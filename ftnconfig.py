@@ -8,7 +8,7 @@ BADDIR="badmsg"
 SECDIR="secmsg"
 ADDRESS="2:5020/12000"
 INBOUND="/tank/home/sergey/fido/fidotmp/archive"
-
+OUTBOUND="/tank/home/sergey/fido/send"
 
 # - values configured in database
 
