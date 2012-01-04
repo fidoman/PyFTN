@@ -12,6 +12,7 @@ import ftnimport
 import ftn.msg
 import ftn.pkt
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed
+from ftnconfig import *
 
 def ispkt(f):
   return f[-4:].lower()==".pkt"
@@ -80,8 +81,6 @@ def import_pkt(sess, fo, recv_from):
 # load messages, setting processd=False and specifying receivedfrom
 # 1) PKT address matches source and destination is this node
 
-BASE="/tank/home/sergey/fido/fidotmp/archive"
-
 def find_all(b):
   for x in glob.glob(b+"/*"):
     if os.path.isdir(x):
@@ -91,9 +90,9 @@ def find_all(b):
       yield x
   return
 
-for net_dir in glob.glob(BASE+"/*:*"):
+for net_dir in glob.glob(INBOUND+"/*:*"):
   for node_dir in glob.glob(net_dir+"/*"):
-    node=node_dir[len(BASE)+1:]
+    node=node_dir[len(INBOUND)+1:]
     print("source: "+node)
     for f in find_all(node_dir):
       #skip for a while
@@ -102,7 +101,7 @@ for net_dir in glob.glob(BASE+"/*:*"):
 
       print("file: "+f)
       try:
-        with ftnimport.session(ftnimport.db) as sess:
+        with ftnimport.session(db) as sess:
 
           if ismsg(f):
             print("msg")

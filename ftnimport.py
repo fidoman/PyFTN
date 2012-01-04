@@ -11,8 +11,6 @@ from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscri
 import re
 from hashlib import sha1
 
-import postgresql
-db=postgresql.open("pq://fido:xxxyzt@192.168.0.3/fido")
 
 def clean_str(s):
   return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
@@ -34,17 +32,221 @@ RE_latin=re.compile(b"IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE")
 
 RE_ukrainian=re.compile(b"ZZUKR\.|ZZUA\.")
 
+
+def normalize_message(msg, charset="ascii"):
+
+    header = xml.etree.ElementTree.Element("header")
+    ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
+
+    if b"CHRS:" in msg.kludge and msg.kludge[b"CHRS:"]==b"CP866 2": # can trust
+      charset="cp866"
+
+#      charset=msg.kludge[b"CHRS:"].rsplit(b" ", 1)[0].decode("ascii")
+      #if charset in set(("IBMPC", "+7 FIDO", "ALT", "+7_FIDO", "CP-866", 
+      #      "RUSSIAN", "RUS_FTN", "FIDO", "UKR", "R_FIDO", "TABLE", "IBMPC2", "R FIDO", 
+      #      "FTN", "JK", "KOI", "CP808", "RUFIDO", "Russian", "IBM", "+7FIDO")):
+      #    charset="cp866"
+
+    # hacks
+    if msg.area:
+      msg.area = msg.area.upper()
+      print("area for charset [%s]"%repr(msg.area))
+      if RE_russian.match(msg.area):
+        charset="cp866"
+      elif RE_latin.match(msg.area):
+        charset="latin-1"
+      elif RE_ukrainian.match(msg.area):
+        charset="cp1125"
+
+    else:
+      # netmail default charset
+      charset="cp866"
+
+    #print("charset:", charset)
+
+
+    #print ("MSGID", msgid)
+  
+    if msg.seenby:
+      for seenby1 in msg.seenby:
+        seenbyel=xml.etree.ElementTree.SubElement(ftnel, "SEEN-BY")
+        if seenby1[0]:
+          seenbyel.set("zone", str(seenby1[0]))
+        seenbyel.set("net", str(seenby1[1]))
+        seenbyel.set("node", str(seenby1[2]))
+        if seenby1[3]:
+          seenbyel.set("point", str(seenby1[3]))
+  
+    if msg.via:
+      for via1 in msg.via:
+        viael = xml.etree.ElementTree.SubElement(ftnel, "VIA")
+        viael.set(via1[0].decode(charset), via1[1].decode(charset))
+  
+    for attr1 in ftn.attr.binary_to_text(msg.attr):
+      xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)
+  
+    for kname, kval in msg.kludge.items():
+      if type(kval)!=list:
+        kval=[kval]
+      for v1 in kval:
+        xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", 
+          name = clean_str(kname.decode(charset)), 
+          value = clean_str(v1.decode(charset)))
+            # TZUTC sometimes filled with zeroes...
+            # and special chars sometimes encountered
+
+    for path1 in msg.path:
+      #print(path1)
+      pathel=xml.etree.ElementTree.SubElement(ftnel, "PATH", record = clean_str(path1))
+  
+
+
+    # get message originator and recipient addresses
+
+    if b"MSGID:" in msg.kludge:
+      msgid=msg.kludge[b"MSGID:"].decode("ascii")
+    else:
+      msgid=None # try to generate
+
+
+    if msg.area:
+
+      # get originator address from Origin or MSGID
+      origdom = "node"
+      origname, _ = msg.orig[0], ftn.addr.addr2str(msg.orig[1])
+
+      origaddr = None
+      for b1 in msg.body:
+        try:
+          a=ftn.msg.decode_origin(b1).decode(charset)
+          origaddr = ftn.addr.addr2str(ftn.addr.str2addr(a))
+        except ftn.msg.DecodeError:
+          pass
+
+      if not origaddr:
+        try:
+          origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msg.kludge[b"MSGID:"].decode(charset).split(" ")[0].split("@")[0]))
+          print ("got from msgid:", origaddr)
+        except:
+          pass
+
+      if not origaddr:
+        raise FTNNoOrigin # No Origin, no MSGID with FTN address
+
+      # destination is echo
+      destdom = "echo"
+      destaddr = msg.area.decode(charset)
+      destname, _ = msg.dest
+
+    else:
+      # netmail
+      origdom = "node"
+      origname, origaddr = msg.orig[0], ftn.addr.addr2str(msg.orig[1])
+
+      destdom = "node"
+      destname, destaddr = msg.dest[0], ftn.addr.addr2str(msg.dest[1])
+  
+  
+    guessed=False
+    mayusezone=None
+    if origdom=="node" and origaddr[0]=='0':
+      print("MSG with from = '%s': guess zone..."%origaddr)
+      if msgid:
+        guessfrom=ftn.addr.str2addr(msgid.split(" ")[0].split("@")[0])
+        knownfrom=ftn.addr.str2addr(origaddr)
+        if guessfrom[1]==knownfrom[1] and guessfrom[2]==knownfrom[2]:
+          print (origaddr,"->",ftn.addr.addr2str(guessfrom))
+          origaddr=ftn.addr.addr2str(guessfrom)
+          guessed=True
+          mayusezone=guessfrom[0]
+  
+      if not guessed:
+        print ("AREA:", repr(msg.area))
+        raise FTNFail("Zone in sender address is empty and cannot guess from MSGID %s\n"
+          		"guess: %s known: %s"%(repr(msg.kludge.get(b"MSGID:")), guessfrom, knownfrom))
+  
+  
+    guessed=False
+    replyzone=None
+    if destdom=="node" and destaddr[0]=='0':
+      print ("MSG with to = '%s': guess zone..."%destaddr)
+      if b"REPLY:" in msg.kludge:
+       try:
+        guessto=ftn.addr.str2addr(msg.kludge[b"REPLY:"].decode(charset).split(" ")[0].split("@")[0])
+        replyzone=guessto[0]
+        knownto=ftn.addr.str2addr(destaddr)
+        if guessto[1]==knownto[1] and guessto[2]==knownto[2]:
+          print("use REPLYTO",destaddr,"->",ftn.addr.addr2str(guessto))
+          destaddr=ftn.addr.addr2str(guessto)
+          guessed=True
+       except FTNFail:
+         pass # could not parse replyto id
+ 
+      if not guessed and mayusezone and ((replyzone is None) or replyzone==mayusezone):
+        guessto=list(ftn.addr.str2addr(destaddr))
+        guessto[0]=mayusezone
+        destaddr=ftn.addr.addr2str(guessto)
+        print("take destination zone from source")
+        guessed=True
+
+#      if not guessed: # caution
+#        guessto=list(ftn.addr.str2addr(destaddr))
+#        if guessto[1]==5020:
+#          guessto[0]=2
+#        destaddr=ftn.addr.addr2str(guessto)
+#        guessed=True
+
+      if not guessed:
+        raise FTNFail("Zone in recepient address is empty and cannot guess from REPLY")
+
+
+    sendernameel = xml.etree.ElementTree.SubElement(header, "sendername")
+    sendernameel.text = clean_str(origname.decode(charset))
+
+    recipientnameel = xml.etree.ElementTree.SubElement(header, "recipientname")
+    recipientnameel.text = clean_str(destname.decode(charset))
+
+    dateel = xml.etree.ElementTree.SubElement(header, "date")
+    dateel.text = clean_str(msg.date.decode(charset))
+
+    subjel=xml.etree.ElementTree.SubElement(header, "subject")
+    subjel.text = clean_str(msg.subj.decode(charset))
+    
+    body = (b"\n".join(msg.body)+b"\n").decode(charset)
+
+    if msgid is None:
+      # make hash of originator+date+subject+body - date to allow repeating posts
+      hashdata = "\n".join((origname.decode(charset), origaddr, destname.decode(charset), destaddr,
+            msg.date.decode(charset), msg.subj.decode(charset), body))
+      msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
+      print("generated MSGID", repr(msgid))
+      msg.kludge[b"MSGID:"] = msgid.encode("ascii")
+      #raise Exception("No MSGID, src=%s"%repr(origaddr))
+      #raise FTNNoMSGID()
+
+    return (origdom, origaddr), (destdom, destaddr), msgid, header, body
+
+
+
+
 class session:
   def __init__(self, db):
     self.db=db
     self.Q_msginsert = None
     self.Q_getlinkid = None
     self.address_cache = {}
+    self.domains = {}
     for domain_id, domain_name in db.prepare("SELECT id, name FROM domains;"):
       #print(domain_id, domain_name)
-      if domain_name=="fidonet node": self.FIDOADDR=domain_id
-      elif domain_name=="fidonet fileecho": self.FIDOFECHO=domain_id
-      elif domain_name=="fidonet echo": self.FIDOECHO=domain_id
+      if domain_name=="fidonet node": 
+        self.FIDOADDR=domain_id
+        self.domains["node"]=domain_id
+      elif domain_name=="fidonet echo": 
+        self.FIDOECHO=domain_id
+        self.domains["echo"]=domain_id
+      elif domain_name=="fidonet fileecho": 
+        self.FIDOFECHO=domain_id
+        self.domains["fileecho"]=domain_id
     self.Q_find_addr=db.prepare("select id from addresses where domain=$1 and text=$2")
 
   def find_addr(self, dom, addr):
@@ -81,7 +283,7 @@ class session:
 
 
   def __enter__(self):
-    self.x=db.xact()
+    self.x=self.db.xact()
     self.x.start()
     return self
 
@@ -173,195 +375,11 @@ class session:
        if msg is correct then it is stored in base.
        if msg fails validation then it will be saved in bad messages' directory """
 
-    header = xml.etree.ElementTree.Element("header")
-    ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
 
-    if b"CHRS:" in msg.kludge and msg.kludge[b"CHRS:"]==b"CP866 2": # can trust
-      charset="cp866"
+    (origdomname, origaddr), (destdomname, destaddr), msgid, header, body = normalize_message(msg, charset)
 
-#      charset=msg.kludge[b"CHRS:"].rsplit(b" ", 1)[0].decode("ascii")
-      #if charset in set(("IBMPC", "+7 FIDO", "ALT", "+7_FIDO", "CP-866", 
-      #      "RUSSIAN", "RUS_FTN", "FIDO", "UKR", "R_FIDO", "TABLE", "IBMPC2", "R FIDO", 
-      #      "FTN", "JK", "KOI", "CP808", "RUFIDO", "Russian", "IBM", "+7FIDO")):
-      #    charset="cp866"
-
-    # hacks
-    if msg.area:
-      msg.area = msg.area.upper()
-      print("area for charset [%s]"%repr(msg.area))
-      if RE_russian.match(msg.area):
-        charset="cp866"
-      elif RE_latin.match(msg.area):
-        charset="latin-1"
-      elif RE_ukrainian.match(msg.area):
-        charset="cp1125"
-
-    else:
-      # netmail default charset
-      charset="cp866"
-
-    #print("charset:", charset)
-
-
-    #print ("MSGID", msgid)
-  
-    if msg.seenby:
-      for seenby1 in msg.seenby:
-        seenbyel=xml.etree.ElementTree.SubElement(ftnel, "SEEN-BY")
-        if seenby1[0]:
-          seenbyel.set("zone", str(seenby1[0]))
-        seenbyel.set("net", str(seenby1[1]))
-        seenbyel.set("node", str(seenby1[2]))
-        if seenby1[3]:
-          seenbyel.set("point", str(seenby1[3]))
-  
-    if msg.via:
-      for via1 in msg.via:
-        viael = xml.etree.ElementTree.SubElement(ftnel, "VIA")
-        viael.set(via1[0].decode(charset), via1[1].decode(charset))
-  
-    for attr1 in ftn.attr.binary_to_text(msg.attr):
-      xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)
-  
-    for kname, kval in msg.kludge.items():
-      if type(kval)!=list:
-        kval=[kval]
-      for v1 in kval:
-        xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", 
-          name = clean_str(kname.decode(charset)), 
-          value = clean_str(v1.decode(charset)))
-            # TZUTC sometimes filled with zeroes...
-            # and special chars sometimes encountered
-
-    for path1 in msg.path:
-      #print(path1)
-      pathel=xml.etree.ElementTree.SubElement(ftnel, "PATH", record = clean_str(path1))
-  
-
-
-    # get message originator and recipient addresses
-
-    if b"MSGID:" in msg.kludge:
-      msgid=msg.kludge[b"MSGID:"].decode("ascii")
-    else:
-      msgid=None # try to generate
-
-
-    if msg.area:
-
-      # get originator address from Origin or MSGID
-      origdom = self.FIDOADDR
-      origname, _ = msg.orig[0], ftn.addr.addr2str(msg.orig[1])
-
-      origaddr = None
-      for b1 in msg.body:
-        try:
-          a=ftn.msg.decode_origin(b1).decode(charset)
-          origaddr = ftn.addr.addr2str(ftn.addr.str2addr(a))
-        except ftn.msg.DecodeError:
-          pass
-
-      if not origaddr:
-        try:
-          origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msg.kludge[b"MSGID:"].decode(charset).split(" ")[0].split("@")[0]))
-          print ("got from msgid:", origaddr)
-        except:
-          pass
-
-      if not origaddr:
-        raise FTNNoOrigin # No Origin, no MSGID with FTN address
-
-      # destination is echo
-      destdom = self.FIDOECHO
-      destaddr = msg.area.decode(charset)
-      destname, _ = msg.dest
-
-    else:
-      # netmail
-      origdom = self.FIDOADDR
-      origname, origaddr = msg.orig[0], ftn.addr.addr2str(msg.orig[1])
-
-      destdom = self.FIDOADDR
-      destname, destaddr = msg.dest[0], ftn.addr.addr2str(msg.dest[1])
-  
-  
-    guessed=False
-    mayusezone=None
-    if origdom==self.FIDOADDR and origaddr[0]=='0':
-      print("MSG with from = '%s': guess zone..."%origaddr)
-      if msgid:
-        guessfrom=ftn.addr.str2addr(msgid.split(" ")[0].split("@")[0])
-        knownfrom=ftn.addr.str2addr(origaddr)
-        if guessfrom[1]==knownfrom[1] and guessfrom[2]==knownfrom[2]:
-          print (origaddr,"->",ftn.addr.addr2str(guessfrom))
-          origaddr=ftn.addr.addr2str(guessfrom)
-          guessed=True
-          mayusezone=guessfrom[0]
-  
-      if not guessed:
-        print ("AREA:", repr(msg.area))
-        raise FTNFail("Zone in sender address is empty and cannot guess from MSGID %s\n"
-          		"guess: %s known: %s"%(repr(msg.kludge.get(b"MSGID:")), guessfrom, knownfrom))
-  
-  
-    guessed=False
-    replyzone=None
-    if destdom==self.FIDOADDR and destaddr[0]=='0':
-      print ("MSG with to = '%s': guess zone..."%destaddr)
-      if b"REPLY:" in msg.kludge:
-       try:
-        guessto=ftn.addr.str2addr(msg.kludge[b"REPLY:"].decode(charset).split(" ")[0].split("@")[0])
-        replyzone=guessto[0]
-        knownto=ftn.addr.str2addr(destaddr)
-        if guessto[1]==knownto[1] and guessto[2]==knownto[2]:
-          print("use REPLYTO",destaddr,"->",ftn.addr.addr2str(guessto))
-          destaddr=ftn.addr.addr2str(guessto)
-          guessed=True
-       except FTNFail:
-         pass # could not parse replyto id
- 
-      if not guessed and mayusezone and ((replyzone is None) or replyzone==mayusezone):
-        guessto=list(ftn.addr.str2addr(destaddr))
-        guessto[0]=mayusezone
-        destaddr=ftn.addr.addr2str(guessto)
-        print("take destination zone from source")
-        guessed=True
-
-#      if not guessed: # caution
-#        guessto=list(ftn.addr.str2addr(destaddr))
-#        if guessto[1]==5020:
-#          guessto[0]=2
-#        destaddr=ftn.addr.addr2str(guessto)
-#        guessed=True
-
-      if not guessed:
-        raise FTNFail("Zone in recepient address is empty and cannot guess from REPLY")
-
-
-    sendernameel = xml.etree.ElementTree.SubElement(header, "sendername")
-    sendernameel.text = clean_str(origname.decode(charset))
-
-    recipientnameel = xml.etree.ElementTree.SubElement(header, "recipientname")
-    recipientnameel.text = clean_str(destname.decode(charset))
-
-    dateel = xml.etree.ElementTree.SubElement(header, "date")
-    dateel.text = clean_str(msg.date.decode(charset))
-
-    subjel=xml.etree.ElementTree.SubElement(header, "subject")
-    subjel.text = clean_str(msg.subj.decode(charset))
-    
-    body = (b"\n".join(msg.body)+b"\n").decode(charset)
-
-    if msgid is None:
-      # make hash of originator+date+subject+body - date to allow repeating posts
-      hashdata = "\n".join((origname.decode(charset), origaddr, destname.decode(charset), destaddr,
-            msg.date.decode(charset), msg.subj.decode(charset), body))
-      msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
-      print("generated MSGID", repr(msgid))
-      msg.kludge[b"MSGID:"] = msgid.encode("ascii")
-      #raise Exception("No MSGID, src=%s"%repr(origaddr))
-      #raise FTNNoMSGID()
-
+    origdom=self.domains[origdomname]
+    destdom=self.domains[destdomname]
 
     #print "-"*79
     #sys.stdout.write(body.encode("utf-8"))
