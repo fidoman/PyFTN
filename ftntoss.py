@@ -3,6 +3,7 @@
 """ legacy tosser - create bundles on periodical basis (contrast to on-session packing) """
 
 import time
+from ast import literal_eval
 
 from ftnconfig import *
 import ftnexport
@@ -34,11 +35,30 @@ class packer:
       self.packet.approxlen+=100+len(m.body)
 
     if self.packet.approxlen>1000000:
+      self.flush_packet()
+
+  def flush_packet(self):
       #write pkt to outbound
-      ...
+      destdir=os.path.join(OUTBOUND, '.'.join(ftn.addr.str2addr(self.node)))
+      if not os.path.exists(destdir):
+        os.makedirs(destdir)
+      try:
+        counter=literal_eval(open(destdir+".pktcounter").read())
+      except IOError as e:
+        if e.args[0]!=2:
+          raise e
+        counter=0
+      pktfile=os.path.join(destdir, "%08x.pkt"%counter)
+      open(destdir+".pktcounter", "w").write(str(counter+1))
+      self.packet.write(pktfile)
+      self.packet=None
+
 
   def flush(self):
-    raise
+    if self.packet:
+      self.flush_packet()
+    if self.bundle:
+      self.flush_bundle()
 
   def __del__(self):
     self.flush()
@@ -63,7 +83,7 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
       print(m)
       if m[0]>max_id: 
         max_id=m[0]
-      msg=ftnexport.denormalize_message(m)
+      msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7])
       p.add(msg)
       sub_content=True
       
