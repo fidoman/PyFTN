@@ -133,7 +133,10 @@ class PKT:
 "===============================================================================\n".join([""]+list(map(str,self.msg))+[""])
 
   def save(self, file):
-    f=open(file, "wb")
+    if type(file)==type(str):
+      f=open(file, "wb")
+    else:
+      f=file
     print(repr(self.source), repr(self.destination))
     print(repr(self.date),repr(self.password))
     f.write(struct.pack("<13H8s12H",self.source[2],self.destination[2],
@@ -150,6 +153,9 @@ class PKT:
         m.make_body()+"\0")
 
     f.write("\0\0")
+
+    if type(file)==type(str):
+      f.close()
 
 if __name__=="__main__":
   from glob import glob
