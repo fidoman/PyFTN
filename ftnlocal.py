@@ -16,11 +16,11 @@ for sub_id, target_id, lastsent in ftnexport.get_node_subscriptions(db, ADDRESS,
   print(sub_id, ": mail directed to", 
         db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target").first(sub_id))
   
-  for id_msg, srcdom, srctext, dstdom, dsttext, msgid, header, body in ftnexport.get_messages(db, target_id, lastsent):
+  for id_msg, srcdom, srctext, msgid, header, body, recvfrom in ftnexport.get_messages(db, target_id, lastsent):
     print("*************"+str(id_msg)+"*"+msgid+"*****************")
     print("From:", header.find("sendername").text,srcdom,srctext)
-    print("To  :", header.find("recipientname").text,dstdom,dsttext)
-    print("To  :", header.find("date").text)
+    print("To  :", header.find("recipientname").text,"node",ADDRESS)
+    print("Date:", header.find("date").text)
     print("Subj:", header.find("subject").text)
     print(body)
     # process

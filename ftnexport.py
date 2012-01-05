@@ -34,13 +34,14 @@ def get_messages(db, dest_id, lastsent):
 #        "where sr.id=$1 and (m.id>sr.lastsent or sr.lastsent is NULL) and m.destination=sr.target and (m.processed is NULL or m.processed<>5)"
 #        "and m.source=s.id and m.destination=d.id")
 
-    Q_get_subscription_messages = db.Q_get_subscription_messages = db.prepare("select m.id, s.domain, s.text, d.domain, d.text, m.msgid, m.header, m.body from "
-        "messages m, addresses s, addresses d "
+    Q_get_subscription_messages = db.Q_get_subscription_messages = db.prepare(
+        "select m.id, s.domain, s.text, m.msgid, m.header, m.body, m.receivedfrom "
+        "from messages m, addresses s "
         "where m.id>$2 and m.destination=$1 and (m.processed is NULL or m.processed<>5)"
-        "and m.source=s.id and m.destination=d.id")
+        "and m.source=s.id")
 
   for m in Q_get_subscription_messages(dest_id, lastsent):
-    yield m[0], db.FTN_backdomains[m[1]], m[2], db.FTN_backdomains[m[3]], m[4], m[5], m[6], m[7]
+    yield m[0], db.FTN_backdomains[m[1]], m[2], m[3], m[4], m[5], m[6]
 
   return
 

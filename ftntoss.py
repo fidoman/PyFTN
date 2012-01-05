@@ -86,7 +86,7 @@ for link_id, link_addr, ladom, latext in db.prepare("select l.id, l.address, a.d
     #print("   ", sub_id)
 
     destdom, desttext = db.prepare("select domain, text from addresses where id=$1").first(sub_targ)
-    destdom = db.FTN_domains[destdom]
+    destdom = db.FTN_backdomains[destdom]
 
     #!!!print("move it to ftnexport and update for recursive queries")
     
@@ -119,7 +119,7 @@ for link_id, link_addr, ladom, latext in db.prepare("select l.id, l.address, a.d
         continue # received from this node
 
       subscriber_comm = db.FTN_commuter.get(sub_id)
-      if subscriber_comm in not None:
+      if subscriber_comm is not None:
         # get subscription through what message was received
         recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
         recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
