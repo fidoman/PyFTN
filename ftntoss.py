@@ -4,6 +4,7 @@
 
 import time
 from ast import literal_eval
+import xml.etree.ElementTree
 
 from ftnconfig import *
 import ftnexport
@@ -64,6 +65,8 @@ class packer:
     self.flush()
 
 
+subscriber_cache = {}
+
 # 1. Get all addresses having subscription
 
 for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domain, a.text from links l, addresses a where l.address=a.id"):
@@ -73,6 +76,16 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
   for sub_id, sub_targ, sub_lastsent in ftnexport.get_node_subscriptions(db, latext, "echo"):
     #print("   ", sub_id)
 
+    print("move it to ftnexport and update for recursive queries")
+    subscribers=subscriber_cache.setdefault(sub_targ, 
+        db.prepare("select a.domain, a.text from subscriptions s, addresses a where s.target=$1 and s.subscriber=a.id")(sub_targ))
+
+    if not all([x[0]==db.FTN_domains["node"] for x in subscribers]):
+      raise FTNFail("subscribers from wrong domain for "+str(sub_targ))
+
+#    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
+    subscribers = [x[1] for x in subscribers]
+
     # --- begin work with messages in subscription  ---
 
     max_id=sub_lastsent
@@ -80,10 +93,16 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
     for m in ftnexport.get_messages(db, sub_targ, sub_lastsent):
       if not p:
         p=packer(latext, True)
-      print(m)
+#      print(m)
       if m[0]>max_id: 
         max_id=m[0]
-      msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7])
+
+      # modify path and seen-by
+      # seen-by's - get list of all subscribers of this target; add subscribers list
+      #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
+      msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
+      print(msg.pack())
+      exit()
       p.add(msg)
       sub_content=True
       

@@ -185,7 +185,7 @@ class MSG:
       if self.dest[1][3]!=0: # topt
         s+=c+b"TOPT "+str(self.dest[1][3]).encode("ascii")+eol
 
-    for k in list(self.kludge.keys()):
+    for k in self.kludge.keys():
       v=self.kludge[k]
       if type(v) is list:
         for x in v:
@@ -234,11 +234,11 @@ class MSG:
 
   def add_seenby(self, a):
     addr=str2addr(a)
-    self.seenby.add((0,addr[1],addr[2],0))
+    self.seenby.add((None,addr[1],addr[2],None))
 
   def add_path(self, a):
     addr=str2addr(a)
-    self.path.append(addr2str((0,addr[1],addr[2],0)))
+    self.path.append(addr2str((None,addr[1],addr[2],None)))
 
 ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$")
 

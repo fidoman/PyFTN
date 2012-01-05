@@ -52,6 +52,8 @@ RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
 def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
 
+    charset = "ascii"
+
     if chrs_kludge=="CP866 2": # can trust
       charset="cp866"
 
@@ -74,3 +76,5 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
       # netmail default charset
       #if destaddr.startswith("2:50")
       charset="cp866"
+
+    return charset

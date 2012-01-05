@@ -10,7 +10,7 @@ import ftn.attr
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed
 import re
 from hashlib import sha1
-
+from ftnconfig import suitable_charset
 
 def clean_str(s):
   return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))

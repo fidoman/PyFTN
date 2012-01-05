@@ -2,8 +2,9 @@
 Message flow from database to links and users
 """
 
-#from ftnconfig import *
+import xml.etree.ElementTree
 
+from ftnconfig import suitable_charset
 import ftn.msg
 
 def get_node_subscriptions(db, addr, msgdom):
@@ -48,46 +49,113 @@ def update_subscription_watermark(db, subscription, id):
 
 
 
-def denormalize_message(orig, dest, msgid, header, body, echodest):
+def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=None, addseenby=None, addpath=None):
   (origdom, origaddr) = orig
   (destdom, destaddr) = dest
+
+  charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr)
+  print(charset)
 
   if origdom!="node":
     raise FTNFail("message source must be node not %s"%origdom)
 
   msg=ftn.msg.MSG()
-  print(orig, dest)
-  fname=header.find("sendername").text
-  tname=header.find("recipientname").text
-  subj=header.find("subject").text
-  date=header.find("date").text
-  print(fname, tname, subj, date)
+
+  fname=header.find("sendername").text.encode(charset)
+  tname=header.find("recipientname").text.encode(charset)
+  msg.subj=header.find("subject").text.encode(charset)
+  msg.date=header.find("date").text.encode(charset)
+  #print(fname, tname, subj, date)
+
+  nltail=len(body)
+  while(nltail>0 and body[nltail-1]=="\n"):
+    nltail-=1
+  msg.body = body[:nltail].encode(charset).split(b"\n")
+
+  #print(xml.etree.ElementTree.tostring(header, encoding="utf-8").decode("utf-8"))
+  ftnheader=header.find("FTN")
+#  print(xml.etree.ElementTree.tostring(ftnheader).decode("utf-8"))
+
+
+  msg.kludge = {} # overwrite CHRS kludge
+  for kludge in ftnheader.findall("KLUDGE"):
+    #print(kludge.get("name"), kludge.get("value"))
+    msg.kludge[kludge.get("name").encode(charset)] = kludge.get("value").encode(charset)
+
+  if charset=="ascii":
+    if b"CHRS:" in msg.kludge:
+      del msg.kludge[b"CHRS:"]
+  else:
+    msg.kludge[b"CHRS:"] = (charset.upper() + " 2").encode("ascii")
+
+#  print(msg.kludge)
+
+  msg.via = [] # netmail only
+  for via in ftnheader.findall("VIA"):
+    1/0
+    #print(kludge.get("name"), kludge.get("value"))
+    msg.kludge[kludge.get("name").encode(charset)] = kludge.get("value").encode(charset)
+    
+
+  msg.path = []
+  msg.seenby = set() # echomail only
 
   if destdom=="echo":
-    msg.body=[""]
-  msg.body = body.split("\n")
-  msg.kludge = {}
-  msg.via = []
-  msg.path = []
-  msg.seenby = []
+
+    dest_zone=ftn.addr.str2addr(echodest)[0]
+    my_zone=ftn.addr.str2addr(addpath)[0] # addpath should be this node's address
+
+    if my_zone==dest_zone:
+      for path in ftnheader.findall("PATH"):
+        print(path.get("record"))
+        msg.add_path(path.get("record"))
+
+      if addpath:
+        print("additional path", addpath)
+        msg.add_path(addpath)
+
+    else:
+      pass # empty path
+  
+    if my_zone==dest_zone:
+
+      for seenby in ftnheader.findall("SEEN-BY"):
+        seenbyaddr = (seenby.get("zone"), seenby.get("net"), seenby.get("node"), seenby.get("point"))
+        print(seenbyaddr)
+        msg.add_seenby(ftn.addr.addr2str(seenbyaddr))
+    else:
+      pass # drop old seen-by's
+  
+    for seenby in addseenby or []:
+      print("additional seenby", seenby)
+      seenby_zone=ftn.addr.str2addr(seenby)[0]
+      if seenby_zone==dest_zone:
+        msg.add_seenby(seenby)
+
+
   msg.orig=(fname, ftn.addr.str2addr(origaddr))
   if destdom=="node":
     msg.dest=(tname, ftn.addr.str2addr(destaddr))
+    msg.area=None
   elif destdom=="echo":
     print("packing echomail msg to "+echodest)
     msg.dest=(tname, ftn.addr.str2addr(echodest))
+    msg.area=destaddr.encode(charset)
   else:
     raise FTNFail("do not know how to pack message to "+destdom)
-  msg.subj=subj
-  msg.date=date
+
+
   msg.attr=0
+  if destdom=="node":
+    raise NotImplementedError("attr for netmail")
+
   msg.cost=0
   msg.readcount=0
   msg.replyto=0
   msg.nextreply=0
 
+  print(msg.__dict__)
 
-  raise Exception("not implemented")
   return msg
 
 

@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/bin/env python3 -bb
 
 """ process local mail """
 
@@ -12,11 +12,11 @@ import ftnexport
 #for s in ftnexport.get_node_subscriptions(db, "2:5020/12000", "node"):
 #  print(db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target")(s)[0])
 
-for localnetmailsubscription in ftnexport.get_node_subscriptions(db, ADDRESS, "node"):
-  print(localnetmailsubscription, ": mail directed to", 
-        db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target").first(localnetmailsubscription))
+for sub_id, target_id, lastsent in ftnexport.get_node_subscriptions(db, ADDRESS, "node"):
+  print(sub_id, ": mail directed to", 
+        db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target").first(sub_id))
   
-  for id_msg, srcdom, srctext, dstdom, dsttext, msgid, header, body in ftnexport.get_subscription_messages(db, localnetmailsubscription):
+  for id_msg, srcdom, srctext, dstdom, dsttext, msgid, header, body in ftnexport.get_messages(db, target_id, lastsent):
     print("*************"+str(id_msg)+"*"+msgid+"*****************")
     print("From:", header.find("sendername").text,srcdom,srctext)
     print("To  :", header.find("recipientname").text,dstdom,dsttext)
