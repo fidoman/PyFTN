@@ -85,7 +85,7 @@ class MSG:
     self.kludge = {}
     self.via = []
     self.path = []
-    self.seenby = []
+    self.seenby = set()
 
     (fname,(fzone,fnet,fnode,fpnt)) = src
     (tname,(tzone,tnet,tnode,tpnt)) = dst
@@ -131,7 +131,7 @@ class MSG:
           self.via+=[(name,value)]
         elif name.upper()==b"PATH:":
           try:
-           self.path += list(map(
+           self.path.extend(map(
             addr2str, addr_expand(list(filter(bool, value.decode("ascii").split(" "))), (None, None, None, None))))
           except:
             raise FTNFail("MSG: bad PATH "+value)
@@ -147,8 +147,7 @@ class MSG:
         self.body += [l]
 
     while len(self.body) and (self.body[-1][:8] == b"SEEN-BY:"):
-      self.seenby += \
-        addr_expand(list(filter(bool,self.body[-1][9:].decode("ascii").split(" "))),(None,None,None,None))
+      self.seenby.update(addr_expand(list(filter(bool,self.body[-1][9:].decode("ascii").split(" "))),(None,None,None,None)))
       del self.body[-1]
 
     self.orig=(fname, (fzone,fnet,fnode,fpnt))
@@ -201,7 +200,7 @@ class MSG:
       
     s+=b"".join([b"@%"+x[0]+b" "+x[1]+eol for x in self.via])
 
-    self.seenby.sort()
+    #self.seenby.sort()
     
     if invalidate:
       s+=addr_makelist(list(map(addr2str, self.seenby)), "SEEN+BY:", eol.decode("ascii")).encode("ascii")
@@ -233,10 +232,10 @@ class MSG:
       self.attr, self.nextreply)+self.make_body()
 
   def add_seenby(self, a):
-    self.seenby+=[str2addr(a)]
+    self.seenby.add(str2addr(a))
 
   def add_path(self, a):
-    self.path+=[addr2str(str2addr(a))]
+    self.path.append(addr2str(str2addr(a)))
 
 ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$")
 
