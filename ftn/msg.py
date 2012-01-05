@@ -200,12 +200,13 @@ class MSG:
       
     s+=b"".join([b"@%"+x[0]+b" "+x[1]+eol for x in self.via])
 
-    #self.seenby.sort()
+    seenbylist=list(self.seenby)
+    seenbylist.sort()
     
     if invalidate:
-      s+=addr_makelist(list(map(addr2str, self.seenby)), "SEEN+BY:", eol.decode("ascii")).encode("ascii")
+      s+=addr_makelist(list(map(addr2str, seenbylist)), "SEEN+BY:", eol.decode("ascii")).encode("ascii")
     else:
-      s+=addr_makelist(list(map(addr2str, self.seenby)), "SEEN-BY:", eol.decode("ascii")).encode("ascii")
+      s+=addr_makelist(list(map(addr2str, seenbylist)), "SEEN-BY:", eol.decode("ascii")).encode("ascii")
 
     s+=addr_makelist(self.path, c.decode("ascii")+"PATH:", eol.decode("ascii")).encode("ascii")
     return s
@@ -232,10 +233,12 @@ class MSG:
       self.attr, self.nextreply)+self.make_body()
 
   def add_seenby(self, a):
-    self.seenby.add(str2addr(a))
+    addr=str2addr(a)
+    self.seenby.add((0,addr[1],addr[2],0))
 
   def add_path(self, a):
-    self.path.append(addr2str(str2addr(a)))
+    addr=str2addr(a)
+    self.path.append(addr2str((0,addr[1],addr[2],0)))
 
 ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$")
 
