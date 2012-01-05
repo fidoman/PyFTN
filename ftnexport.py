@@ -44,8 +44,9 @@ def get_messages(db, dest_id, lastsent):
 
   return
 
+
 def update_subscription_watermark(db, subscription, id):
-  raise Exception("not implemented")
+  db.prepare("update subscriptions set lastsent=$1 where id=$2")(id, subscription)
 
 
 
@@ -61,10 +62,10 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
   msg=ftn.msg.MSG()
 
-  fname=header.find("sendername").text.encode(charset)
-  tname=header.find("recipientname").text.encode(charset)
-  msg.subj=header.find("subject").text.encode(charset)
-  msg.date=header.find("date").text.encode(charset)
+  fname=(header.find("sendername").text or '').encode(charset)
+  tname=(header.find("recipientname").text or '').encode(charset)
+  msg.subj=(header.find("subject").text or '').encode(charset)
+  msg.date=(header.find("date").text or '').encode(charset)
   #print(fname, tname, subj, date)
 
   nltail=len(body)
