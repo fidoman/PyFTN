@@ -54,7 +54,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   (destdom, destaddr) = dest
 
   charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr)
-  print(charset)
+  #print(charset)
 
   if origdom!="node":
     raise FTNFail("message source must be node not %s"%origdom)
@@ -107,11 +107,11 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
     if my_zone==dest_zone:
       for path in ftnheader.findall("PATH"):
-        print(path.get("record"))
+        #print(path.get("record"))
         msg.add_path(path.get("record"))
 
       if addpath:
-        print("additional path", addpath)
+        #print("additional path", addpath)
         msg.add_path(addpath)
 
     else:
@@ -121,13 +121,13 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
       for seenby in ftnheader.findall("SEEN-BY"):
         seenbyaddr = (seenby.get("zone"), seenby.get("net"), seenby.get("node"), seenby.get("point"))
-        print(seenbyaddr)
+        #print(seenbyaddr)
         msg.add_seenby(ftn.addr.addr2str(seenbyaddr))
     else:
       pass # drop old seen-by's
   
     for seenby in addseenby or []:
-      print("additional seenby", seenby)
+      #print("additional seenby", seenby)
       seenby_zone=ftn.addr.str2addr(seenby)[0]
       if seenby_zone==dest_zone:
         msg.add_seenby(seenby)
@@ -138,7 +138,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
     msg.dest=(tname, ftn.addr.str2addr(destaddr))
     msg.area=None
   elif destdom=="echo":
-    print("packing echomail msg to "+echodest)
+    #print("packing echomail msg to "+echodest)
     msg.dest=(tname, ftn.addr.str2addr(echodest))
     msg.area=destaddr.encode(charset)
   else:
@@ -154,7 +154,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   msg.replyto=0
   msg.nextreply=0
 
-  print(msg.__dict__)
+  #print(msg.__dict__)
 
   return msg
 

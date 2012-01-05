@@ -133,7 +133,14 @@ class PKT:
 "===============================================================================\n".join([""]+list(map(str,self.msg))+[""])
 
   def save(self, file):
-    if type(file)==type(str):
+
+    def cut(s, l):
+      if len(s)<l:
+        return s+b"\0"
+      else:
+        return s[:l]
+
+    if type(file) is str:
       f=open(file, "wb")
     else:
       f=file
@@ -147,14 +154,14 @@ class PKT:
        0,0,0,1,self.source[0],self.destination[0],
        self.source[3],self.destination[3],0,0))
     for m in self.msg:
-      f.write(struct.pack("<7H20s", 2, m.orig[1][2],m.dest[1][2],
-        m.orig[1][1],m.dest[1][1],m.attr,m.cost,m.date)+
-        m.dest[0][:35]+"\0"+m.orig[0][:35]+"\0"+m.subj[:71]+"\0"+
-        m.make_body()+"\0")
+      f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
+        m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +
+        cut(m.dest[0], 36) + cut(m.orig[0], 36) + cut(m.subj, 72)+
+        m.make_body()+b"\0")
 
-    f.write("\0\0")
+    f.write(b"\0\0")
 
-    if type(file)==type(str):
+    if type(file) is str:
       f.close()
 
 if __name__=="__main__":

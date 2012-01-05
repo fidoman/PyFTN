@@ -3,11 +3,14 @@
 """ legacy tosser - create bundles on periodical basis (contrast to on-session packing) """
 
 import time
+import os
 from ast import literal_eval
 import xml.etree.ElementTree
 
 from ftnconfig import *
 import ftnexport
+import ftn.pkt
+
 
 class packer:
   def __init__(self, me, node, bundle=True):
@@ -25,7 +28,7 @@ class packer:
   def add_message(self, m):
     if not self.packet:
       self.packet=ftn.pkt.PKT()
-      self.packet.password=get_link_password(db, node)
+      self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
       self.packet.source=ftn.addr.str2addr(self.me)
       self.packet.destination=ftn.addr.str2addr(self.node)
       self.packet.date=time.localtime()
@@ -40,7 +43,7 @@ class packer:
 
   def flush_packet(self):
       #write pkt to outbound
-      destdir=os.path.join(OUTBOUND, '.'.join(ftn.addr.str2addr(self.node)))
+      destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
       if not os.path.exists(destdir):
         os.makedirs(destdir)
       try:
@@ -51,7 +54,7 @@ class packer:
         counter=0
       pktfile=os.path.join(destdir, "%08x.pkt"%counter)
       open(destdir+".pktcounter", "w").write(str(counter+1))
-      self.packet.write(pktfile)
+      self.packet.save(pktfile)
       self.packet=None
 
 
@@ -92,7 +95,7 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
     sub_content=False
     for m in ftnexport.get_messages(db, sub_targ, sub_lastsent):
       if not p:
-        p=packer(latext, True)
+        p=packer(ADDRESS, latext, True)
 #      print(m)
       if m[0]>max_id: 
         max_id=m[0]
@@ -101,9 +104,7 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
       msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
-      print(msg.pack())
-      exit()
-      p.add(msg)
+      p.add_message(msg)
       sub_content=True
       
 

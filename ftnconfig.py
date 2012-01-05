@@ -78,3 +78,23 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
       charset="cp866"
 
     return charset
+
+# - 
+
+def get_link_password(db, linkaddr):
+  try:
+    pw=db.link_passwords
+  except:
+    pw=db.link_passwords={}
+
+  authinfo = pw.setdefault(linkaddr, 
+        db.prepare("select l.authentication from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2").first(db.FTN_domains["node"], linkaddr))
+
+  if not authinfo:
+    return None
+
+  return authinfo.find("ConnectPassword").text
+
+if __name__ == "__main__": 
+  print(get_link_password(db, "2:5020/71522"))
+  print(get_link_password(db, "2:5020/715"))
