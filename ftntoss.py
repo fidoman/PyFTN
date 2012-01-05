@@ -75,6 +75,8 @@ subscriber_cache = {}
 for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domain, a.text from links l, addresses a where l.address=a.id"):
   print(latext)
   p=None
+  flush_list=[]
+
 #  for sub_id, sub_targ, sub_last in db.prepare("select id, target, lastsent from subscriptions where subscriber=$1").rows(linkaddr):
   for sub_id, sub_targ, sub_lastsent in ftnexport.get_node_subscriptions(db, latext, "echo"):
     #print("   ", sub_id)
@@ -94,9 +96,10 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
     max_id=sub_lastsent
     sub_content=False
     for m in ftnexport.get_messages(db, sub_targ, sub_lastsent):
+      sub_content=True
       if not p:
         p=packer(ADDRESS, latext, True)
-#      print(m)
+
       if m[0]>max_id: 
         max_id=m[0]
 
@@ -105,20 +108,21 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
       msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
       p.add_message(msg)
-      sub_content=True
       
 
 
     # --- end work with messages in subscription  ---
 
     if sub_content:
-      p.flush()
-      ftnexport.update_subscription_watermark(db, sub_id, max_id)
+    #  p.flush()
+    #  ftnexport.update_subscription_watermark(db, sub_id, max_id)
+      flush_list.append((sub_id, max_id))
 
   if p:
     p.flush()
+    for sub_id, max_id in flush_list:
+      ftnexport.update_subscription_watermark(db, sub_id, max_id)
 
-    exit()
 exit()
 
 # all the unsent
