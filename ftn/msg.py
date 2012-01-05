@@ -171,7 +171,8 @@ class MSG:
     s=b""
 
     if self.area:
-      s+=b"\x02\x00AREA:"+self.area+eol
+#      s+=b"\x02\x00AREA:"+self.area+eol
+      s+=b"AREA:"+self.area+eol
 
     else:
       if self.orig[1][0]!=0: # zone
