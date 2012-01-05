@@ -36,6 +36,13 @@ def init_domains(db):
 
 init_domains(db)
 
+def init_commuter(db):
+  db.FTN_commuter = {}
+  for id, comm in db.prepare("select id, commuter from subscriptions"):
+    db.FTN_commuter[id] = comm
+
+init_commuter(db)
+
 # -
 
 RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|FLUID\.|SURVIVAL\.GUIDE$|STARPER\.|VGA\.PLANETS|OBEC\.|SPB\.|"

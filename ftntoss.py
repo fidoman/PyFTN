@@ -76,14 +76,17 @@ subscriber_cache = {}
 
 # 1. Get all addresses having subscription
 
-for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domain, a.text from links l, addresses a where l.address=a.id"):
+for link_id, link_addr, ladom, latext in db.prepare("select l.id, l.address, a.domain, a.text from links l, addresses a where l.address=a.id"):
   print(latext)
   p=None
   flush_list=[]
 
-#  for sub_id, sub_targ, sub_last in db.prepare("select id, target, lastsent from subscriptions where subscriber=$1").rows(linkaddr):
+#  for sub_id, sub_targ, sub_last in db.prepare("select id, target, lastsent from subscriptions where subscriber=$1").rows(link_addr):
   for sub_id, sub_targ, sub_lastsent in ftnexport.get_node_subscriptions(db, latext, "echo"):
     #print("   ", sub_id)
+
+    destdom, desttext = db.prepare("select domain, text from addresses where id=$1").first(sub_targ)
+    destdom = db.FTN_domains[destdom]
 
     #!!!print("move it to ftnexport and update for recursive queries")
     
@@ -103,19 +106,32 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
 
     max_id=sub_lastsent
     sub_content=False
-    for m in ftnexport.get_messages(db, sub_targ, sub_lastsent):
+    for m_id, m_srcdom, m_srctext, m_msgid, m_header, m_body, m_recvfrom in ftnexport.get_messages(db, sub_targ, sub_lastsent):
       sub_content=True
       if not p:
         p=packer(ADDRESS, latext, True)
 
-      if m[0]>max_id: 
-        max_id=m[0]
+      if m_id>max_id: 
+        max_id=m_id
+
+      #.. skip the message if is is received from this node or this node is commuter as node from which message was received
+      if m_recvfrom == link_addr:
+        continue # received from this node
+
+      subscriber_comm = db.FTN_commuter.get(sub_id)
+      if subscriber_comm in not None:
+        # get subscription through what message was received
+        recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
+        recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
+        if recvfrom_comm == subscriber_comm:
+          continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
+      
 
       # modify path and seen-by
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
       try:
-        msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
+        msg=ftnexport.denormalize_message((m_srcdom, m_srctext), (destdom, desttext), m_msgid, m_header, m_body, latext, addseenby=subscribers, addpath=ADDRESS)
       except:
         raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
       p.add_message(msg)
