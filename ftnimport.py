@@ -21,94 +21,21 @@ class NoAddressInBaseException(FTNFail):
   def __init__(self, dom, addr):
     FTNFail.__init__(self, "no address %d %s"%(dom,addr))
 
-RE_russian=re.compile(b"RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|FLUID\.|SURVIVAL\.GUIDE$|STARPER\.|VGA\.PLANETS|OBEC\.|SPB\.|"
-            b"CTPAHHOE\.MECTO|PVT\.|1072\.|ADINF\.|ZX\.SPECTRUM|\$CRACK\$|BOCHAROFF\.|ZONE7|MISTRESS\.|FAR\.SUPPORT|FIDONET\.HISTORY|MINDO\.|"
-            b"TYT\.BCE\.HACPEM|PUSHKIN\.|715\.|XPEHOBO\.MHE|CKA3KA\.CTPAHHOE\.MECTO|UZ\.|FREUD|GUITAR\.SONGS|RUSSIAN\.|LOTSMAN\.|AVP\.|1200\.|"
-            b"MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
-            b"TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
-            b"TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO")
-
-RE_latin=re.compile(b"IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE")
-
-RE_ukrainian=re.compile(b"ZZUKR\.|ZZUA\.")
-
-
 def normalize_message(msg, charset="ascii"):
 
     header = xml.etree.ElementTree.Element("header")
     ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
 
-    if b"CHRS:" in msg.kludge and msg.kludge[b"CHRS:"]==b"CP866 2": # can trust
-      charset="cp866"
-
-#      charset=msg.kludge[b"CHRS:"].rsplit(b" ", 1)[0].decode("ascii")
-      #if charset in set(("IBMPC", "+7 FIDO", "ALT", "+7_FIDO", "CP-866", 
-      #      "RUSSIAN", "RUS_FTN", "FIDO", "UKR", "R_FIDO", "TABLE", "IBMPC2", "R FIDO", 
-      #      "FTN", "JK", "KOI", "CP808", "RUFIDO", "Russian", "IBM", "+7FIDO")):
-      #    charset="cp866"
-
-    # hacks
-    if msg.area:
-      msg.area = msg.area.upper()
-      print("area for charset [%s]"%repr(msg.area))
-      if RE_russian.match(msg.area):
-        charset="cp866"
-      elif RE_latin.match(msg.area):
-        charset="latin-1"
-      elif RE_ukrainian.match(msg.area):
-        charset="cp1125"
-
-    else:
-      # netmail default charset
-      charset="cp866"
-
-    #print("charset:", charset)
-
-
-    #print ("MSGID", msgid)
-  
-    if msg.seenby:
-      for seenby1 in msg.seenby:
-        seenbyel=xml.etree.ElementTree.SubElement(ftnel, "SEEN-BY")
-        if seenby1[0]:
-          seenbyel.set("zone", str(seenby1[0]))
-        seenbyel.set("net", str(seenby1[1]))
-        seenbyel.set("node", str(seenby1[2]))
-        if seenby1[3]:
-          seenbyel.set("point", str(seenby1[3]))
-  
-    if msg.via:
-      for via1 in msg.via:
-        viael = xml.etree.ElementTree.SubElement(ftnel, "VIA")
-        viael.set(via1[0].decode(charset), via1[1].decode(charset))
-  
-    for attr1 in ftn.attr.binary_to_text(msg.attr):
-      xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)
-  
-    for kname, kval in msg.kludge.items():
-      if type(kval)!=list:
-        kval=[kval]
-      for v1 in kval:
-        xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", 
-          name = clean_str(kname.decode(charset)), 
-          value = clean_str(v1.decode(charset)))
-            # TZUTC sometimes filled with zeroes...
-            # and special chars sometimes encountered
-
-    for path1 in msg.path:
-      #print(path1)
-      pathel=xml.etree.ElementTree.SubElement(ftnel, "PATH", record = clean_str(path1))
-  
-
-
+    # begin addresses
     # get message originator and recipient addresses
 
+    # - MSGID
     if b"MSGID:" in msg.kludge:
       msgid=msg.kludge[b"MSGID:"].decode("ascii")
     else:
       msgid=None # try to generate
 
-
+    # - plain
     if msg.area:
 
       # get originator address from Origin or MSGID
@@ -118,14 +45,14 @@ def normalize_message(msg, charset="ascii"):
       origaddr = None
       for b1 in msg.body:
         try:
-          a=ftn.msg.decode_origin(b1).decode(charset)
+          a=ftn.msg.decode_origin(b1)
           origaddr = ftn.addr.addr2str(ftn.addr.str2addr(a))
         except ftn.msg.DecodeError:
           pass
 
       if not origaddr:
         try:
-          origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msg.kludge[b"MSGID:"].decode(charset).split(" ")[0].split("@")[0]))
+          origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msgid.split(" ")[0].split("@")[0]))
           print ("got from msgid:", origaddr)
         except:
           pass
@@ -135,7 +62,7 @@ def normalize_message(msg, charset="ascii"):
 
       # destination is echo
       destdom = "echo"
-      destaddr = msg.area.decode(charset)
+      destaddr = msg.area.decode(charset) # ascii 
       destname, _ = msg.dest
 
     else:
@@ -146,7 +73,7 @@ def normalize_message(msg, charset="ascii"):
       destdom = "node"
       destname, destaddr = msg.dest[0], ftn.addr.addr2str(msg.dest[1])
   
-  
+    # - guess
     guessed=False
     mayusezone=None
     if origdom=="node" and origaddr[0]=='0':
@@ -198,6 +125,46 @@ def normalize_message(msg, charset="ascii"):
 
       if not guessed:
         raise FTNFail("Zone in recepient address is empty and cannot guess from REPLY")
+
+    # end addresses
+
+
+    charset = suitable_charset(msg.kludge.get(b"CHRS:"), "decode", origdom, origaddr, destdom, destaddr) or charset
+    #print("charset:", charset)
+
+
+    if msg.seenby:
+      for seenby1 in msg.seenby:
+        seenbyel=xml.etree.ElementTree.SubElement(ftnel, "SEEN-BY")
+        if seenby1[0]:
+          seenbyel.set("zone", str(seenby1[0]))
+        seenbyel.set("net", str(seenby1[1]))
+        seenbyel.set("node", str(seenby1[2]))
+        if seenby1[3]:
+          seenbyel.set("point", str(seenby1[3]))
+  
+    if msg.via:
+      for via1 in msg.via:
+        viael = xml.etree.ElementTree.SubElement(ftnel, "VIA")
+        viael.set(via1[0].decode(charset), via1[1].decode(charset))
+  
+    for attr1 in ftn.attr.binary_to_text(msg.attr):
+      xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)
+  
+    for kname, kval in msg.kludge.items():
+      if type(kval)!=list:
+        kval=[kval]
+      for v1 in kval:
+        xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", 
+          name = clean_str(kname.decode(charset)), 
+          value = clean_str(v1.decode(charset)))
+            # TZUTC sometimes filled with zeroes...
+            # and special chars sometimes encountered
+
+    for path1 in msg.path:
+      #print(path1)
+      pathel=xml.etree.ElementTree.SubElement(ftnel, "PATH", record = clean_str(path1))
+  
 
 
     sendernameel = xml.etree.ElementTree.SubElement(header, "sendername")
