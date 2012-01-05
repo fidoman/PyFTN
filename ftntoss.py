@@ -6,10 +6,12 @@ import time
 import os
 from ast import literal_eval
 import xml.etree.ElementTree
+import traceback
 
 from ftnconfig import *
 import ftnexport
 import ftn.pkt
+import ftn.addr
 
 
 class packer:
@@ -18,6 +20,7 @@ class packer:
     self.packet=None
     self.node=node
     self.me=me
+    self.destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
 
   def init_bundle(self):
     raise
@@ -43,17 +46,17 @@ class packer:
 
   def flush_packet(self):
       #write pkt to outbound
-      destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
-      if not os.path.exists(destdir):
-        os.makedirs(destdir)
+      
+      if not os.path.exists(self.destdir):
+        os.makedirs(self.destdir)
       try:
-        counter=literal_eval(open(destdir+".pktcounter").read())
+        counter=literal_eval(open(self.destdir+".pktcounter").read())
       except IOError as e:
         if e.args[0]!=2:
           raise e
         counter=0
-      pktfile=os.path.join(destdir, "%08x.pkt"%counter)
-      open(destdir+".pktcounter", "w").write(str(counter+1))
+      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
+      open(self.destdir+".pktcounter", "w").write(str(counter+1))
       self.packet.save(pktfile)
       self.packet=None
 
@@ -64,8 +67,9 @@ class packer:
     if self.bundle:
       self.flush_bundle()
 
-  def __del__(self):
-    self.flush()
+# no auto flush - only when correctly updating lastsent
+#  def __del__(self):
+#    self.flush()
 
 
 subscriber_cache = {}
@@ -81,15 +85,19 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
   for sub_id, sub_targ, sub_lastsent in ftnexport.get_node_subscriptions(db, latext, "echo"):
     #print("   ", sub_id)
 
-    print("move it to ftnexport and update for recursive queries")
-    subscribers=subscriber_cache.setdefault(sub_targ, 
-        db.prepare("select a.domain, a.text from subscriptions s, addresses a where s.target=$1 and s.subscriber=a.id")(sub_targ))
+    #!!!print("move it to ftnexport and update for recursive queries")
+    
+    if sub_targ in subscriber_cache:
+        subscribers = subscriber_cache[sub_targ]
+    else:
+        subscribers = db.prepare("select a.domain, a.text from subscriptions s, addresses a where s.target=$1 and s.subscriber=a.id")(sub_targ)
 
-    if not all([x[0]==db.FTN_domains["node"] for x in subscribers]):
-      raise FTNFail("subscribers from wrong domain for "+str(sub_targ))
+        if not all([x[0]==db.FTN_domains["node"] for x in subscribers]):
+          raise FTNFail("subscribers from wrong domain for "+str(sub_targ))
 
-#    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
-    subscribers = [x[1] for x in subscribers]
+        #    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
+
+        subscribers = subscriber_cache[sub_targ] = [x[1] for x in subscribers]
 
     # --- begin work with messages in subscription  ---
 
@@ -106,7 +114,10 @@ for link, linkaddr, ladom, latext in db.prepare("select l.id, l.address, a.domai
       # modify path and seen-by
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
-      msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
+      try:
+        msg=ftnexport.denormalize_message((m[1], m[2]), (m[3], m[4]), m[5], m[6], m[7], latext, addseenby=subscribers, addpath=ADDRESS)
+      except:
+        raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
       p.add_message(msg)
       
 

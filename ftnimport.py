@@ -45,7 +45,7 @@ def normalize_message(msg, charset="ascii"):
       origaddr = None
       for b1 in msg.body:
         try:
-          a=ftn.msg.decode_origin(b1)
+          a=ftn.msg.decode_origin(b1).decode(charset)
           origaddr = ftn.addr.addr2str(ftn.addr.str2addr(a))
         except ftn.msg.DecodeError:
           pass
