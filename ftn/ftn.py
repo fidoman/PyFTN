@@ -25,6 +25,11 @@ class FTNNotSubscribed(FTNFail):
   def __init__(self, src, dst):
     FTNFail.__init__(self, "Address %s not subscribed to %s"%(src, dst))
 
+class FTNAlreadySubscribed(FTNFail):
+  def __init__(self, target, subscriber):
+    FTNFail.__init__(self, "Address %s already subscribed to %s"%(str(subscriber), str(target)))
+
+
 def logprint(s):
   sys.stderr.write(s+"\n")
 

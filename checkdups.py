@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/bin/env python3 -bb
 
 # check that messages in dupearea really the same as in database
 
@@ -8,7 +8,7 @@ import ftn.msg
 import postgresql
 import xml.etree.ElementTree
 
-from ftnimport import normalize_message, db
+from ftnimport import normalize_message
 
 Q_msgget = db.prepare("select m.msgid, m.header, m.body, s.domain, s.text, d.domain, d.text "
             "from messages m, addresses s, addresses d "

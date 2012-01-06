@@ -7,7 +7,7 @@ import sys
 import xml.etree.ElementTree
 import ftn.pkt
 import ftn.attr
-from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed
+from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed
 import re
 from hashlib import sha1
 from ftnconfig import suitable_charset
@@ -264,11 +264,22 @@ class session:
       self.x.commit()
       return True
 
-  def add_subscription(self, vital, target_domain, target_addr, subscriber_addr):
-    target=check_addr(target_domain, target_addr)
-    subscriber=check_addr(FIDOADDR, subscriber_addr)
-    op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, NULL)")
-    op(vital, target, subscriber)
+  def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
+    target=self.check_addr(target_domain, target_addr)
+    subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
+    if start is None:
+      start=self.db.prepare("select max(id) from messages").first()
+    
+    check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
+    if len(check):
+      if check[0][0]!=vital:
+        raise FTNAlreadySubscribed(target, subscriber)
+      else:
+        print("already subscribed")
+        return
+
+    op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")
+    op(vital, target, subscriber, start)
 
 
   def import_link_conn(self, node, conninfo):

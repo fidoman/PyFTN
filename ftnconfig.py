@@ -10,6 +10,11 @@ SECDIR="secmsg"
 ADDRESS="2:5020/12000"
 INBOUND="/tank/home/sergey/fido/fidotmp/archive"
 OUTBOUND="/tank/home/sergey/fido/send"
+NODELIST="/home/sergey/PyFTN/NODELIST.005"
+
+NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
+NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
+NETMAIL_peers += ["2:5020/181", "2:5020/1453"] # downliks
 
 # - values configured in database
 
@@ -97,7 +102,7 @@ def get_link_password(db, linkaddr):
   authinfo = pw.setdefault(linkaddr, 
         db.prepare("select l.authentication from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2").first(db.FTN_domains["node"], linkaddr))
 
-  if not authinfo:
+  if authinfo is None:
     return None
 
   return authinfo.find("ConnectPassword").text
