@@ -17,7 +17,8 @@ if False: # poits
 
   with db.xact():
     for n_id, n_text, p_id, p_text, p_group in db.prepare(
-          "select n.id, n.text, p.id, p.text, p.group from addresses n, addresses p where n.domain=$1 and p.domain=$1 and p.text LIKE n.text || '.%'").rows(db.FTN_domains["node"]):
+        "select n.id, n.text, p.id, p.text, p.group from addresses n, addresses p "
+        "where n.domain=$1 and p.domain=$1 and p.text LIKE n.text || '.%'").rows(db.FTN_domains["node"]):
       if p_group!=n_id:
         print(n_text, p_text, p_group==n_id)
         update_group(n_id, p_id)
