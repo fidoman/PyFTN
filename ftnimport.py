@@ -433,8 +433,3 @@ class session:
       conn.rollback()
       c.execute("update links set (authentication) = (%s) where address=%s", (authel.toxml(), addr_id))
       conn.commit()
-  
-  
-
-
-#print( db.prepare("select e.domain, e.text from subscriptions s, addresses a, addresses e where s.subscriber=a.id and e.id=s.target and a.text='2:5020/12000.1'")() )
