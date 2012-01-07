@@ -1,6 +1,7 @@
 
 import postgresql
 import re
+import socket
 
 db=postgresql.open("pq://fido:bgdis47wb@192.168.0.3/fido")
 
@@ -15,6 +16,12 @@ NODELIST="/home/sergey/PyFTN/NODELIST.005"
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
 NETMAIL_peers += ["2:5020/181", "2:5020/1453"] # downliks
+
+DAEMONPORT=24555
+DAEMONBIND=[
+    (socket.AF_INET, ('0.0.0.0', DAEMONPORT)),
+    (socket.AF_INET6, ('::', DAEMONPORT)),
+]
 
 # - values configured in database
 
