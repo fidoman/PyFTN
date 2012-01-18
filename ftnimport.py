@@ -7,10 +7,67 @@ import sys
 import xml.etree.ElementTree
 import ftn.pkt
 import ftn.attr
-from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed
+from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed, FTNWrongPassword
 import re
+import os
 from hashlib import sha1
-from ftnconfig import suitable_charset
+from ftnconfig import suitable_charset, get_link_password, inbound_dir
+
+def modname(n, m):
+  return n if m==0 else "%s.%d"%(n, m)
+
+class file_import:
+  def __init__(self, db, address, password, filename, length):
+    print("from",address,"pw",password,"recv",filename,"len",length)
+
+    # based on length choose to process data in memory (check received data length)
+    # or save to disk
+    # packets
+    # bundles
+    # freqs
+    # tics
+    # files
+
+    self.db = db
+    self.address = address
+    if password is not None:
+      if password == get_link_password(db, address):
+        self.protected = True
+      else:
+        raise FTNWrongPassword()
+    else:
+      self.protected = False
+
+    savedir = inbound_dir(address, self.protected, True)
+    if not os.path.exists(savedir):
+      os.makedirs(savedir)
+    mod = 0
+    while True:
+      try:
+        self.file = os.path.join(savedir, modname(filename, mod))
+        self.fo = os.fdopen(os.open(self.file, os.O_CREAT | os.O_EXCL | os.O_WRONLY), "wb") # should add  | os.O_BINARY
+        break
+      except OSError as e:
+        if e.args[0]!=17:
+          raise e
+
+      mod += 1
+
+  def __enter__(self):
+    return self
+
+  def add_data(self, d):
+    self.fo.write(d)
+
+  def __exit__(self, et, ev, tb):
+    self.fo.close()
+    if et:
+      print("cancel file")
+      os.unlink(self.file)
+      return False
+    else:
+      return True
+
 
 def clean_str(s):
   return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
