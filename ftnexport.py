@@ -4,8 +4,13 @@ Message flow from database to links and users
 
 import xml.etree.ElementTree
 
-from ftnconfig import suitable_charset
+from ftnconfig import suitable_charset, get_link_password
 import ftn.msg
+from ftn.ftn import FTNWrongPassword
+
+def export_file(address, password, mailclass):
+  """ mailclass is set of values netmail, echomail or any """
+  raise Exception("not implemented")
 
 def get_node_subscriptions(db, addr, msgdom):
   """ addr - address of subscriber node
@@ -161,3 +166,28 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   return msg
 
 
+class file_export:
+  def __init__(self, db, address, password, what):
+    # first netmail
+    # then requested file
+    # then echoes
+    # then filebox
+    # and at last fileechoes
+    self.db = db
+    self.address = address
+    if password != get_link_password(db, address):
+      raise FTNWrongPassword()
+    self.what = what
+
+  def __enter__(self):
+    return outbound_iterator(self.db, self.address, self.what)
+
+  def __exit__(self, et, ev, tb):
+    if et:
+      print("cancel export")
+      return False
+    else:
+      raise Excption("update last sent marks")
+      return True
+
+  

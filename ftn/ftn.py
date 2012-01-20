@@ -6,9 +6,6 @@ class FTNFail (Exception):
   def __init__(self, text):
     Exception.__init__(self, "FTN error: %s"%text)
 
-class FTNSubscribeFailed (FTNFail):
-  pass
-
 class FTNDupMSGID(FTNFail):
   def __init__(self, text):
     FTNFail.__init__(self, "MSGID %s already in base"%text)
@@ -20,6 +17,10 @@ class FTNNoMSGID(FTNFail):
 class FTNNoOrigin(FTNFail):
   def __init__(self):
     FTNFail.__init__(self, "Message without Origin")
+
+class FTNWrongPassword(FTNFail):
+  def __init__(self):
+    FTNFail.__init__(self, "Wrong Password")
 
 class FTNNotSubscribed(FTNFail):
   def __init__(self, src, dst):

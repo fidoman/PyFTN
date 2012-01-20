@@ -2,14 +2,19 @@
 import postgresql
 import re
 import socket
+import os
+import ftn.addr
 
-db=postgresql.open("pq://fido:bgdis47wb@192.168.0.3/fido")
+# ---------------------------------------------------------------------------------------
+
+db=postgresql.open("pq://fido:bgdis47wb@127.0.0.1/fido")
 
 DUPDIR="dupmsg"
 BADDIR="badmsg"
 SECDIR="secmsg"
 ADDRESS="2:5020/12000"
 INBOUND="/tank/home/sergey/fido/fidotmp/archive"
+DINBOUND="/tank/home/sergey/fido/drecv"
 OUTBOUND="/tank/home/sergey/fido/send"
 NODELIST="/home/sergey/PyFTN/NODELIST.005"
 
@@ -22,6 +27,8 @@ DAEMONBIND=[
     (socket.AF_INET, ('0.0.0.0', DAEMONPORT)),
     (socket.AF_INET6, ('::', DAEMONPORT)),
 ]
+
+# ---------------------------------------------------------------------------------------
 
 # - values configured in database
 
@@ -113,6 +120,13 @@ def get_link_password(db, linkaddr):
     return None
 
   return authinfo.find("ConnectPassword").text
+
+def inbound_dir(address, isprotected, isdaemon):
+  base = DINBOUND if isdaemon else INBOUND
+  if isprotected:
+    return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(address))))
+  else:
+    return os.path.join(base, "unknown")
 
 if __name__ == "__main__": 
   print(get_link_password(db, "2:5020/71522"))
