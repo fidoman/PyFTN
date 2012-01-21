@@ -199,7 +199,11 @@ class MSG:
     else:
       s+=eol.join(self.body)+eol
       
-    s+=b"".join([b"@%"+x[0]+b" "+x[1]+eol for x in self.via])
+
+    if invalidate:
+      s+=b"".join([b"@"+x[0]+b" "+x[1]+eol for x in self.via])
+    else:
+      s+=b"".join([b"\1"+x[0]+b" "+x[1]+eol for x in self.via])
 
     seenbylist=list(self.seenby)
     seenbylist.sort()

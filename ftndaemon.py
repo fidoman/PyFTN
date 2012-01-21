@@ -44,24 +44,7 @@ from ftnconfig import *
 from ftnimport import file_import
 from ftnexport import file_export
 
-def readline(s):
-  l=b""
-  while True:
-    c=s.recv(1)
-    if len(c)==0:
-      raise Exception("EOF")
-    if c==b"\n":
-      break
-    l+=c
-  return l
-
-def readdata(s, length):
-  while length:
-    chunk = s.recv(length)
-    length -= len(chunk)
-    if length<0:
-      raise Exception("got more data from socket than asked, check your platform")
-    yield chunk
+from socketutil import *
 
 def session(s, a):
   address = None
@@ -123,20 +106,22 @@ def session(s, a):
               classes.add(classstr)
             else:
               raise Excption("invalid mail class")
-        print("sending"+", ".join(list(classes)))
+        print("sending "+", ".join(list(classes)))
 
-        for filesess in file_export(db, address, classes):
-          s.send(b"FILENAME " + filesess.filename.encode("utf-8") + b"\n")
-          s.send(b"BINARY %d\n"%filesess.length)
-          with filesess() as sess:
-            for d in sess.get_data():
-              s.send(d)
+        for outbfile in file_export(db, address, password, classes):
+          s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
+          s.send(b"BINARY %d\n"%outbfile.length)
 
-            confirmstr=readline(s)
-            if confirmstr != b"DONE " + filesess.filename.encode("utf-8") + b"\n":
-              raise Exception("did not get good confirmation string")
+          for d in outbfile.data:
+            s.send(d)
 
-        s.send(b"QUEUE EMPTY")
+          confirmstr = readline(s)
+          if confirmstr != b"DONE " + filesess.filename.encode("utf-8") + b"\n":
+            raise Exception("did not get good confirmation string")
+
+          outbfile.commit()
+
+        s.send(b"QUEUE EMPTY\n")
 
       else:
         raise Exception("unknown keyword %s"%arg)

@@ -40,3 +40,4 @@ with session(db) as sess:
 
 # 3. Create subscription for hub links, if uplink hub is linked to me
 
+# should use network/region routing files for it

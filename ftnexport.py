@@ -6,11 +6,10 @@ import xml.etree.ElementTree
 
 from ftnconfig import suitable_charset, get_link_password
 import ftn.msg
-from ftn.ftn import FTNWrongPassword
+import ftn.attr
+from ftn.ftn import FTNFail, FTNWrongPassword
 
-def export_file(address, password, mailclass):
-  """ mailclass is set of values netmail, echomail or any """
-  raise Exception("not implemented")
+
 
 def get_node_subscriptions(db, addr, msgdom):
   """ addr - address of subscriber node
@@ -20,7 +19,7 @@ def get_node_subscriptions(db, addr, msgdom):
   try:
     Q_get_node_subscriptions = db.Q_get_node_subscriptions
   except AttributeError as e:
-    # target: any but domain msgdom
+    # target: any with domain msgdom
     # subscriber: addr
     Q_get_node_subscriptions = db.Q_get_node_subscriptions = db.prepare("select s.id, t.id, s.lastsent from subscriptions s, addresses sr, addresses t "
         "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3")
@@ -30,23 +29,107 @@ def get_node_subscriptions(db, addr, msgdom):
 
 
 
-def get_messages(db, dest_id, lastsent):
-  try:
-    Q_get_subscription_messages = db.Q_get_subscription_messages
-  except AttributeError:
-#    Q_get_subscription_messages = db.Q_get_subscription_messages = db.prepare("select m.id, s.domain, s.text, d.domain, d.text, m.msgid, m.header, m.body from "
-#        "subscriptions sr, messages m, addresses s, addresses d "
-#        "where sr.id=$1 and (m.id>sr.lastsent or sr.lastsent is NULL) and m.destination=sr.target and (m.processed is NULL or m.processed<>5)"
-#        "and m.source=s.id and m.destination=d.id")
+def get_subscriber_messages_n(db, subscriber, domain):
+  """ get all subscribed addresses in specified domain and 
+      fetch all messages with id>lastsent or if lastsent is None - with processed==0 """
 
-    Q_get_subscription_messages = db.Q_get_subscription_messages = db.prepare(
+
+#  if lastsent:
+
+  query = db.prepare("""
+
+    with recursive allsubscription(id, target, dir) as 
+    (
+        select id, target, 1 from subscriptions where subscriber=$1
+      Union
+        select s.id, a.id, 0 from allsubscription s, addresses a 
+        where a.group = s.target
+              and (select count(id) from subscriptions where target=a.id) = 0
+    )
+
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom
+    from allsubscription alls, addresses sa, messages m
+    where sa.id=alls.target and sa.domain=$2 and 
+          m.processed=0 and m.destination=alls.target
+    order by m.id
+    ;
+
+  """)
+
+  for m in query(subscriber, domain):
+    yield m
+
+
+def get_subscriber_messages_e(db, subscriber, domain):
+  """ get all subscribed addresses in specified domain and 
+      fetch all messages with id>lastsent or if lastsent is None - with processed==0 """
+
+
+#  if lastsent:
+
+  query = db.prepare("""
+
+    with recursive allsubscription(id, lastsent, target, dir) as 
+    (
+        select id, lastsent, target, 1 from subscriptions where subscriber=$1
+      Union
+        select s.id, s.lastsent, a.id, 0 from allsubscription s, addresses a 
+        where a.group = s.target
+              and (select count(id) from subscriptions where target=a.id) = 0
+    )
+
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.id
+    from allsubscription alls, addresses sa, messages m
+    where sa.id=alls.target and sa.domain=$2 and 
+          ($3::bigint is not NULL and m.id>$3 or $3 is NULL and m.processed=0)
+          and m.destination=alls.target
+    order by m.id
+    ;
+
+  """)
+
+
+
+  for m in query(subscriber, domain, lastsent):
+    yield m
+
+
+
+
+def get_messages(db, dest_id, lastsent):
+  """ use lastsent >= -1 for fetching echomail
+      or lastsent = None for netmail """
+
+  try:
+    Q_get_subscription_messages_e = db.Q_get_subscription_messages_e
+    Q_get_subscription_messages_n = db.Q_get_subscription_messages_n
+
+  except AttributeError:
+
+    Q_get_subscription_messages_e = db.Q_get_subscription_messages_e = db.prepare(
         "select m.id, s.domain, s.text, m.msgid, m.header, m.body, m.receivedfrom "
         "from messages m, addresses s "
-        "where m.id>$2 and m.destination=$1 and (m.processed is NULL or m.processed<>5)"
+        "where m.id>$2 and m.destination=$1"
         "and m.source=s.id")
 
-  for m in Q_get_subscription_messages(dest_id, lastsent):
-    yield m[0], db.FTN_backdomains[m[1]], m[2], m[3], m[4], m[5], m[6]
+    Q_get_subscription_messages_n = db.Q_get_subscription_messages_n = db.prepare(
+        "select m.id, s.domain, s.text, m.msgid, m.header, m.body, m.receivedfrom "
+        "from messages m, addresses s "
+        "where m.destination=$1 and m.processed=0"
+        "and m.source=s.id")
+
+
+  if lastsent is not None:
+    # echomail-style 
+
+    for m in Q_get_subscription_messages_e(dest_id, lastsent):
+      yield m[0], db.FTN_backdomains[m[1]], m[2], m[3], m[4], m[5], m[6]
+
+  else:
+    # netmail-style
+
+    for m in Q_get_subscription_messages_n(dest_id):
+      yield m[0], db.FTN_backdomains[m[1]], m[2], m[3], m[4], m[5], m[6]
 
   return
 
@@ -99,10 +182,10 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
   msg.via = [] # netmail only
   for via in ftnheader.findall("VIA"):
-    1/0
-    #print(kludge.get("name"), kludge.get("value"))
-    msg.kludge[kludge.get("name").encode(charset)] = kludge.get("value").encode(charset)
-    
+    for viak, viav in via.attrib.items():
+      msg.via.append((viak.encode(charset), viav.encode(charset)))
+
+#  print(msg.via)
 
   msg.path = []
   msg.seenby = set() # echomail only
@@ -154,7 +237,10 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
   msg.attr=0
   if destdom=="node":
-    raise NotImplementedError("attr for netmail")
+    attrs=[]
+    for attr in ftnheader.findall("ATTR"):
+      attrs.append(attr.get("id"))
+    msg.attr = ftn.attr.text_to_binary(attrs)
 
   msg.cost=0
   msg.readcount=0
@@ -166,28 +252,103 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   return msg
 
 
-class file_export:
-  def __init__(self, db, address, password, what):
+class exported_file:
+  def __init__(self):
+    self
+
+
+def file_export(db, address, password, what):
+  """ This generator fetches messages from database and
+      yields objects, that contain the file information
+      and instructions how to commit to db inforamtion
+      about successful message delivery """
+
     # first netmail
     # then requested file
     # then echoes
     # then filebox
     # and at last fileechoes
-    self.db = db
-    self.address = address
-    if password != get_link_password(db, address):
+  if password != get_link_password(db, address):
       raise FTNWrongPassword()
-    self.what = what
 
-  def __enter__(self):
-    return outbound_iterator(self.db, self.address, self.what)
+  if "netmail" in what:
+    #..firstly send pkts in outbound
+    for sub_id, sub_target, sub_lastsend in get_node_subscriptions(db, addr, db.FTN_domains["node"]):
+      1/0
+      pass #..
+    
+  if "echomail" in what:
+    #..firstly send bundles in outbound
+    1/0
 
-  def __exit__(self, et, ev, tb):
-    if et:
-      print("cancel export")
-      return False
+  if "filebox" in what:
+    # ..send freq filebox
+    1/0
+
+  if "fileecho" in what:
+    # ..send fileechoes
+    1/0
+
+  if "filebox" in what:
+    # ..send main filebox
+    1/0
+
+  return
+
+
+class packer:
+  def __init__(self, me, node, bundle=True):
+    self.bundle=None
+    self.packet=None
+    self.node=node
+    self.me=me
+    self.destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
+
+  def init_bundle(self):
+    raise
+
+  def init_pkt(self):
+    raise
+
+  def add_message(self, m):
+    if not self.packet:
+      self.packet=ftn.pkt.PKT()
+      self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
+      self.packet.source=ftn.addr.str2addr(self.me)
+      self.packet.destination=ftn.addr.str2addr(self.node)
+      self.packet.date=time.localtime()
+      self.packet.msg=[m]
+      self.packet.approxlen=100+len(m.body)
     else:
-      raise Excption("update last sent marks")
-      return True
+      self.packet.msg.append(m)
+      self.packet.approxlen+=100+len(m.body)
 
-  
+    if self.packet.approxlen>1000000:
+      self.flush_packet()
+
+  def flush_packet(self):
+      #write pkt to outbound
+      
+      if not os.path.exists(self.destdir):
+        os.makedirs(self.destdir)
+      try:
+        counter=literal_eval(open(self.destdir+".pktcounter").read())
+      except IOError as e:
+        if e.args[0]!=2:
+          raise e
+        counter=0
+      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
+      open(self.destdir+".pktcounter", "w").write(str(counter+1))
+      self.packet.save(pktfile)
+      self.packet=None
+
+
+  def flush(self):
+    if self.packet:
+      self.flush_packet()
+    if self.bundle:
+      self.flush_bundle()
+
+# no auto flush - only when correctly updating lastsent
+#  def __del__(self):
+#    self.flush()

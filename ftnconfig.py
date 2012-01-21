@@ -17,6 +17,7 @@ INBOUND="/tank/home/sergey/fido/fidotmp/archive"
 DINBOUND="/tank/home/sergey/fido/drecv"
 OUTBOUND="/tank/home/sergey/fido/send"
 NODELIST="/home/sergey/PyFTN/NODELIST.005"
+LOCALNETMAIL="/tank/home/sergey/fido/netmail"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone

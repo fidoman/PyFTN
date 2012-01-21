@@ -24,9 +24,12 @@ class BadWriter:
     f=open(os.path.join(self.folder, "%012X.%s"%(self.badcounter, self.ext)), "wb")
     f.write(data)
     f.close()
-    f=open(os.path.join(self.folder, "%012X.status"%self.badcounter), "w")
-    f.write(status)
-    f.close()
+
+    if status:
+      f=open(os.path.join(self.folder, "%012X.status"%self.badcounter), "w")
+      f.write(status)
+      f.close()
+
     self.badcounter+=1
 
   def __del__(self):

@@ -10,8 +10,9 @@ import ftn.attr
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed, FTNWrongPassword
 import re
 import os
+import time
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, inbound_dir
+from ftnconfig import suitable_charset, get_link_password, inbound_dir, ADDRESS
 
 def modname(n, m):
   return n if m==0 else "%s.%d"%(n, m)
@@ -77,6 +78,9 @@ def clean_str(s):
 class NoAddressInBaseException(FTNFail):
   def __init__(self, dom, addr):
     FTNFail.__init__(self, "no address %d %s"%(dom,addr))
+
+
+
 
 def normalize_message(msg, charset="ascii"):
 
@@ -244,7 +248,7 @@ def normalize_message(msg, charset="ascii"):
             msg.date.decode(charset), msg.subj.decode(charset), body))
       msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
       print("generated MSGID", repr(msgid))
-      msg.kludge[b"MSGID:"] = msgid.encode("ascii")
+      #msg.kludge[b"MSGID:"] = msgid.encode("ascii")
       #raise Exception("No MSGID, src=%s"%repr(origaddr))
       #raise FTNNoMSGID()
 
@@ -252,6 +256,32 @@ def normalize_message(msg, charset="ascii"):
 
 
 
+def compose_message(sender, sendername, recipient, recipientname, subject, body):
+
+    header = xml.etree.ElementTree.Element("header")
+    ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
+
+    sendernameel = xml.etree.ElementTree.SubElement(header, "sendername")
+    sendernameel.text = sendername
+
+    recipientnameel = xml.etree.ElementTree.SubElement(header, "recipientname")
+    recipientnameel.text = recipientname
+
+    dateel = xml.etree.ElementTree.SubElement(header, "date")
+    dateel.text = time.strftime("%d %b %y  %H:%M:%S")
+
+    subjel=xml.etree.ElementTree.SubElement(header, "subject")
+    subjel.text = subject
+
+    hashdata = "\n".join((str(sender), str(recipient), dateel.text, subject, body))
+    msgid = sender[1] + " " + sha1(hashdata.encode("utf-8")).hexdigest()
+    print("generated MSGID", repr(msgid))
+
+    return sender, recipient, msgid, header, body
+
+
+
+# ---------------------------------------------
 
 class session:
   def __init__(self, db):
@@ -326,17 +356,36 @@ class session:
     subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
+
+    if vital:
+      1/0 # check removedsubswatermark
     
     check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
     if len(check):
       if check[0][0]!=vital:
         raise FTNAlreadySubscribed(target, subscriber)
       else:
-        print("already subscribed")
-        return
+        return "already subscribed"
 
     op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")
     op(vital, target, subscriber, start)
+    return "subscribed"
+
+
+  def remove_subscription(self, target_domain, target_addr, subscriber_addr):
+    target=self.check_addr(target_domain, target_addr)
+    subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
+
+    check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
+    if len(check):
+      if check[0][0]:
+        1/0 # save removedsubswatermark
+    else:
+      return "not subscribed"
+
+    op=self.db.prepare("delete from subscriptions where target=$1 and subscriber=$2")
+    op(target, subscriber)
+    return "unsubscribed"
 
 
   def import_link_conn(self, node, conninfo):
@@ -405,13 +454,22 @@ class session:
         else:
           print ("OK")
 
-  def import_message(self, msg, recvfrom, charset="ascii", processed=None, bulkload=False):
+
+  def send_message(self, sendername, recipient, recipientname, subj, body):
+    orig, dest, msgid, header, body = compose_message(("node", ADDRESS), sendername, recipient, recipientname, subj, body)
+    return self.save_message(orig, dest, msgid, header, body, ADDRESS)
+
+  def import_message(self, msg, recvfrom, bulk):
+    orig, dest, msgid, header, body = normalize_message(msg, charset)
+    return self.save_message(orig, dest, msgid, header, body, recvfrom, processed=5 if bulk else 0, bulkload=bulk)
+
+  def save_message(self, sender, recipient, msgid, header, body, recvfrom, processed=0, bulkload=False):
     """import msg as part of transaction.
        if msg is correct then it is stored in base.
        if msg fails validation then it will be saved in bad messages' directory """
 
-
-    (origdomname, origaddr), (destdomname, destaddr), msgid, header, body = normalize_message(msg, charset)
+    origdomname, origaddr = sender
+    destdomname, destaddr = recipient
 
     origdom=self.domains[origdomname]
     destdom=self.domains[destdomname]

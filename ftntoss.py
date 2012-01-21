@@ -14,63 +14,7 @@ import ftn.pkt
 import ftn.addr
 
 
-class packer:
-  def __init__(self, me, node, bundle=True):
-    self.bundle=None
-    self.packet=None
-    self.node=node
-    self.me=me
-    self.destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
-
-  def init_bundle(self):
-    raise
-
-  def init_pkt(self):
-    raise
-
-  def add_message(self, m):
-    if not self.packet:
-      self.packet=ftn.pkt.PKT()
-      self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
-      self.packet.source=ftn.addr.str2addr(self.me)
-      self.packet.destination=ftn.addr.str2addr(self.node)
-      self.packet.date=time.localtime()
-      self.packet.msg=[m]
-      self.packet.approxlen=100+len(m.body)
-    else:
-      self.packet.msg.append(m)
-      self.packet.approxlen+=100+len(m.body)
-
-    if self.packet.approxlen>1000000:
-      self.flush_packet()
-
-  def flush_packet(self):
-      #write pkt to outbound
-      
-      if not os.path.exists(self.destdir):
-        os.makedirs(self.destdir)
-      try:
-        counter=literal_eval(open(self.destdir+".pktcounter").read())
-      except IOError as e:
-        if e.args[0]!=2:
-          raise e
-        counter=0
-      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
-      open(self.destdir+".pktcounter", "w").write(str(counter+1))
-      self.packet.save(pktfile)
-      self.packet=None
-
-
-  def flush(self):
-    if self.packet:
-      self.flush_packet()
-    if self.bundle:
-      self.flush_bundle()
-
-# no auto flush - only when correctly updating lastsent
-#  def __del__(self):
-#    self.flush()
-
+packer = ftnexport.packer
 
 subscriber_cache = {}
 
@@ -81,7 +25,6 @@ for link_id, link_addr, ladom, latext in db.prepare("select l.id, l.address, a.d
   p=None
   flush_list=[]
 
-#  for sub_id, sub_targ, sub_last in db.prepare("select id, target, lastsent from subscriptions where subscriber=$1").rows(link_addr):
   for sub_id, sub_targ, sub_lastsent in ftnexport.get_node_subscriptions(db, latext, "echo"):
     #print("   ", sub_id)
 
