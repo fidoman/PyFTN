@@ -7,7 +7,7 @@ import sys
 import xml.etree.ElementTree
 import ftn.pkt
 import ftn.attr
-from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed, FTNWrongPassword
+from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed, FTNWrongPassword, FTNNoAddressInBase
 import re
 import os
 import time
@@ -74,11 +74,6 @@ def clean_str(s):
   return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
 
 # changed at id=897897
-
-class NoAddressInBaseException(FTNFail):
-  def __init__(self, dom, addr):
-    FTNFail.__init__(self, "no address %d %s"%(dom,addr))
-
 
 
 
@@ -313,7 +308,7 @@ class session:
         return res[0][0]
       if len(res)>1:
         raise Exception("multiple address records found (%d)"%len(res))
-      raise NoAddressInBaseException(dom, addr)
+      raise FTNNoAddressInBase(dom, addr)
 
   def add_addr(self, dom, addr):
       self.db.prepare("insert into addresses (domain, text) values($1, $2)")(dom, addr)
@@ -321,7 +316,7 @@ class session:
   def check_addr(self, dom, addr):
       try:
         return self.find_addr(dom, addr)
-      except NoAddressInBaseException:
+      except FTNNoAddressInBase:
         self.add_addr(dom, addr)
       return self.find_addr(dom, addr)
 
@@ -352,7 +347,7 @@ class session:
       return True
 
   def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
-    target=self.check_addr(target_domain, target_addr)
+    target=self.find_addr(target_domain, target_addr)
     subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
@@ -373,8 +368,8 @@ class session:
 
 
   def remove_subscription(self, target_domain, target_addr, subscriber_addr):
-    target=self.check_addr(target_domain, target_addr)
-    subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
+    target=self.find_addr(target_domain, target_addr)
+    subscriber=self.find_addr(self.db.FTN_domains["node"], subscriber_addr)
 
     check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
     if len(check):
@@ -460,7 +455,7 @@ class session:
     return self.save_message(orig, dest, msgid, header, body, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):
-    orig, dest, msgid, header, body = normalize_message(msg, charset)
+    orig, dest, msgid, header, body = normalize_message(msg)
     return self.save_message(orig, dest, msgid, header, body, recvfrom, processed=5 if bulk else 0, bulkload=bulk)
 
   def save_message(self, sender, recipient, msgid, header, body, recvfrom, processed=0, bulkload=False):

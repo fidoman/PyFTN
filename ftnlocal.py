@@ -6,18 +6,19 @@ from ftnconfig import *
 import ftnexport
 import ftnimport
 import time
+from ftn.ftn import *
 
 from badwriter import BadWriter
 
 localmsgs=BadWriter(LOCALNETMAIL, os.path.join(LOCALNETMAIL, "next"), "msg")
 
-def fix(db, sess, src, domain, password, cmdtext):
+def fix(db, sess, src, srcname, destname, domain, password, cmdtext):
   dom, text = db.prepare("select domain, text from addresses where id=$1").first(src)
   if dom != db.FTN_domains["node"]:
     raise FTNFail("not our domain")
   print(text)
   if password != get_link_password(db, text):
-    print("wrong password")
+    reply=["wrong password"]
   else:
     reply=[]
     for cmd in map(str.strip, cmdtext.upper().strip().split("\n")):
@@ -39,18 +40,34 @@ def fix(db, sess, src, domain, password, cmdtext):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%AVAIL"):
         reply.append("Sorry not implemented: "+cmd)
+      elif cmd.startswith("%PAUSE"):
+        reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("-"):
-        reply.append(sess.remove_subscription(domain, cmd[1:], text) + ": " + cmd)
+        try:
+          reply.append(sess.remove_subscription(domain, cmd[1:], text) + ": " + cmd)
+        except FTNNoAddressInBase:
+          reply.append("no such area: " + cmd)
       elif cmd.startswith("+"):
-        reply.append(sess.add_subscription(False, domain, cmd[1:], text) + ": " + cmd)
+        try:
+          reply.append(sess.add_subscription(False, domain, cmd[1:], text) + ": " + cmd)
+        except FTNNoAddressInBase:
+          reply.append("no such area: " + cmd)
+        except FTNAlreadySubscribed:
+          reply.append("seems you are uplink for it: " + cmd)
       elif cmd.startswith("%"):
         reply.append("Unknown command: "+cmd)
         print(cmd)
         1/0
       else:
-        reply.append(sess.add_subscription(False, domain, cmd, text) + ": " + cmd)
-    print(reply)  #  sess.send_message("robot", ("node", ADDRESS), "sysop", "test", "test message")
-    # .. send reply
+        try:
+          reply.append(sess.add_subscription(False, domain, cmd, text) + ": " + cmd)
+        except FTNNoAddressInBase:
+          reply.append("no such area: " + cmd)
+        except FTNAlreadySubscribed:
+          reply.append("seems you are uplink for it: " + cmd)
+  reply.append("--- PyFTN")
+  sess.send_message(destname+" Robot", ("node", text), srcname, "report", "\n".join(reply))
+  print(reply)
 
 
 #for s in ftnexport.get_node_subscriptions(db, "2:5020/4441", "echo"):
@@ -65,12 +82,15 @@ my = []
 
 
 for id_msg, src, dest, msgid, header, body, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
+
   if header.find("recipientname").text.lower() == "areafix":
-    fixes_e.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), header.find("subject").text, body))
-  elif header.find("recipientname").text.lower() == "filefix":
-    fixes_f.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), header.find("subject").text, body))
-  elif header.find("recipientname").text.lower() == "allfix":
-    fixes_f.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), header.find("subject").text, body))
+    fixes_e.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), 
+        header.find("sendername").text, header.find("subject").text, body))
+
+  elif header.find("recipientname").text.lower() in ("filefix", "allfix"):
+    fixes_f.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), 
+        header.find("sendername").text, header.find("subject").text, body))
+
   else:
 
     srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -104,14 +124,16 @@ for id_msg, _, m in my:
   localmsgs.write(m.pack(), None)
   db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
-for id_msg, src, _, h, b in fixes_e:
+for id_msg, src, _, sn, h, b in fixes_e:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, db.FTN_domains["echo"], h, b)
+    fix(db, sess, src, sn, "AreaFix", db.FTN_domains["echo"], h, b)
     db.prepare("update messages set processed=1 where id=$1")(id_msg)
     
 
-#for id_msg, src, _, h, b in fixes_f:
-#  fix(db, src, db.FTN_domains["fileecho"], h, b)
+for id_msg, src, _, sn, h, b in fixes_f:
+  with ftnimport.session(db) as sess:
+    fix(db, sess, src, sn, "FileFix", db.FTN_domains["fileecho"], h, b)
+    db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
 exit()
 

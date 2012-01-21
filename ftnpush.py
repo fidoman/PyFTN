@@ -34,7 +34,7 @@ from badwriter import badmsgs, dupmsgs, secmsgs
 
 def import_msg(sess, m, recv_from):
   try:
-    sess.import_message(m, recv_from)
+    sess.import_message(m, recv_from, False)
   except FTNDupMSGID as e:
     # move duplicate to dup-area
     dupmsgs.write(m.pack(), "Duplicate message received from %s"%recv_from+"\n"+traceback.format_exc())

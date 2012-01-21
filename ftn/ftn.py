@@ -30,6 +30,10 @@ class FTNAlreadySubscribed(FTNFail):
   def __init__(self, target, subscriber):
     FTNFail.__init__(self, "Address %s already subscribed to %s"%(str(subscriber), str(target)))
 
+class FTNNoAddressInBase(FTNFail):
+  def __init__(self, dom, addr):
+    FTNFail.__init__(self, "no address %d %s"%(dom,addr))
+
 
 def logprint(s):
   sys.stderr.write(s+"\n")
