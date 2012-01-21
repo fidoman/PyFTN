@@ -4,7 +4,7 @@ Message flow from database to links and users
 
 import xml.etree.ElementTree
 
-from ftnconfig import suitable_charset, get_link_password
+from ftnconfig import suitable_charset, get_link_password, ADDRESS
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
@@ -64,9 +64,6 @@ def get_subscriber_messages_e(db, subscriber, domain):
   """ get all subscribed addresses in specified domain and 
       fetch all messages with id>lastsent or if lastsent is None - with processed==0 """
 
-
-#  if lastsent:
-
   query = db.prepare("""
 
     with recursive allsubscription(id, lastsent, target, dir) as 
@@ -81,16 +78,14 @@ def get_subscriber_messages_e(db, subscriber, domain):
     select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.id
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
-          ($3::bigint is not NULL and m.id>$3 or $3 is NULL and m.processed=0)
-          and m.destination=alls.target
+          m.id>alls.lastsent and m.destination=alls.target
+          m.receivedfrom<>$1
     order by m.id
     ;
 
   """)
 
-
-
-  for m in query(subscriber, domain, lastsent):
+  for m in query(subscriber, domain):
     yield m
 
 
@@ -184,6 +179,8 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   for via in ftnheader.findall("VIA"):
     for viak, viav in via.attrib.items():
       msg.via.append((viak.encode(charset), viav.encode(charset)))
+  for via in addvia:
+    msg.via.append(("Via", via))
 
 #  print(msg.via)
 
@@ -256,6 +253,15 @@ class exported_file:
   def __init__(self):
     self
 
+def commit_list(db, idlist):
+  while len(idlist):
+    db.prepare("update messages set processed=2 where id=$1")(idlist[0])
+    del idlist[0]
+
+def commit_lasts(db, lasts):
+  for k, v in lasts.items():
+    db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
+    del lasts[k]
 
 def file_export(db, address, password, what):
   """ This generator fetches messages from database and
@@ -271,27 +277,102 @@ def file_export(db, address, password, what):
   if password != get_link_password(db, address):
       raise FTNWrongPassword()
 
+  addr_id = db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], address)
+
   if "netmail" in what:
+    p = packer(ADDRESS, address, False)
+    p.msgids = []
+
     #..firstly send pkts in outbound
-    for sub_id, sub_target, sub_lastsend in get_node_subscriptions(db, addr, db.FTN_domains["node"]):
-      1/0
-      pass #..
-    
+    for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
+
+      myvia = "PyFTN " + ADDRESS + " " + time.asctime()
+      srca=db.prepare("select domain, text from addresses where id=$1").first(src)
+      dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
+
+      try:
+        msg = denormalize_message(
+            (db.FTN_backdomains[srca[0]], srca[1]),
+            (db.FTN_backdomains[dsta[0]], dsta[1]), 
+            msgid, header, body, address, addvia = [myvia])
+      except:
+        raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
+
+      p.msgids.append(id_msg)
+      if p.add_message(msg):
+        p.file.commit = lambda: commit_list(db, p.msgids)
+        yield p.file
+        
+
+    if p.flush():
+      p.file.commit = lambda: commit_list(db, p.msgids)
+      yield p.file
+    del p
+
   if "echomail" in what:
+
     #..firstly send bundles in outbound
-    1/0
+
+
+    p = packer(ADDRESS, address, True)
+    p.lasts = {}
+    subscache = {}
+    for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
+      print(id_msg)
+
+      # check commuter
+      subscriber_comm = db.FTN_commuter.get(withsubscr)
+      if subscriber_comm is not None:
+        # get subscription through what message was received
+        recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
+        recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
+        if recvfrom_comm == subscriber_comm:
+          continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
+
+      if dest in subscache:
+        subscribers = subscache[dest]
+      else:
+        subscribers = db.prepare("select a.domain, a.text from subscriptions s, addresses a where s.target=$1 and s.subscriber=a.id")(dest)
+
+        if not all([x[0]==db.FTN_domains["node"] for x in subscribers]):
+          raise FTNFail("subscribers from wrong domain for "+str(sub_targ))
+
+        #    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
+
+        subscribers = subscriber_cache[dest] = [x[1] for x in subscribers]
+
+
+      # modify path and seen-by
+      # seen-by's - get list of all subscribers of this target; add subscribers list
+      #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
+      try:
+        msg = denormalize_message(
+            (db.FTN_backdomains[srca[0]], srca[1]),
+            (db.FTN_backdomains[dsta[0]], dsta[1]), 
+            m_msgid, m_header, m_body, address, addseenby=subscribers, addpath=ADDRESS)
+      except:
+        raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
+
+      p.lasts.setdefault(withsubscr, id_msg)
+      if p.add_message(msg):
+        p.file.commit = lambda: commit_lasts(db, p.lasts)
+        yield p.file
+     
+    if p.flush():
+      p.file.commit = lambda: commit_lasts(db, p.lasts)
+      yield p.file
 
   if "filebox" in what:
     # ..send freq filebox
-    1/0
+    pass #1/0
 
   if "fileecho" in what:
     # ..send fileechoes
-    1/0
+    pass #1/0
 
   if "filebox" in what:
     # ..send main filebox
-    1/0
+    pass #1/0
 
   return
 
@@ -324,7 +405,7 @@ class packer:
       self.packet.approxlen+=100+len(m.body)
 
     if self.packet.approxlen>1000000:
-      self.flush_packet()
+      return self.flush()
 
   def flush_packet(self):
       #write pkt to outbound
@@ -345,9 +426,12 @@ class packer:
 
   def flush(self):
     if self.packet:
-      self.flush_packet()
+      if self.flush_packet():
+        return True
     if self.bundle:
-      self.flush_bundle()
+      if self.flush_bundle():
+        return True
+    return False
 
 # no auto flush - only when correctly updating lastsent
 #  def __del__(self):
