@@ -300,12 +300,12 @@ def file_export(db, address, password, what):
 
       p.msgids.append(id_msg)
       if p.add_message(msg):
-        p.file.commit = lambda: commit_list(db, p.msgids)
+        p.file.commitdb = lambda: commit_list(db, p.msgids)
         yield p.file
         
 
     if p.flush():
-      p.file.commit = lambda: commit_list(db, p.msgids)
+      p.file.commitdb = lambda: commit_list(db, p.msgids)
       yield p.file
     del p
 
@@ -355,11 +355,11 @@ def file_export(db, address, password, what):
 
       p.lasts.setdefault(withsubscr, id_msg)
       if p.add_message(msg):
-        p.file.commit = lambda: commit_lasts(db, p.lasts)
+        p.file.commitdb = lambda: commit_lasts(db, p.lasts)
         yield p.file
      
     if p.flush():
-      p.file.commit = lambda: commit_lasts(db, p.lasts)
+      p.file.commitdb = lambda: commit_lasts(db, p.lasts)
       yield p.file
 
   if "filebox" in what:
@@ -377,6 +377,10 @@ def file_export(db, address, password, what):
   return
 
 
+class outfile:
+  def commit(self):
+    self.commitdb()
+
 class packer:
   def __init__(self, me, node, bundle=True):
     self.bundle=None
@@ -384,6 +388,7 @@ class packer:
     self.node=node
     self.me=me
     self.destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
+    self.pack=bundle
 
   def init_bundle(self):
     raise
@@ -409,19 +414,29 @@ class packer:
 
   def flush_packet(self):
       #write pkt to outbound
+    if self.pack:
+      .. add to bundle
+    else:
+      #.. output packet
+      self.file = outfile()
+      self.file.filename = 
+      self.file.length = 
+      self.file.data = 
+      return True
       
-      if not os.path.exists(self.destdir):
-        os.makedirs(self.destdir)
-      try:
-        counter=literal_eval(open(self.destdir+".pktcounter").read())
-      except IOError as e:
-        if e.args[0]!=2:
-          raise e
-        counter=0
-      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
-      open(self.destdir+".pktcounter", "w").write(str(counter+1))
-      self.packet.save(pktfile)
-      self.packet=None
+      
+#      if not os.path.exists(self.destdir):
+#        os.makedirs(self.destdir)
+#      try:
+#        counter=literal_eval(open(self.destdir+".pktcounter").read())
+#      except IOError as e:
+#        if e.args[0]!=2:
+#          raise e
+#        counter=0
+#      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
+#      open(self.destdir+".pktcounter", "w").write(str(counter+1))
+#      self.packet.save(pktfile)
+#      self.packet=None
 
 
   def flush(self):
