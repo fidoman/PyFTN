@@ -1,5 +1,6 @@
 
 import postgresql
+import postgresql.alock
 import re
 import socket
 import os
@@ -28,6 +29,10 @@ DAEMONBIND=[
     (socket.AF_INET, ('0.0.0.0', DAEMONPORT)),
     (socket.AF_INET6, ('::', DAEMONPORT)),
 ]
+
+PKTLOCK=1
+BUNDLELOCK=2
+TICLOCK=3
 
 # ---------------------------------------------------------------------------------------
 
@@ -129,6 +134,39 @@ def inbound_dir(address, isprotected, isdaemon):
   else:
     return os.path.join(base, "unknown")
 
+# -
+
+class FileNumbering:
+  def __init__(self, db):
+    self.db = db
+
+  def get_pkt_n(self, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((PKTLOCK, link_id))):
+      r = db.prepare("select pktn from links where id=$1").first(link_id)
+      db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
+    return r
+
+  def get_bundle_n(self, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((BUNDLELOCK, link_id))):
+      r = db.prepare("select bundlen from links where id=$1").first(link_id)
+      db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
+    return r
+
+  def get_tic_n(self, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((TICLOCK, link_id))):
+      r = db.prepare("select ticn from links where id=$1").first(link_id)
+      db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
+    return r
+
+filen=FileNumbering(db)
+
+# -
+
 if __name__ == "__main__": 
   print(get_link_password(db, "2:5020/71522"))
   print(get_link_password(db, "2:5020/715"))
+
+#  print(filen.get_pkt_n(113))
+#  print(filen.get_tic_n(113))
+#  print(filen.get_pkt_n(114))
+#  print(filen.get_bundle_n(114))
