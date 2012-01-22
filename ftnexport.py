@@ -7,7 +7,7 @@ import io
 import traceback
 import time
 
-from ftnconfig import suitable_charset, get_link_password, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD
+from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, filen
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
@@ -314,7 +314,7 @@ def file_export(db, address, password, what):
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(address)), lambda: netmailcommitter(db))
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -343,8 +343,8 @@ def file_export(db, address, password, what):
 
     #..firstly send bundles in outbound
 
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(address)), lambda: echomailcommitter(db),
-        bundlepacker(None, lambda: filen.get_bundle_n(get_link_id(address)), lambda: echomailcommitter(db)))
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
+        bundlepacker(None, lambda: filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
 
     subscache = {}
     for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
@@ -448,7 +448,7 @@ class pktpacker:
     p.data.seek(0)
     self.packet = None
     if self.packto:
-      for x in packto.add_item(p, self.committer):
+      for x in self.packto.add_item(p, self.committer):
         yield x
     else:
       yield p, self.committer
@@ -458,7 +458,7 @@ class pktpacker:
       for x in self.pack():
         yield x
     if self.packto:
-      for x in packto.flush():
+      for x in self.packto.flush():
         yield x
 
 
@@ -491,7 +491,7 @@ class bundlepacker:
     b.data.seek(0)
     self.bundle = None
     if self.packto:
-      for x in packto.add_item(b):
+      for x in self.packto.add_item(b):
         yield x
     else:
       yield b, self.committer
@@ -501,5 +501,5 @@ class bundlepacker:
       for x in self.pack():
         yield x
     if self.packto:
-      for x in packto.flush():
+      for x in self.packto.flush():
         yield x
