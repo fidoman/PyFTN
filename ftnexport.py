@@ -32,23 +32,21 @@ def get_node_subscriptions(db, addr, msgdom):
 
 def get_subscriber_messages_n(db, subscriber, domain):
   """ get all subscribed addresses in specified domain and 
-      fetch all messages with id>lastsent or if lastsent is None - with processed==0 """
-
-
-#  if lastsent:
+      fetch all messages with id>lastsent or if lastsent is None - with processed==0 
+      Non-vital netmail subscription should be processed as echomail """
 
   query = db.prepare("""
 
     with recursive allsubscription(id, target, dir) as 
     (
-        select id, target, 1 from subscriptions where subscriber=$1
+        select id, target, 1 from subscriptions where subscriber=$1 and vital=TRUE
       Union
         select s.id, a.id, 0 from allsubscription s, addresses a 
         where a.group = s.target
               and (select count(id) from subscriptions where target=a.id) = 0
     )
 
-    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.vital
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
           m.processed=0 and m.destination=alls.target
@@ -250,19 +248,46 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   return msg
 
 
-class exported_file:
-  def __init__(self):
-    self
+class netmailcommitter:
+  def __init__(self, db):
+    self.msglist=set()
+    self.db = db
 
-def commit_list(db, idlist):
-  while len(idlist):
-    db.prepare("update messages set processed=2 where id=$1")(idlist[0])
-    del idlist[0]
+  def add(self, d):
+    if type(d) is netmailcommitter:
+      if self.msglist.intersection(d.msglist):
+        raise Exception("double export of netmail message")
+      self.msglist.update(d.msglist)
+    else:
+      if d in self.msglist:
+        raise Exception("double export of netmail message")
+      self.msglist.append(d)
 
-def commit_lasts(db, lasts):
-  for k, v in lasts.items():
-    db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
-    del lasts[k]
+  def commit(self):
+    for msg in self.msglist:
+      self.db.prepare("update messages set processed=2 where id=$1")(idlist[0])
+
+class echomailcommitter:
+  def __init__(self, db):
+    self.lasts = {} # subscription: lastsent
+    self.db = db
+
+  def add_one(self, k, v):
+    if k in self.lasts and v<=self.lasts[k]:
+      raise Exception("non-monotonic echomail export")
+    self.lasts[k] = v
+
+  def add(self, d):
+    if type(d) is echomailcommitter:
+      for k, v in d.lasts:
+        self.add_one(k, v)
+    else:
+      self.add_one(*d)
+
+  def commit(self):
+    for k, v in self.lasts.items():
+      self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
+
 
 def file_export(db, address, password, what):
   """ This generator fetches messages from database and
@@ -281,11 +306,13 @@ def file_export(db, address, password, what):
   addr_id = db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], address)
 
   if "netmail" in what:
-    p = packer(ADDRESS, address, False)
-    p.msgids = []
+    # only vital subscriptions is processed
+    # non-vital (CC) should be processed just like echomail
+
+    p = pktpacker(ADDRESS, address, lambda: filen.get_pkt_n(get_link_id(address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
-    for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
+    for id_msg, src, dest, msgid, header, body, recvfrom, vital in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -299,15 +326,12 @@ def file_export(db, address, password, what):
       except:
         raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
 
-      p.msgids.append(id_msg)
-      if p.add_message(msg):
-        p.file.commitdb = lambda: commit_list(db, p.msgids)
-        yield p.file
+      for x in p.add_message(msg, id_msg):
+        yield x
         
+    for x in p.flush():
+      yield x
 
-    if p.flush():
-      p.file.commitdb = lambda: commit_list(db, p.msgids)
-      yield p.file
     del p
 
   if "echomail" in what:
@@ -383,14 +407,15 @@ class outfile:
     self.commitdb()
 
 class pktpacker:
-  def __init__(self, me, node, counter, packto=None):
+  def __init__(self, me, node, counter, commitgen, packto=None):
     self.packet = None
     self.node = node
     self.me = me
     self.packto = packto
     self.counter = counter
+    self.commitgen = commitgen
 
-  def add_item(self, m):
+  def add_item(self, m, commitdata):
     if not self.packet:
       self.packet=ftn.pkt.PKT()
       self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
@@ -399,9 +424,12 @@ class pktpacker:
       self.packet.date=time.localtime()
       self.packet.msg=[m]
       self.packet.approxlen=100+len(m.body)
+      self.committer = self.commitgen()
     else:
       self.packet.msg.append(m)
       self.packet.approxlen+=100+len(m.body)
+
+    self.committer.add(commitdata)
 
     if self.packet.approxlen>PACKETTHRESHOLD:
       for x in self.pack():
@@ -416,10 +444,10 @@ class pktpacker:
     p.data.seek(0)
     self.packet = None
     if self.packto:
-      for x in packto.add_item(p):
+      for x in packto.add_item(p, self.committer):
         yield x
     else:
-      yield p
+      yield p, self.committer
       
   def flush(self):
     if self.packet:
@@ -431,16 +459,21 @@ class pktpacker:
 
 
 class bundlepacker:
-  def __init__(self, savepath, counter, packto=None):
+  def __init__(self, savepath, counter, commitgen, packto=None):
     self.savepath = savepath
     self.counter = counter
     self.bundle = None
+    self.commitgen = commitgen
 
-  def add_item(self, p):
+  def add_item(self, p, commitdata):
     if not self.bundle:
       fo = io.BytesIO()
       self.bundle = (fo, zipfile(fo, "w", zipfile.ZIP_DEFLATED))
+      self.committer = self.commitgen()
+
     self.bundle[1].writestr(p.filename, p.data.read())
+    self.committer.add(commitdata)
+
     if self.bundle[0].tell()>BUNDLETHRESHOLD:
       for x in self.pack():
         yield x
@@ -457,7 +490,7 @@ class bundlepacker:
       for x in packto.add_item(b):
         yield x
     else:
-      yield b
+      yield b, self.committer
 
   def flush(self):
     if self.bundle:
