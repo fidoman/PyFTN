@@ -4,6 +4,8 @@ Message flow from database to links and users
 
 import xml.etree.ElementTree
 import io
+import traceback
+import time
 
 from ftnconfig import suitable_charset, get_link_password, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD
 import ftn.msg
@@ -77,7 +79,7 @@ def get_subscriber_messages_e(db, subscriber, domain):
     select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.id
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
-          m.id>alls.lastsent and m.destination=alls.target
+          m.id>alls.lastsent and m.destination=alls.target and
           m.receivedfrom<>$1
     order by m.id
     ;
@@ -133,7 +135,7 @@ def update_subscription_watermark(db, subscription, id):
 
 
 
-def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=None, addseenby=None, addpath=None):
+def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=None, addseenby=[], addpath=None):
   (origdom, origaddr) = orig
   (destdom, destaddr) = dest
 
@@ -178,8 +180,8 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
   for via in ftnheader.findall("VIA"):
     for viak, viav in via.attrib.items():
       msg.via.append((viak.encode(charset), viav.encode(charset)))
-  for via in addvia:
-    msg.via.append(("Via", via))
+  if addvia:
+    msg.via.append(("Via", addvia))
 
 #  print(msg.via)
 
@@ -212,7 +214,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
     else:
       pass # drop old seen-by's
   
-    for seenby in addseenby or []:
+    for seenby in addseenby:
       #print("additional seenby", seenby)
       seenby_zone=ftn.addr.str2addr(seenby)[0]
       if seenby_zone==dest_zone:
@@ -265,7 +267,8 @@ class netmailcommitter:
 
   def commit(self):
     for msg in self.msglist:
-      self.db.prepare("update messages set processed=2 where id=$1")(idlist[0])
+      #self.db.prepare("update messages set processed=2 where id=$1")(msg)
+      print("commit msg #%d"%msg)
 
 
 class echomailcommitter:
@@ -287,7 +290,8 @@ class echomailcommitter:
 
   def commit(self):
     for k, v in self.lasts.items():
-      self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
+      #self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
+      print("commit subscription %d up to message #%d"%(k, v))
 
 
 def file_export(db, address, password, what):
@@ -310,7 +314,7 @@ def file_export(db, address, password, what):
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
-    p = pktpacker(ADDRESS, address, lambda: filen.get_pkt_n(get_link_id(address)), lambda: netmailcommitter(db))
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -323,9 +327,9 @@ def file_export(db, address, password, what):
         msg = denormalize_message(
             (db.FTN_backdomains[srca[0]], srca[1]),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
-            msgid, header, body, address, addvia = [myvia])
+            msgid, header, body, address, addvia = myvia)
       except:
-        raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
+        raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
       for x in p.add_item(msg, id_msg):
         yield x
@@ -339,7 +343,7 @@ def file_export(db, address, password, what):
 
     #..firstly send bundles in outbound
 
-    p = pktpacker(ADDRESS, address, lambda: filen.get_pkt_n(get_link_id(address)), lambda: echomailcommitter(db),
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: filen.get_pkt_n(get_link_id(address)), lambda: echomailcommitter(db),
         bundlepacker(None, lambda: filen.get_bundle_n(get_link_id(address)), lambda: echomailcommitter(db)))
 
     subscache = {}
@@ -364,8 +368,10 @@ def file_export(db, address, password, what):
 
         #    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
 
-        subscribers = subscriber_cache[dest] = [x[1] for x in subscribers]
+        subscribers = subscache[dest] = [x[1] for x in subscribers]
 
+      srca=db.prepare("select domain, text from addresses where id=$1").first(src)
+      dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
 
       # modify path and seen-by
       # seen-by's - get list of all subscribers of this target; add subscribers list
@@ -374,9 +380,9 @@ def file_export(db, address, password, what):
         msg = denormalize_message(
             (db.FTN_backdomains[srca[0]], srca[1]),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
-            m_msgid, m_header, m_body, address, addseenby=subscribers, addpath=ADDRESS)
+            msgid, header, body, address, addseenby=subscribers, addpath=ADDRESS)
       except:
-        raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
+        raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
       for x in p.add_item(msg, (withsubscr, id_msg)):
         yield x
@@ -404,18 +410,19 @@ class outfile:
     self.commitdb()
 
 class pktpacker:
-  def __init__(self, me, node, counter, commitgen, packto=None):
+  def __init__(self, me, node, passw, counter, commitgen, packto=None):
     self.packet = None
     self.node = node
     self.me = me
     self.packto = packto
     self.counter = counter
     self.commitgen = commitgen
+    self.passw = passw.encode("utf-8")[:8]
 
   def add_item(self, m, commitdata):
     if not self.packet:
       self.packet=ftn.pkt.PKT()
-      self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
+      self.packet.password=self.passw
       self.packet.source=ftn.addr.str2addr(self.me)
       self.packet.destination=ftn.addr.str2addr(self.node)
       self.packet.date=time.localtime()
