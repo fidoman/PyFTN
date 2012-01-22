@@ -3,8 +3,9 @@ Message flow from database to links and users
 """
 
 import xml.etree.ElementTree
+import io
 
-from ftnconfig import suitable_charset, get_link_password, ADDRESS
+from ftnconfig import suitable_charset, get_link_password, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
@@ -381,22 +382,15 @@ class outfile:
   def commit(self):
     self.commitdb()
 
-class packer:
-  def __init__(self, me, node, bundle=True):
-    self.bundle=None
-    self.packet=None
-    self.node=node
-    self.me=me
-    self.destdir=os.path.join(OUTBOUND, '.'.join(map(str,ftn.addr.str2addr(self.node))))
-    self.pack=bundle
+class pktpacker:
+  def __init__(self, me, node, counter, packto=None):
+    self.packet = None
+    self.node = node
+    self.me = me
+    self.packto = packto
+    self.counter = counter
 
-  def init_bundle(self):
-    raise
-
-  def init_pkt(self):
-    raise
-
-  def add_message(self, m):
+  def add_item(self, m):
     if not self.packet:
       self.packet=ftn.pkt.PKT()
       self.packet.password=(get_link_password(db, self.node) or '').encode("utf-8")[:8]
@@ -409,45 +403,66 @@ class packer:
       self.packet.msg.append(m)
       self.packet.approxlen+=100+len(m.body)
 
-    if self.packet.approxlen>1000000:
-      return self.flush()
+    if self.packet.approxlen>PACKETTHRESHOLD:
+      for x in self.pack():
+        yield x
 
-  def flush_packet(self):
-      #write pkt to outbound
-    if self.pack:
-      .. add to bundle
+  def pack(self):
+    p = outfile()
+    p.filename = "%08x.pkt"%self.counter()
+    p.data = io.BytesIO()
+    self.packet.save(p.data)
+    p.length = p.data.tell()
+    p.data.seek(0)
+    self.packet = None
+    if self.packto:
+      for x in packto.add_item(p):
+        yield x
     else:
-      #.. output packet
-      self.file = outfile()
-      self.file.filename = 
-      self.file.length = 
-      self.file.data = 
-      return True
+      yield p
       
-      
-#      if not os.path.exists(self.destdir):
-#        os.makedirs(self.destdir)
-#      try:
-#        counter=literal_eval(open(self.destdir+".pktcounter").read())
-#      except IOError as e:
-#        if e.args[0]!=2:
-#          raise e
-#        counter=0
-#      pktfile=os.path.join(self.destdir, "%08x.pkt"%counter)
-#      open(self.destdir+".pktcounter", "w").write(str(counter+1))
-#      self.packet.save(pktfile)
-#      self.packet=None
-
-
   def flush(self):
     if self.packet:
-      if self.flush_packet():
-        return True
-    if self.bundle:
-      if self.flush_bundle():
-        return True
-    return False
+      for x in self.pack():
+        yield x
+    if self.packto:
+      for x in packto.flush():
+        yield x
 
-# no auto flush - only when correctly updating lastsent
-#  def __del__(self):
-#    self.flush()
+
+class bundlepacker:
+  def __init__(self, savepath, counter, packto=None):
+    self.savepath = savepath
+    self.counter = counter
+    self.bundle = None
+
+  def add_item(self, p):
+    if not self.bundle:
+      fo = io.BytesIO()
+      self.bundle = (fo, zipfile(fo, "w", zipfile.ZIP_DEFLATED))
+    self.bundle[1].writestr(p.filename, p.data.read())
+    if self.bundle[0].tell()>BUNDLETHRESHOLD:
+      for x in self.pack():
+        yield x
+      
+  def pack(self):
+    b = outfile()
+    b.filename = "%08x.mo0"%self.counter()
+    self.bundle[1].close()
+    b.data = self.bundle[0]
+    b.length = b.data.tell()
+    b.data.seek(0)
+    self.bundle = None
+    if self.packto:
+      for x in packto.add_item(b):
+        yield x
+    else:
+      yield b
+
+  def flush(self):
+    if self.bundle:
+      for x in self.pack():
+        yield x
+    if self.packto:
+      for x in packto.flush():
+        yield x
