@@ -131,6 +131,14 @@ def get_link_password(db, linkaddr):
 
   return authinfo.find("ConnectPassword").text
 
+def get_link_id(db, linkaddr):
+  try:
+    linkids=db.link_ids
+  except:
+    linkids=db.link_ids={}
+  return linkids.setdefault(linkaddr, 
+        db.prepare("select l.id from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2").first(db.FTN_domains["node"], linkaddr))
+
 def inbound_dir(address, isprotected, isdaemon):
   base = DINBOUND if isdaemon else INBOUND
   if isprotected:

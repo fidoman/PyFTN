@@ -46,7 +46,7 @@ def get_subscriber_messages_n(db, subscriber, domain):
               and (select count(id) from subscriptions where target=a.id) = 0
     )
 
-    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.vital
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
           m.processed=0 and m.destination=alls.target
@@ -267,6 +267,7 @@ class netmailcommitter:
     for msg in self.msglist:
       self.db.prepare("update messages set processed=2 where id=$1")(idlist[0])
 
+
 class echomailcommitter:
   def __init__(self, db):
     self.lasts = {} # subscription: lastsent
@@ -312,7 +313,7 @@ def file_export(db, address, password, what):
     p = pktpacker(ADDRESS, address, lambda: filen.get_pkt_n(get_link_id(address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
-    for id_msg, src, dest, msgid, header, body, recvfrom, vital in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
+    for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -326,7 +327,7 @@ def file_export(db, address, password, what):
       except:
         raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
 
-      for x in p.add_message(msg, id_msg):
+      for x in p.add_item(msg, id_msg):
         yield x
         
     for x in p.flush():
@@ -338,12 +339,11 @@ def file_export(db, address, password, what):
 
     #..firstly send bundles in outbound
 
+    p = pktpacker(ADDRESS, address, lambda: filen.get_pkt_n(get_link_id(address)), lambda: echomailcommitter(db),
+        bundlepacker(None, lambda: filen.get_bundle_n(get_link_id(address)), lambda: echomailcommitter(db)))
 
-    p = packer(ADDRESS, address, True)
-    p.lasts = {}
     subscache = {}
     for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
-      print(id_msg)
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -378,14 +378,11 @@ def file_export(db, address, password, what):
       except:
         raise Exception("denormalization error on message id=%d"%m[0]+"\n"+traceback.format_exc())
 
-      p.lasts.setdefault(withsubscr, id_msg)
-      if p.add_message(msg):
-        p.file.commitdb = lambda: commit_lasts(db, p.lasts)
-        yield p.file
+      for x in p.add_item(msg, (withsubscr, id_msg)):
+        yield x
      
-    if p.flush():
-      p.file.commitdb = lambda: commit_lasts(db, p.lasts)
-      yield p.file
+    for x in p.flush():
+      yield x
 
   if "filebox" in what:
     # ..send freq filebox

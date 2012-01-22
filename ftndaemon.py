@@ -108,18 +108,21 @@ def session(s, a):
               raise Excption("invalid mail class")
         print("sending "+", ".join(list(classes)))
 
-        for outbfile in file_export(db, address, password, classes):
+        for outbfile, committer in file_export(db, address, password, classes):
           s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
           s.send(b"BINARY %d\n"%outbfile.length)
 
-          for d in outbfile.data:
-            s.send(d)
+          while True:
+            d = outbfile.data.read(16384)
+            if len(d)==0:
+              break
+            print(s.send(d))
 
           confirmstr = readline(s)
           if confirmstr != b"DONE " + filesess.filename.encode("utf-8") + b"\n":
             raise Exception("did not get good confirmation string")
 
-          outbfile.commit()
+          committer.commit()
 
         s.send(b"QUEUE EMPTY\n")
 
