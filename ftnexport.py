@@ -284,7 +284,7 @@ class echomailcommitter:
 
   def add(self, d):
     if type(d) is echomailcommitter:
-      for k, v in d.lasts:
+      for k, v in d.lasts.items():
         self.add_one(k, v)
     else:
       self.add_one(*d)
@@ -433,11 +433,11 @@ class pktpacker:
       self.packet.destination=ftn.addr.str2addr(self.node)
       self.packet.date=time.localtime()
       self.packet.msg=[m]
-      self.packet.approxlen=100+len(m.body)
+      self.packet.approxlen=len(m.pack()) # double packing :(
       self.committer = self.commitgen()
     else:
       self.packet.msg.append(m)
-      self.packet.approxlen+=100+len(m.body)
+      self.packet.approxlen+=len(m.pack())
 
     self.committer.add(commitdata)
 
@@ -448,6 +448,7 @@ class pktpacker:
   def pack(self):
     p = outfile()
     p.filename = "%08x.pkt"%self.counter()
+    print("PACKET %s"%p.filename)
     p.data = io.BytesIO()
     self.packet.save(p.data)
     p.length = p.data.tell()
@@ -474,6 +475,7 @@ class bundlepacker:
     self.counter = counter
     self.bundle = None
     self.commitgen = commitgen
+    self.packto = packto
 
   def add_item(self, p, commitdata):
     if not self.bundle:
@@ -491,6 +493,7 @@ class bundlepacker:
   def pack(self):
     b = outfile()
     b.filename = "%08x.mo0"%self.counter()
+    print("BUNDLE %s"%b.filename)
     self.bundle[1].close()
     b.data = self.bundle[0]
     b.length = b.data.tell()

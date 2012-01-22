@@ -27,9 +27,24 @@ try:
   print(readline(s))
 
   s.send(b"GET ALL\n")
-  print(readline(s))
+  while True:
+    l = readline(s).decode("utf-8")
+    print(repr(l))
+    if l.startswith("FILENAME"):
+      fn=l[9:]
+      print(l)
+      f=open("test/"+fn, "wb")
+    elif l.startswith("BINARY"):
+      fl=int(l[7:])
+      for d in readdata(s, fl):
+        f.write(d)
+      f.close()
+      s.send(("DONE "+fn+"\n").encode("utf-8"))
 
-
+    elif l=="QUEUE EMPTY":
+      break
+    else:
+      print(l)
 
   s.send(b"END SESSION\n")
 

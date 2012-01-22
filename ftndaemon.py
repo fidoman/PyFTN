@@ -110,7 +110,7 @@ def session(s, a):
 
         for outbfile, committer in file_export(db, address, password, classes):
           s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
-          s.send(b"BINARY %d\n"%outbfile.length)
+          s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
 
           while True:
             d = outbfile.data.read(16384)
@@ -119,7 +119,9 @@ def session(s, a):
             print(s.send(d))
 
           confirmstr = readline(s)
-          if confirmstr != b"DONE " + filesess.filename.encode("utf-8") + b"\n":
+          print("RECV: "+repr(confirmstr))
+          print("SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
+          if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
             raise Exception("did not get good confirmation string")
 
           committer.commit()
