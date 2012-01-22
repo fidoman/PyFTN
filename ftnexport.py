@@ -6,6 +6,7 @@ import xml.etree.ElementTree
 import io
 import traceback
 import time
+import zipfile
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, filen
 import ftn.msg
@@ -319,6 +320,8 @@ def file_export(db, address, password, what):
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
+      print("netmail %d"%id_msg)
+
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
       dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
@@ -349,6 +352,8 @@ def file_export(db, address, password, what):
     subscache = {}
     for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
+      print("echomail %d"%id_msg)
+
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
       if subscriber_comm is not None:
@@ -356,6 +361,7 @@ def file_export(db, address, password, what):
         recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
         recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
         if recvfrom_comm == subscriber_comm:
+          print("commuter skip %d - %d"%(withsubscr, recvfrom_subscription))
           continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
 
       if dest in subscache:
@@ -472,7 +478,7 @@ class bundlepacker:
   def add_item(self, p, commitdata):
     if not self.bundle:
       fo = io.BytesIO()
-      self.bundle = (fo, zipfile(fo, "w", zipfile.ZIP_DEFLATED))
+      self.bundle = (fo, zipfile.ZipFile(fo, "w", zipfile.ZIP_DEFLATED))
       self.committer = self.commitgen()
 
     self.bundle[1].writestr(p.filename, p.data.read())
