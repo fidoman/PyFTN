@@ -268,7 +268,7 @@ class netmailcommitter:
 
   def commit(self):
     for msg in self.msglist:
-      #self.db.prepare("update messages set processed=2 where id=$1")(msg)
+      self.db.prepare("update messages set processed=2 where id=$1")(msg)
       print("commit msg #%d"%msg)
 
 
@@ -291,7 +291,7 @@ class echomailcommitter:
 
   def commit(self):
     for k, v in self.lasts.items():
-      #self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
+      self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
       print("commit subscription %d up to message #%d"%(k, v))
 
 

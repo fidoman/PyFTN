@@ -251,7 +251,7 @@ def normalize_message(msg, charset="ascii"):
 
 
 
-def compose_message(sender, sendername, recipient, recipientname, subject, body):
+def compose_message(sender, sendername, recipient, recipientname, replyto, subject, body):
 
     header = xml.etree.ElementTree.Element("header")
     ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
@@ -268,7 +268,10 @@ def compose_message(sender, sendername, recipient, recipientname, subject, body)
     subjel=xml.etree.ElementTree.SubElement(header, "subject")
     subjel.text = subject
 
-    hashdata = "\n".join((str(sender), str(recipient), dateel.text, subject, body))
+    if replyto:
+      xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "REPLY:", value = replyto)
+
+    hashdata = "\n".join((str(sender), str(recipient), xml.etree.ElementTree.tostring(header, "unicode"), body))
     msgid = sender[1] + " " + sha1(hashdata.encode("utf-8")).hexdigest()
     print("generated MSGID", repr(msgid))
 
@@ -450,8 +453,14 @@ class session:
           print ("OK")
 
 
-  def send_message(self, sendername, recipient, recipientname, subj, body):
-    orig, dest, msgid, header, body = compose_message(("node", ADDRESS), sendername, recipient, recipientname, subj, body)
+  def send_message(self, sendername, recipient, recipientname, replyto, subj, body):
+    orig, dest, msgid, header, body = compose_message(("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body)
+    print ("msg from:", orig)
+    print ("msg to  :", dest)
+    print ("msgid   :", msgid)
+    print ("header  :")
+    xml.etree.ElementTree.dump(header)
+    print ("body    :", body)
     return self.save_message(orig, dest, msgid, header, body, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):

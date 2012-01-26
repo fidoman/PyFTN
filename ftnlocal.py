@@ -12,7 +12,7 @@ from badwriter import BadWriter
 
 localmsgs=BadWriter(LOCALNETMAIL, os.path.join(LOCALNETMAIL, "next"), "msg")
 
-def fix(db, sess, src, srcname, destname, domain, password, cmdtext):
+def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
   dom, text = db.prepare("select domain, text from addresses where id=$1").first(src)
   if dom != db.FTN_domains["node"]:
     raise FTNFail("not our domain")
@@ -66,7 +66,7 @@ def fix(db, sess, src, srcname, destname, domain, password, cmdtext):
         except FTNAlreadySubscribed:
           reply.append("seems you are uplink for it: " + cmd)
   reply.append("--- PyFTN")
-  sess.send_message(destname+" Robot", ("node", text), srcname, "report", "\n".join(reply))
+  sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply))
   print(reply)
 
 
@@ -85,11 +85,11 @@ for id_msg, src, dest, msgid, header, body, recvfrom in ftnexport.get_subscriber
 
   if header.find("recipientname").text.lower() == "areafix":
     fixes_e.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), 
-        header.find("sendername").text, header.find("subject").text, body))
+        header.find("sendername").text, header.find("subject").text, msgid, body))
 
   elif header.find("recipientname").text.lower() in ("filefix", "allfix"):
     fixes_f.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), 
-        header.find("sendername").text, header.find("subject").text, body))
+        header.find("sendername").text, header.find("subject").text, msgid, body))
 
   else:
 
@@ -124,15 +124,15 @@ for id_msg, _, m in my:
   localmsgs.write(m.pack(), None)
   db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
-for id_msg, src, _, sn, h, b in fixes_e:
+for id_msg, src, _, sn, h, mi, b in fixes_e:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "AreaFix", db.FTN_domains["echo"], h, b)
+    fix(db, sess, src, sn, "AreaFix", db.FTN_domains["echo"], h, mi, b)
     db.prepare("update messages set processed=1 where id=$1")(id_msg)
     
 
-for id_msg, src, _, sn, h, b in fixes_f:
+for id_msg, src, _, sn, h, mi, b in fixes_f:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "FileFix", db.FTN_domains["fileecho"], h, b)
+    fix(db, sess, src, sn, "FileFix", db.FTN_domains["fileecho"], h, mi, b)
     db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
 exit()
