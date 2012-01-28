@@ -109,6 +109,7 @@ def session(s, a):
         print("sending "+", ".join(list(classes)))
 
         for outbfile, committer in file_export(db, address, password, classes):
+          print(outbfile.filename)
           s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
           s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
 
@@ -126,6 +127,7 @@ def session(s, a):
 
           committer.commit()
 
+        print("that's all")
         s.send(b"QUEUE EMPTY\n")
 
       else:
@@ -145,7 +147,7 @@ for s, a in sockets:
   s.bind(a)
   s.listen(3)
 
-threads = []
+#threads = []
 
 try:
   while True:
@@ -154,7 +156,7 @@ try:
       ls, peer = ic.accept()
       print(ls, peer)
       t=threading.Thread(target=session, args=(ls,peer))
-      threads.append(t)
+      #threads.append(t)
       t.start()
 finally:
   for s, a in sockets:

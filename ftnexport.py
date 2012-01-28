@@ -182,7 +182,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
     for viak, viav in via.attrib.items():
       msg.via.append((viak.encode(charset), viav.encode(charset)))
   if addvia:
-    msg.via.append(("Via", addvia))
+    msg.via.append((b"Via", addvia.encode(charset)))
 
 #  print(msg.via)
 
@@ -264,7 +264,7 @@ class netmailcommitter:
     else:
       if d in self.msglist:
         raise Exception("double export of netmail message")
-      self.msglist.append(d)
+      self.msglist.add(d)
 
   def commit(self):
     for msg in self.msglist:
