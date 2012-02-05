@@ -14,11 +14,11 @@ DUPDIR="dupmsg"
 BADDIR="badmsg"
 SECDIR="secmsg"
 ADDRESS="2:5020/12000"
-INBOUND="/tank/home/sergey/fido/archive"
-DINBOUND="/tank/home/sergey/fido/drecv"
-OUTBOUND="/tank/home/sergey/fido/send"
-NODELIST="/home/sergey/PyFTN/NODELIST.005"
-LOCALNETMAIL="/tank/home/sergey/fido/netmail"
+INBOUND="/tank/home/fido/recv"
+DINBOUND="/tank/home/fido/drecv"
+OUTBOUND="/tank/home/fido/send"
+NODELIST="/tank/home/fido/nodelist/fido.ndl"
+LOCALNETMAIL="/tank/home/fido/netmail"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -123,11 +123,13 @@ def get_link_password(db, linkaddr):
   except:
     pw=db.link_passwords={}
 
-  authinfo = pw.setdefault(linkaddr, 
-        db.prepare("select l.authentication from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2").first(db.FTN_domains["node"], linkaddr))
-
+  authinfo = pw.get(linkaddr)
   if authinfo is None:
-    return None
+    x = db.prepare("""select l.authentication from links l, addresses a 
+                    where l.address=a.id and a.domain=$1 and a.text=$2""")(db.FTN_domains["node"], linkaddr)
+    if len(x)==0:
+      return None
+    authinfo=pw[linkaddr]=x[0][0]
 
   return authinfo.find("ConnectPassword").text
 
@@ -175,7 +177,7 @@ filen=FileNumbering(db)
 # -
 
 if __name__ == "__main__": 
-  print(get_link_password(db, "2:5020/71522"))
+  print(get_link_password(db, "2:5020/2065"))
   print(get_link_password(db, "2:5020/715"))
 
 #  print(filen.get_pkt_n(113))

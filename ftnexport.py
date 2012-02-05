@@ -306,6 +306,9 @@ def file_export(db, address, password, what):
     # then echoes
     # then filebox
     # and at last fileechoes
+
+  print("export",repr(address),repr(password),repr(what))
+
   if password != get_link_password(db, address):
       raise FTNWrongPassword()
 

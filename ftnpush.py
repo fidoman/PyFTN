@@ -11,6 +11,7 @@ import io
 import ftnimport
 import ftn.msg
 import ftn.pkt
+import ftn.addr
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed
 from ftnconfig import *
 
@@ -90,11 +91,13 @@ def find_all(b):
       yield x
   return
 
-for net_dir in glob.glob(INBOUND+"/*:*"):
-  for node_dir in glob.glob(net_dir+"/*"):
-    node=node_dir[len(INBOUND)+1:]
+#for net_dir in glob.glob(INBOUND+"/*:*"):
+#  for node_dir in glob.glob(net_dir+"/*"):
+for pnode_dir in glob.glob(INBOUND+"/*"):
+    node=ftn.addr.addr2str(map(int, pnode_dir[len(INBOUND)+1:].split(".")))
+#    node=node_dir[len(INBOUND)+1:]
     print("source: "+node)
-    for f in find_all(node_dir):
+    for f in find_all(pnode_dir+"/pwd-in"):
       #skip for a while
       if not ismsg(f) and not ispkt(f) and not isbundle(f):
         continue
