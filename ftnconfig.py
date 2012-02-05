@@ -193,21 +193,21 @@ class FileNumbering:
     self.db = db
 
   def get_pkt_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(db, ((PKTLOCK, link_id))):
-      r = db.prepare("select pktn from links where id=$1").first(link_id)
-      db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
+    with postgresql.alock.ExclusiveLock(self.db, ((PKTLOCK, link_id))):
+      r = self.db.prepare("select pktn from links where id=$1").first(link_id)
+      self.db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
     return r
 
   def get_bundle_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(db, ((BUNDLELOCK, link_id))):
-      r = db.prepare("select bundlen from links where id=$1").first(link_id)
-      db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
+    with postgresql.alock.ExclusiveLock(self.db, ((BUNDLELOCK, link_id))):
+      r = self.db.prepare("select bundlen from links where id=$1").first(link_id)
+      self.db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
     return r
 
   def get_tic_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(db, ((TICLOCK, link_id))):
-      r = db.prepare("select ticn from links where id=$1").first(link_id)
-      db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
+    with postgresql.alock.ExclusiveLock(self.db, ((TICLOCK, link_id))):
+      r = self.db.prepare("select ticn from links where id=$1").first(link_id)
+      self.db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
     return r
 
 

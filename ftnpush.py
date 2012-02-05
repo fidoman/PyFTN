@@ -91,6 +91,8 @@ def find_all(b):
       yield x
   return
 
+db=connectdb()
+
 #for net_dir in glob.glob(INBOUND+"/*:*"):
 #  for node_dir in glob.glob(net_dir+"/*"):
 for pnode_dir in glob.glob(INBOUND+"/*"):

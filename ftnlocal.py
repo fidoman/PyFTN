@@ -74,6 +74,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
 #  print(db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target")(s)[0])
 #exit()
 
+db = connectdb()
 me = db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], ADDRESS)
 
 fixes_e = []
