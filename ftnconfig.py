@@ -5,20 +5,26 @@ import re
 import socket
 import os
 import ftn.addr
+from ftn.ftn import FTNNoAddressInBase
 
 # ---------------------------------------------------------------------------------------
 
-db=postgresql.open("pq://fido:bgdis47wb@127.0.0.1/fido")
+def connectdb():
+  db = postgresql.open("pq://fido:bgdis47wb@127.0.0.1/fido")
+  init_domains(db)
+  init_commuter(db)
+  db.filen=FileNumbering(db)
+  return db
 
-DUPDIR="dupmsg"
-BADDIR="badmsg"
-SECDIR="secmsg"
+DUPDIR="/tank/home/fido/refuse/dupmsg"
+BADDIR="/tank/home/fido/refuse/badmsg"
+SECDIR="/tank/home/fido/refuse/secmsg"
 ADDRESS="2:5020/12000"
 INBOUND="/tank/home/fido/recv"
 DINBOUND="/tank/home/fido/drecv"
 OUTBOUND="/tank/home/fido/send"
 NODELIST="/tank/home/fido/nodelist/fido.ndl"
-LOCALNETMAIL="/tank/home/fido/netmail"
+LOCALNETMAIL="/tank/home/fido/local/netmail"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -63,14 +69,12 @@ def init_domains(db):
         db.FTN_backdomains[domain_id]="backbone"
     return db.FTN_domains, db.FTN_backdomains
 
-init_domains(db)
 
 def init_commuter(db):
   db.FTN_commuter = {}
   for id, comm in db.prepare("select id, commuter from subscriptions"):
     db.FTN_commuter[id] = comm
 
-init_commuter(db)
 
 # -
 
@@ -90,7 +94,7 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
     charset = "ascii"
 
-    if chrs_kludge=="CP866 2": # can trust
+    if chrs_kludge==b"CP866 2": # can trust
       charset="cp866"
 
 #      charset=msg.kludge[b"CHRS:"].rsplit(b" ", 1)[0].decode("ascii")
@@ -123,10 +127,15 @@ def get_link_password(db, linkaddr):
   except:
     pw=db.link_passwords={}
 
+  try:
+    pwq=db.link_passwords_q
+  except:
+    pwq=db.link_passwords_q=db.prepare("select l.authentication from links l, addresses a "
+                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
+
   authinfo = pw.get(linkaddr)
   if authinfo is None:
-    x = db.prepare("""select l.authentication from links l, addresses a 
-                    where l.address=a.id and a.domain=$1 and a.text=$2""")(db.FTN_domains["node"], linkaddr)
+    x = pwq(db.FTN_domains["node"], linkaddr)
     if len(x)==0:
       return None
     authinfo=pw[linkaddr]=x[0][0]
@@ -138,8 +147,37 @@ def get_link_id(db, linkaddr):
     linkids=db.link_ids
   except:
     linkids=db.link_ids={}
-  return linkids.setdefault(linkaddr, 
-        db.prepare("select l.id from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2").first(db.FTN_domains["node"], linkaddr))
+
+  try:
+    linkids_q=db.link_ids_q
+  except:
+    linkids_q=db.link_ids_q=db.prepare(
+        "select l.id from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2")
+
+  return linkids.setdefault(linkaddr, linkids_q.first(db.FTN_domains["node"], linkaddr))
+
+def get_addr_id(db, dom, addr):
+  try:
+    ac=db.address_cache
+  except:
+    ac=db.address_cache={}
+
+  try:
+    ac_q=db.address_cache_q
+  except:
+    ac_q=db.address_cache_q = db.prepare("select id from addresses where domain=$1 and text=$2")
+
+  if (dom, addr) in ac:
+    return ac[(dom, addr)]
+
+  res=ac_q(dom, addr)
+  if len(res)==1:
+    ac[(dom, addr)]=res[0][0]
+    return res[0][0]
+  if len(res)>1:
+    raise Exception("multiple address records found (%d)"%len(res))
+  raise FTNNoAddressInBase(dom, addr)
+
 
 def inbound_dir(address, isprotected, isdaemon):
   base = DINBOUND if isdaemon else INBOUND
@@ -172,13 +210,13 @@ class FileNumbering:
       db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
     return r
 
-filen=FileNumbering(db)
 
 # -
 
 if __name__ == "__main__": 
-  print(get_link_password(db, "2:5020/2065"))
-  print(get_link_password(db, "2:5020/715"))
+  while True:
+    print(get_link_password(db, "2:5020/2065"))
+    print(get_link_password(db, "2:5020/715"))
 
 #  print(filen.get_pkt_n(113))
 #  print(filen.get_tic_n(113))

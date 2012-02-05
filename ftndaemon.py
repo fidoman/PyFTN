@@ -39,6 +39,7 @@
 import socket
 import select
 import threading
+import traceback
 
 from ftnconfig import *
 from ftnimport import file_import
@@ -47,6 +48,7 @@ from ftnexport import file_export
 from socketutil import *
 
 def session(s, a):
+  db = connectdb()
   address = None
   password = None
   filename = None
@@ -132,6 +134,9 @@ def session(s, a):
 
       else:
         raise Exception("unknown keyword %s"%arg)
+
+  except Exception:
+    traceback.print_exc()
 
   finally:
     print("end "+str(a))

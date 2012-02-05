@@ -216,18 +216,15 @@ class MSG:
     s+=addr_makelist(self.path, c.decode("ascii")+"PATH:", eol.decode("ascii")).encode("ascii")
     return s
 
-#  def __str__(self):
-#    s = (
-#      "From: %s, %s\n"%(self.orig[0],addr2str(self.orig[1])) +
-#      "To  : %s, %s\n"%(self.dest[0],addr2str(self.dest[1])) +
-#      "Subj: %s\n"%self.subj +
-#      "Date: %s\n"%self.date +
-#      "Attr: %d reads %s\n"%(self.readcount,
-#        " ".join([x[1] for x in [x for x in zip(list(range(16)),attrs) if self.attr&(1<<x[0])]])
-#      ) + "\n" +
-#      self.make_body(invalidate=1)
-#    )
-#    return s
+  def as_str(self):
+    s = b"From: "+self.orig[0]+b", "+addr2str(self.orig[1]).encode("ascii")+b"\n"
+    s+= b"To  : "+self.dest[0]+b", "+addr2str(self.dest[1]).encode("ascii")+b"\n"
+    s+= b"Subj: "+self.subj+b"\n"
+    s+= b"Date: "+self.date+b"\n"
+    s+= b"Attr: "+str(self.readcount).encode("ascii")+b" reads " + \
+          b" ".join([x[1].encode("ascii") for x in [x for x in zip(list(range(16)),attrs) if self.attr&(1<<x[0])]]) + b"\n"
+    s+= b"\n" + self.make_body(invalidate=1)
+    return s
 
   def pack(self):
     faddr=self.orig[1]

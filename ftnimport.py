@@ -12,7 +12,7 @@ import re
 import os
 import time
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, inbound_dir, ADDRESS
+from ftnconfig import suitable_charset, get_link_password, inbound_dir, ADDRESS, get_addr_id
 
 def modname(n, m):
   return n if m==0 else "%s.%d"%(n, m)
@@ -299,29 +299,29 @@ class session:
       elif domain_name=="fidonet fileecho": 
         self.FIDOFECHO=domain_id
         self.domains["fileecho"]=domain_id
-    self.Q_find_addr=db.prepare("select id from addresses where domain=$1 and text=$2")
+#    self.Q_find_addr=db.prepare("select id from addresses where domain=$1 and text=$2")
 
-  def find_addr(self, dom, addr):
-      if (dom, addr) in self.address_cache:
-        return self.address_cache[(dom, addr)]
-
-      res=self.Q_find_addr(dom, addr)
-      if len(res)==1:
-        self.address_cache[(dom, addr)]=res[0][0]
-        return res[0][0]
-      if len(res)>1:
-        raise Exception("multiple address records found (%d)"%len(res))
-      raise FTNNoAddressInBase(dom, addr)
+#  def find_addr(self, dom, addr):
+#      if (dom, addr) in self.address_cache:
+#        return self.address_cache[(dom, addr)]
+#
+#      res=self.Q_find_addr(dom, addr)
+#      if len(res)==1:
+#        self.address_cache[(dom, addr)]=res[0][0]
+#        return res[0][0]
+#      if len(res)>1:
+#        raise Exception("multiple address records found (%d)"%len(res))
+#      raise FTNNoAddressInBase(dom, addr)
 
   def add_addr(self, dom, addr):
       self.db.prepare("insert into addresses (domain, text) values($1, $2)")(dom, addr)
 
   def check_addr(self, dom, addr):
       try:
-        return self.find_addr(dom, addr)
+        return get_addr_id(self.db, dom, addr)
       except FTNNoAddressInBase:
         self.add_addr(dom, addr)
-      return self.find_addr(dom, addr)
+      return get_addr_id(self.db, dom, addr)
 
   def get_linkid(self, dom, addr):
       if not self.Q_getlinkid:
@@ -350,7 +350,7 @@ class session:
       return True
 
   def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
-    target=self.find_addr(target_domain, target_addr)
+    target=get_addr_id(self.db, target_domain, target_addr)
     subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
@@ -371,8 +371,8 @@ class session:
 
 
   def remove_subscription(self, target_domain, target_addr, subscriber_addr):
-    target=self.find_addr(target_domain, target_addr)
-    subscriber=self.find_addr(self.db.FTN_domains["node"], subscriber_addr)
+    target=get_addr_id(self.db, target_domain, target_addr)
+    subscriber=get_addr_id(self.db, self.db.FTN_domains["node"], subscriber_addr)
 
     check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
     if len(check):
@@ -491,7 +491,7 @@ class session:
     # database must have trigger to check address to be created for nodelist and area for echolist and uplinks
 
     if not bulkload:
-      recvfrom_id = self.find_addr(self.FIDOADDR, recvfrom)
+      recvfrom_id = get_addr_id(self.db, self.FIDOADDR, recvfrom)
 
       # check domain's "verifysubscription" and if true refuse if not subscribed
       r=self.db.prepare("select verifysubscriptions from domains where id=$1")(destdom)

@@ -1,4 +1,4 @@
-#!/bin/env python3 -bb
+#!/usr/local/bin/python3 -bb
 
 import glob
 import os
@@ -96,7 +96,7 @@ def find_all(b):
 for pnode_dir in glob.glob(INBOUND+"/*"):
     node=ftn.addr.addr2str(map(int, pnode_dir[len(INBOUND)+1:].split(".")))
 #    node=node_dir[len(INBOUND)+1:]
-    print("source: "+node)
+    #print("source: "+node)
     for f in find_all(pnode_dir+"/pwd-in"):
       #skip for a while
       if not ismsg(f) and not ispkt(f) and not isbundle(f):
