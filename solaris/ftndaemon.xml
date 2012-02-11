@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+<service_bundle type='manifest' name='ftndaemon'>
+<service name='application/ftn/daemon' type='service' version='1'>
+<create_default_instance enabled='true' />
+<single_instance />
+<dependency name='filesystem-local' grouping='require_all' restart_on='none' type='service'>
+    <service_fmri value='svc:/system/filesystem/local:default'/>
+</dependency>
+<dependency name='network' grouping='require_all' restart_on='none' type='service'>
+    <service_fmri value='svc:/milestone/network:default' />
+</dependency>
+<dependency name='postgresql' grouping='require_all' restart_on='none' type='service'>
+    <service_fmri value='svc:/application/database/postgresql:default'/>
+</dependency>
+
+<method_context><method_credential user='fido' group='uucp' /></method_context>
+<exec_method type='method' name='start' exec='/lib/svc/method/ftndaemon start' timeout_seconds='120' />
+<exec_method type='method' name='stop' exec='/lib/svc/method/ftndaemon stop' timeout_seconds='120' />
+
+<property_group name='ftndaemon' type='application'>
+<propval name='execdir' type='astring' value='/home/sergey/PyFTN' />
+<propval name='log' type='astring' value='/tank/home/fido/log/ftndaemon.log' />
+<propval name='run' type='astring' value='/tank/home/fido' />
+</property_group>
+
+<stability value='Evolving' />
+
+<template>
+<common_name>
+<loctext xml:lang='C'>FTN Daemon</loctext>
+</common_name>
+<!--documentation>
+<manpage title='postgres' section='1M' />
+<doc_link name='postgresql.org' uri='http://postgresql.org' />
+</documentation-->
+</template>
+
+</service>
+</service_bundle>

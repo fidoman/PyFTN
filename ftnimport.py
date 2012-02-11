@@ -461,6 +461,8 @@ class session:
     print ("header  :")
     xml.etree.ElementTree.dump(header)
     print ("body    :", body)
+    #!!! TODO
+    # add tearline and origin for echomail
     return self.save_message(orig, dest, msgid, header, body, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):

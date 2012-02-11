@@ -1,4 +1,4 @@
-#!/bin/env python3 -bb
+#!/usr/local/bin/python3 -bb
 
 """ listen for incoming connection:
     processes received files 
@@ -40,6 +40,18 @@ import socket
 import select
 import threading
 import traceback
+import sys
+import time
+
+logfile = open(sys.argv[1], "ab")
+
+def log(s):
+  logfile.write((time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + " ftndaemon: " + 
+                str(s).replace("\n", " + ") + "\n").encode("utf-8"))
+  logfile.flush()
+
+log("start")
+
 
 from ftnconfig import *
 from ftnimport import file_import
@@ -57,9 +69,9 @@ def session(s, a):
     s.send(b"hi "+str(a).encode("utf-8")+b"\n")
     while True:
       l=readline(s).decode("utf-8").rstrip()
-      print("got '%s'"%repr(l))
+      log("got '%s'"%repr(l))
       arg, val = l.split(" ", 1)
-      print(arg, val)
+      log(arg+" is "+val)
       if arg=="ADDRESS":
         if address:
           raise Exception("address already established")
@@ -80,7 +92,7 @@ def session(s, a):
         if not filename:
           raise Exception("binary data without filename")
         length = int(val)
-        print("should receive %d bytes of file %s from address %s password %s"%(length, filename, address, password))
+        log("should receive %d bytes of file %s from address %s password %s"%(length, filename, address, password))
 
         with file_import(db, address, password, filename, length) as sess:
           for data in readdata(s, length):
@@ -90,7 +102,7 @@ def session(s, a):
         filename = None
 
       elif arg=="END":
-        print("session end "+val)
+        log("session end "+val)
         break
 
       elif arg=="GET":
@@ -108,10 +120,10 @@ def session(s, a):
               classes.add(classstr)
             else:
               raise Excption("invalid mail class")
-        print("sending "+", ".join(list(classes)))
+        log("sending "+", ".join(list(classes)))
 
         for outbfile, committer in file_export(db, address, password, classes):
-          print(outbfile.filename)
+          log(outbfile.filename)
           s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
           s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
 
@@ -119,27 +131,27 @@ def session(s, a):
             d = outbfile.data.read(16384)
             if len(d)==0:
               break
-            print(s.send(d))
+            log(s.send(d))
 
           confirmstr = readline(s)
-          print("RECV: "+repr(confirmstr))
-          print("SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
+          log("RECV: "+repr(confirmstr))
+          log("SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
           if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
             raise Exception("did not get good confirmation string")
 
           committer.commit()
 
-        print("that's all")
+        log("that's all")
         s.send(b"QUEUE EMPTY\n")
 
       else:
         raise Exception("unknown keyword %s"%arg)
 
   except Exception:
-    traceback.print_exc()
+    log(traceback.format_exc())
 
   finally:
-    print("end "+str(a))
+    log("end "+str(a))
     s.close()
 
 
@@ -151,6 +163,7 @@ for af, addr in DAEMONBIND:
 for s, a in sockets:
   s.bind(a)
   s.listen(3)
+  log("socket "+str(s)+" listen on "+str(a))
 
 #threads = []
 
@@ -159,13 +172,13 @@ try:
     (incoming_connections, _, _) = select.select([x[0] for x in sockets], [], [])
     for ic in incoming_connections:
       ls, peer = ic.accept()
-      print(ls, peer)
+      log("socket %s peer %s"%(str(ls), str(peer)))
       t=threading.Thread(target=session, args=(ls,peer))
       #threads.append(t)
       t.start()
 finally:
   for s, a in sockets:
-    print("closing "+str(a))
+    log("closing "+str(a))
     s.close()
-  print("process will terminate after all threads finished")
-  print("if after finish OS reports that already in use try just to telnet to all daemon's listened ports and wait")
+  log("process will terminate after all threads finished")
+  #log("if after finish OS reports that already in use try just to telnet to all daemon's listened ports and wait")
