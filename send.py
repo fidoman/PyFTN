@@ -5,11 +5,21 @@ import ftnimport
 
 db=connectdb()
 
-with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "N5020.SYSOP"), "All", None, "test", 
-"""Привет All!
+#with ftnimport.session(db) as sess:
+#  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.LOCAL"), "All", None, "fluid.reports", 
+#"""Привет All!
+#
+#Починить никак нельзя, новый надо делать.
+#Тут же всё по-другому :) Только тикер старый пока остался.
+#
+#""")
 
-2:5020/12000 переехал на новый софт.
-Просьба сообщать о глюках.
-Сейчас главная проблема с завершением binkp сессий.
-""")
+with ftnimport.session(db) as sess:
+  sess.send_message("Sergey Dorofeev", 
+                    ("node", "2:50/10.27753"), "Mihail Yakovlev", 
+                    "2:50/10.27753 4f37e5b5", "Re: 5012", 
+"""Привет 
+
+Прописал.
+
+--- PyFTN""")

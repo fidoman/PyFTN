@@ -65,7 +65,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
           reply.append("no such area: " + cmd)
         except FTNAlreadySubscribed:
           reply.append("seems you are uplink for it: " + cmd)
-  reply.append("--- PyFTN")
+  reply.append("")
   sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply))
   print(reply)
 

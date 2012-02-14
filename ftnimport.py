@@ -249,6 +249,13 @@ def normalize_message(msg, charset="ascii"):
 
     return (origdom, origaddr), (destdom, destaddr), msgid, header, body
 
+import re
+
+RE_ftnsign = re.compile("(\r|\n|\r\n|\n\r)(---| \* Origin)")
+def sign_invalidate(s):
+    n=s.group(1)+s.group(2)[0]+"+"+s.group(2)[2:]
+    #print("!!!",s.group(0),"->", n)
+    return n
 
 
 def compose_message(sender, sendername, recipient, recipientname, replyto, subject, body):
@@ -274,6 +281,9 @@ def compose_message(sender, sendername, recipient, recipientname, replyto, subje
     hashdata = "\n".join((str(sender), str(recipient), xml.etree.ElementTree.tostring(header, "unicode"), body))
     msgid = sender[1] + " " + sha1(hashdata.encode("utf-8")).hexdigest()
     print("generated MSGID", repr(msgid))
+
+    body = RE_ftnsign.sub(sign_invalidate, body) + "\n--- PyFTN\n" + \
+        ((" * Origin: fluid.fidoman.ru ("+sender[1]+")\n") if recipient[0]=="echo" else "")
 
     return sender, recipient, msgid, header, body
 
@@ -461,8 +471,6 @@ class session:
     print ("header  :")
     xml.etree.ElementTree.dump(header)
     print ("body    :", body)
-    #!!! TODO
-    # add tearline and origin for echomail
     return self.save_message(orig, dest, msgid, header, body, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):
