@@ -7,6 +7,7 @@ import zipfile
 import rarfile
 import traceback
 import io
+import time
 
 import ftnimport
 import ftn.msg
@@ -92,6 +93,8 @@ def find_all(b):
   return
 
 db=connectdb()
+
+print(time.asctime(), "start ftnpush")
 
 #for net_dir in glob.glob(INBOUND+"/*:*"):
 #  for node_dir in glob.glob(net_dir+"/*"):

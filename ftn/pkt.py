@@ -41,8 +41,8 @@ class PKT:
         raise FTNFail("packet is too short: header incomplete")
 
       (fnode,tnode,year,month,day,hour,minute,second,        # 00-0F
-       baud,sig,fnet,tnet,prod_l,rev_h,password,        # 10-21
-       qfzone,qtzone,auxnet,CW_xchgcopy,prod_h,rev_l,   # 22-2B
+       baud,sig,fnet,tnet, prod_l,rev_h, password,        # 10-21
+       qfzone,qtzone,auxnet,CW_xchgcopy, prod_h,rev_l,   # 22-2B
        capability,fzone,tzone,fpoint,tpoint             # 2C-35
        ) = struct.unpack("<12H2B8s4H2B5H4x",h)
 
@@ -144,15 +144,15 @@ class PKT:
       f=open(file, "wb")
     else:
       f=file
-    print(repr(self.source), repr(self.destination))
-    print(repr(self.date),repr(self.password))
-    f.write(struct.pack("<13H8s12H",self.source[2],self.destination[2],
+    #print(repr(self.source), repr(self.destination))
+    #print(repr(self.date),repr(self.password))
+    f.write(struct.pack("<13H8s10H4s",self.source[2],self.destination[2],
       self.date[0],self.date[1],self.date[2],self.date[3],
       self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0,
        self.password,
        self.source[0],self.destination[0],
        0,0,0,1,self.source[0],self.destination[0],
-       self.source[3],self.destination[3],0,0))
+       self.source[3],self.destination[3],b"XPKT"))
     for m in self.msg:
       f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
         m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +

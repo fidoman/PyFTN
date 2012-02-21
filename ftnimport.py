@@ -365,7 +365,7 @@ class session:
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
 
-    if vital:
+    if vital and (target_domain==self.db.FTN_domains["echo"] or target_domain==self.db.FTN_domains["fileecho"]):
       1/0 # check removedsubswatermark
     
     check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)

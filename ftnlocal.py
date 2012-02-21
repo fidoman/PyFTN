@@ -77,6 +77,8 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
 db = connectdb()
 me = db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], ADDRESS)
 
+print(time.asctime(), "start ftnlocal")
+
 fixes_e = []
 fixes_f = []
 my = []
@@ -110,7 +112,7 @@ for id_msg, src, dest, msgid, header, body, recvfrom in ftnexport.get_subscriber
     print("From:", header.find("sendername").text, src)
     print("To  :", header.find("recipientname").text, dest)
     print("Date:", header.find("date").text)
-    print("Subj:", header.find("subject").text)
+    #print("Subj:", header.find("subject").text)
 #    print(body)
     # process
     # if fail abort

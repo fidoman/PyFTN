@@ -23,12 +23,16 @@ ADDRESS="2:5020/12000"
 INBOUND="/tank/home/fido/recv"
 DINBOUND="/tank/home/fido/drecv"
 OUTBOUND="/tank/home/fido/send"
-NODELIST="/tank/home/fido/nodelist/fido.ndl"
+NODELIST="/home/sergey/PyFTN/routing/NODELIST"
 LOCALNETMAIL="/tank/home/fido/local/netmail"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
-NETMAIL_peers += ["2:5020/181", "2:5020/1453"] # downliks
+NETMAIL_peers += ["2:5020/181", "2:5020/1453", "2:50/10", "2:5059/37"] # downliks
+
+# only links must be here!
+NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
+                     ("2:5051/0", "2:5020/845")]
 
 DAEMONPORT=24555
 DAEMONBIND=[

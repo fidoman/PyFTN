@@ -10,27 +10,33 @@ import ftnimport
 # 4. Group hosts and free nodes to regions
 # 5. Group regions to zones
 
+db=connectdb()
+
 update_group=db.prepare("update addresses set \"group\" = $1 where id=$2")
 
-if False: # poits
-  
+def group_points():
 
   with db.xact():
     for n_id, n_text, p_id, p_text, p_group in db.prepare(
         "select n.id, n.text, p.id, p.text, p.group from addresses n, addresses p "
-        "where n.domain=$1 and p.domain=$1 and p.text LIKE n.text || '.%'").rows(db.FTN_domains["node"]):
+        "where n.domain=$1 and p.domain=$1 and p.text LIKE n.text || '.%'")(db.FTN_domains["node"]):
       if p_group!=n_id:
-        print(n_text, p_text, p_group==n_id)
+        print("update point:", n_text, "<-", p_text, p_group==n_id)
         update_group(n_id, p_id)
 
   with ftnimport.session(db) as sess:
     for p_id, p_text in db.prepare("""select id, text from addresses where "group" is NULL and text LIKE '%:%/%.%' and domain=$1""")(db.FTN_domains["node"]):
       newnode=p_text[:p_text.rfind(".")]
-      print(p_id, p_text, p_text[:p_text.rfind(".")])
+      print("point without node:", p_id, p_text, p_text[:p_text.rfind(".")])
       newid=sess.check_addr(db.FTN_domains["node"], newnode)
+      print("addind new node and grouping to", newnode)
       update_group(newid, p_id)
 
 
+print("grouping points...")
+group_points()
+
+print("grouping by nodelist")
 
 groups = {0: None}
 leveln = 1

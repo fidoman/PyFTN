@@ -10,6 +10,8 @@ import xml.etree.ElementTree
 
 from ftnimport import normalize_message
 
+db=connectdb()
+
 Q_msgget = db.prepare("select m.msgid, m.header, m.body, s.domain, s.text, d.domain, d.text "
             "from messages m, addresses s, addresses d "
             "where m.msgid=$1 and m.source=s.id and m.destination=d.id")
@@ -46,8 +48,8 @@ for f in os.listdir(DUPDIR):
 
     match= header.find("subject").text==dbheader.find("subject").text and body==dbbody
 
-    print(match)
-    if match:
+    print(match, origdomname, destdomname)
+    if destdomname=="echo" and match:
       os.unlink(os.path.join(DUPDIR,f))
       os.unlink(os.path.join(DUPDIR,f[:-4]+".status"))
 

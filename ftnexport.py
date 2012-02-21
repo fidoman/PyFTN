@@ -14,9 +14,12 @@ import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
 
+def get_subscribers(db, target):
+    """ query all subscribers including that who are subscribed to group of the target """
+    1/0
+    pass
 
-
-def get_node_subscriptions(db, addr, msgdom):
+def _get_node_subscriptions(db, addr, msgdom):
   """ addr - address of subscriber node
       msgdom - destination domain of messages (no combining supported)
   """
@@ -72,6 +75,8 @@ def get_subscriber_messages_e(db, subscriber, domain):
   try:
     query = db.Q_get_subscriber_messages_e
   except AttributeError:
+    # seems checking that nobody is subscribed to subgroup is not needed for echomail
+    # and should be removed
     query = db.Q_get_subscriber_messages_e = db.prepare("""
 
     with recursive allsubscription(id, lastsent, target, dir) as 
@@ -80,7 +85,6 @@ def get_subscriber_messages_e(db, subscriber, domain):
       Union
         select s.id, s.lastsent, a.id, 0 from allsubscription s, addresses a 
         where a.group = s.target
-              and (select count(id) from subscriptions where target=a.id) = 0
     )
 
     select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.id
@@ -95,9 +99,9 @@ def get_subscriber_messages_e(db, subscriber, domain):
 
   for m in query(subscriber, domain):
     yield m
+        #id_msg, src, dest, msgid, header, body, recvfrom, withsubscr
 
-
-def get_messages(db, dest_id, lastsent):
+def _get_messages(db, dest_id, lastsent):
   """ use lastsent >= -1 for fetching echomail
       or lastsent = None for netmail """
 
@@ -218,7 +222,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
         msg.add_seenby(ftn.addr.addr2str(seenbyaddr))
     else:
       pass # drop old seen-by's
-  
+
     for seenby in addseenby:
       #print("additional seenby", seenby)
       seenby_zone=ftn.addr.str2addr(seenby)[0]
@@ -311,7 +315,7 @@ def file_export(db, address, password, what):
     # then filebox
     # and at last fileechoes
 
-  print("export",repr(address),repr(password),repr(what))
+  print("export to", repr(address), repr(password), repr(what))
 
   if password != get_link_password(db, address):
       raise FTNWrongPassword()
@@ -322,12 +326,12 @@ def file_export(db, address, password, what):
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
+    p = pktpacker(ADDRESS, address, '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
-      print("netmail %d"%id_msg)
+      print("netmail %d recvfrom %d"%(id_msg, recvfrom))
 
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -353,13 +357,14 @@ def file_export(db, address, password, what):
 
     #..firstly send bundles in outbound
 
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
-        bundlepacker(None, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
+    # do not add password get_link_password(db, address) or 
+    p = pktpacker(ADDRESS, address, '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
+        bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
 
     subscache = {}
     for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
-      print("echomail %d"%id_msg)
+      print("echomail %d src %d dest %d recvfrom %d subscr %d"%(id_msg, src, dest, recvfrom, withsubscr))
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -382,6 +387,11 @@ def file_export(db, address, password, what):
         #    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
 
         subscribers = subscache[dest] = [x[1] for x in subscribers]
+
+      print("subscribers:", repr(subscribers))
+
+#      if withsubscr not in subscribers:
+#        raise Exception("strange: exporting to non-existent subscription", withsubscr)
 
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
       dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
@@ -477,8 +487,8 @@ class pktpacker:
 
 
 class bundlepacker:
-  def __init__(self, savepath, counter, commitgen, packto=None):
-    self.savepath = savepath
+  def __init__(self, destination, counter, commitgen, packto=None):
+    self.destination = destination
     self.counter = counter
     self.bundle = None
     self.commitgen = commitgen
@@ -496,16 +506,23 @@ class bundlepacker:
     if self.bundle[0].tell()>BUNDLETHRESHOLD:
       for x in self.pack():
         yield x
-      
+
   def pack(self):
     b = outfile()
     zone, net, node, point = ftn.addr.str2addr(ADDRESS)
+    dzone, dnet, dnode, dpoint = ftn.addr.str2addr(self.destination)
+    if dpoint:
+        basename = "0000p%03x"%dpoint
+    else:
+        netd = net - dnet
+        noded = node - dnode
+        basename = "%04x%04x"%(netd%0x10000, noded%0x10000)
     c = self.counter()
     d = c%16
     c = c//16
     e = ["mo", "tu", "we", "th", "fr", "sa", "su"][c%7]
     c = c//7
-    b.filename = "%04x%04x.%s%x"%(net,node,e,d)
+    b.filename = "%s.%s%x"%(basename, e, d)
     print("BUNDLE %s"%b.filename)
     self.bundle[1].close()
     b.data = self.bundle[0]
