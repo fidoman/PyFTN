@@ -1,0 +1,1 @@
+"select m.id, m.source, m.destination from messages m, addresses a where a.id=m.destination and m.processed=0 and a.domain=1"
