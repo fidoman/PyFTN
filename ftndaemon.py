@@ -6,6 +6,8 @@
 
     Initialization:
     ADDRESS address
+    ADDRESS address2
+    ...
     PASSWORD password
 
     Outbound:
@@ -46,7 +48,7 @@ import time
 logfile = open(sys.argv[1], "ab")
 
 def log(s):
-  logfile.write((time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + " ftndaemon: " + 
+  logfile.write((time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + ": " + 
                 str(s).replace("\n", " + ") + "\n").encode("utf-8"))
   logfile.flush()
 
@@ -61,7 +63,7 @@ from socketutil import *
 
 def session(s, a):
   db = connectdb()
-  address = None
+  addresses = []
   password = None
   filename = None
   length = None
@@ -69,32 +71,35 @@ def session(s, a):
     s.send(b"hi "+str(a).encode("utf-8")+b"\n")
     while True:
       l=readline(s).decode("utf-8").rstrip()
-      log("got '%s'"%repr(l))
+      log(str(a)+" got %s"%repr(l))
       arg, val = l.split(" ", 1)
-      log(arg+" is "+val)
+      #log(arg+" is "+val)
       if arg=="ADDRESS":
-        if address:
-          raise Exception("address already established")
-        address = val
+        if password:
+          raise Exception("password already established")
+        #log(str(a)+" ADDRESS "+val)
+        addresses.append(val)
       elif arg=="PASSWORD":
         if password:
           raise Exception("password already established")
-        if address is None:
+        if len(addresses) == 0:
           raise Exception("password without address")
+        #log("PASSWORD "+val)
         password = val
       elif arg=="FILENAME":
         if filename:
           raise Exception("filename already established")
         if not address:
           raise Exception("filename without address")
+        #log("FILENAME "+val)
         filename = val
       elif arg=="BINARY":
         if not filename:
           raise Exception("binary data without filename")
         length = int(val)
-        log("should receive %d bytes of file %s from address %s password %s"%(length, filename, address, password))
+        log(str(a)+" receive %d bytes of file %s from address %s password %s"%(length, filename, address[0], password))
 
-        with file_import(db, address, password, filename, length) as sess:
+        with file_import(db, address[0], password, filename, length) as sess:
           for data in readdata(s, length):
             sess.add_data(data)
 
@@ -102,7 +107,7 @@ def session(s, a):
         filename = None
 
       elif arg=="END":
-        log("session end "+val)
+        log(str(a)+" session end "+val)
         break
 
       elif arg=="GET":
@@ -120,38 +125,42 @@ def session(s, a):
               classes.add(classstr)
             else:
               raise Excption("invalid mail class")
-        log("sending "+", ".join(list(classes)))
+        log(str(a)+" sending "+", ".join(list(classes)))
 
-        for outbfile, committer in file_export(db, address, password, classes):
-          log(outbfile.filename)
-          s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
-          s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
+        for address in addresses:
+          log(str(a)+" export for address "+address)
 
-          while True:
-            d = outbfile.data.read(16384)
-            if len(d)==0:
-              break
-            log(s.send(d))
+          for outbfile, committer in file_export(db, address, password, classes):
+            log(str(a)+" outbound file "+outbfile.filename)
+            s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
+            s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
 
-          confirmstr = readline(s)
-          log("RECV: "+repr(confirmstr))
-          log("SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
-          if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
-            raise Exception("did not get good confirmation string")
+            while True:
+              d = outbfile.data.read(16384)
+              if len(d)==0:
+                break
+              log(str(a)+" "+s.send(d))
 
-          committer.commit()
+            confirmstr = readline(s)
+            log(str(a)+" RECV: "+repr(confirmstr))
+            log(str(a)+ "SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
+            if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
+              raise Exception("did not get good confirmation string")
 
-        log("that's all")
+            log(str(a)+" CONFIRMED")
+            committer.commit()
+
+        log(str(a)+" that's all")
         s.send(b"QUEUE EMPTY\n")
 
       else:
         raise Exception("unknown keyword %s"%arg)
 
   except Exception:
-    log(traceback.format_exc())
+    log(str(a)+"\nexception\n"+traceback.format_exc())
 
   finally:
-    log("end "+str(a))
+    log(str(a)+" end")
     s.close()
 
 
@@ -181,4 +190,3 @@ finally:
     log("closing "+str(a))
     s.close()
   log("process will terminate after all threads finished")
-  #log("if after finish OS reports that already in use try just to telnet to all daemon's listened ports and wait")
