@@ -5,39 +5,29 @@ import ftnimport
 
 db=connectdb()
 
+exit()
+
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.LOCAL"), 
         "Eugene Palenock", None, "что с фидо?", 
 """Привет
 
-Отправь тест убедиться что всё идёт и скажи мне путь который там увидишь. Я отравлю заново.
-Если скажешь msgid последнего сообщения, которое там есть от 19-го, будет вообще отлично.
+MO.IZMAILOVO уже и так на /4441...
 
 """)
 
 exit()
 
 
-with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "N5020.SYSOP"), "All", None, "",
-"""Привет All
-
-Так нормально?
-
-""")
-
-exit()
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", 
-                    ("node", "2:5020/758"), "Alexey Gerasimov", 
-                    None, "бэды", 
+                    ("node", "2:5020/715"), "Alexey Barinov", 
+                    None, "строчка для нодлиста", 
 """Привет 
 
-Посмотри плз, нет ли от меня бэдов и нераспакованной почты. Если есть, запакуй в архив и 
-выложи мне на холд пожалуйста - буду разбираться.
+Hub,12000,Fluid,Vidnoe,Sergey_Dorofeev,7-495-541-9688,33600,V34,XW,IBN,IFC,INA:fluid.fidoman.ru,U,TDL
 
 """)
 
 exit()
-

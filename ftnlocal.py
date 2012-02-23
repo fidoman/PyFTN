@@ -57,7 +57,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
       elif cmd.startswith("%"):
         reply.append("Unknown command: "+cmd)
         print(cmd)
-        1/0
+#        1/0
       else:
         try:
           reply.append(sess.add_subscription(False, domain, cmd, text) + ": " + cmd)

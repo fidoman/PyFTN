@@ -14,6 +14,9 @@ outp = []
 for mid, sd, st, dd, dt, did in x():
   outp.append("msg #%d %d|%s->%d|%s (destid %d)\n"%(mid,sd,st,dd,dt,did))
 
+#print(outp)
+#exit()
+
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "почтовая очередь",
 """Привет All
