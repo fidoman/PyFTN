@@ -25,6 +25,7 @@ DINBOUND="/tank/home/fido/drecv"
 OUTBOUND="/tank/home/fido/send"
 NODELIST="/home/sergey/PyFTN/routing/NODELIST"
 LOCALNETMAIL="/tank/home/fido/local/netmail"
+MSGMARK="/tank/home/fido/msgmark"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -218,7 +219,8 @@ class FileNumbering:
 # -
 
 if __name__ == "__main__": 
-  while True:
+  db=connectdb()
+  for i in range(100):
     print(get_link_password(db, "2:5020/2065"))
     print(get_link_password(db, "2:5020/715"))
 

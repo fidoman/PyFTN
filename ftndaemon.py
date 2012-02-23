@@ -128,6 +128,7 @@ def session(s, a):
         log(str(a)+" sending "+", ".join(list(classes)))
 
         for address in addresses:
+         try:
           log(str(a)+" export for address "+address)
 
           for outbfile, committer in file_export(db, address, password, classes):
@@ -139,16 +140,19 @@ def session(s, a):
               d = outbfile.data.read(16384)
               if len(d)==0:
                 break
-              log(str(a)+" "+s.send(d))
+              log(str(a)+" %d"%s.send(d))
 
             confirmstr = readline(s)
             log(str(a)+" RECV: "+repr(confirmstr))
-            log(str(a)+ "SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
+            log(str(a)+ " SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
             if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
               raise Exception("did not get good confirmation string")
 
             log(str(a)+" CONFIRMED")
             committer.commit()
+
+         except:
+            log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
 
         log(str(a)+" that's all")
         s.send(b"QUEUE EMPTY\n")

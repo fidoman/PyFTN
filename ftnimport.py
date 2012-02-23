@@ -243,9 +243,6 @@ def normalize_message(msg, charset="ascii"):
             msg.date.decode(charset), msg.subj.decode(charset), body))
       msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
       print("generated MSGID", repr(msgid))
-      #msg.kludge[b"MSGID:"] = msgid.encode("ascii")
-      #raise Exception("No MSGID, src=%s"%repr(origaddr))
-      #raise FTNNoMSGID()
 
     return (origdom, origaddr), (destdom, destaddr), msgid, header, body
 
@@ -280,7 +277,9 @@ def compose_message(sender, sendername, recipient, recipientname, replyto, subje
 
     hashdata = "\n".join((str(sender), str(recipient), xml.etree.ElementTree.tostring(header, "unicode"), body))
     msgid = sender[1] + " " + sha1(hashdata.encode("utf-8")).hexdigest()
-    print("generated MSGID", repr(msgid))
+    #print("generated MSGID", repr(msgid))
+
+    xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "MSGID:", value = msgid)
 
     body = RE_ftnsign.sub(sign_invalidate, body) + "\n--- PyFTN\n" + \
         ((" * Origin: fluid.fidoman.ru ("+sender[1]+")\n") if recipient[0]=="echo" else "")
@@ -465,12 +464,12 @@ class session:
 
   def send_message(self, sendername, recipient, recipientname, replyto, subj, body):
     orig, dest, msgid, header, body = compose_message(("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body)
-    print ("msg from:", orig)
-    print ("msg to  :", dest)
-    print ("msgid   :", msgid)
-    print ("header  :")
-    xml.etree.ElementTree.dump(header)
-    print ("body    :", body)
+    #print ("msg from:", orig)
+    #print ("msg to  :", dest)
+    #print ("msgid   :", msgid)
+    #print ("header  :")
+    #xml.etree.ElementTree.dump(header)
+    #print ("body    :", body)
     return self.save_message(orig, dest, msgid, header, body, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):

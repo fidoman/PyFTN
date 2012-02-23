@@ -14,4 +14,4 @@ for i, l, t in db.prepare("""select s.id, s.lastsent, t.text from subscriptions 
                 where s.target=t.id and t.text LIKE $1 and t.domain=$2 and s.subscriber=sr.id and sr.text=$3 and sr.domain=$4""")\
                     (ECHO, db.FTN_domains["echo"], LINK, db.FTN_domains["node"]):
     print(i, l, t)
-    db.prepare("update subscriptions set lastsent=1162221 where id=$1")(i)
+#!!!    db.prepare("update subscriptions set lastsent=1162221 where id=$1")(i)

@@ -6,10 +6,23 @@ import ftnimport
 db=connectdb()
 
 with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "N5020.SYSOP"), "All", None, "эхи",
+  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.LOCAL"), 
+        "Eugene Palenock", None, "что с фидо?", 
+"""Привет
+
+Отправь тест убедиться что всё идёт и скажи мне путь который там увидишь. Я отравлю заново.
+Если скажешь msgid последнего сообщения, которое там есть от 19-го, будет вообще отлично.
+
+""")
+
+exit()
+
+
+with ftnimport.session(db) as sess:
+  sess.send_message("Sergey Dorofeev", ("echo", "N5020.SYSOP"), "All", None, "",
 """Привет All
 
-Что-то я туплю, где найти актуальную информацию об эхобоне?
+Так нормально?
 
 """)
 
@@ -27,14 +40,4 @@ with ftnimport.session(db) as sess:
 """)
 
 exit()
-
-with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.LOCAL"), "All", None, "$CRACK$", 
-"""Привет All!
-
-Кто на $CRACK$ подписан, посмотрите, есть мессага с MSGID="2:5020/1955.4 4f3b1a82"
-(там что-то про nod32)
-
-""")
-
 

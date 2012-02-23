@@ -172,11 +172,12 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 #  print(xml.etree.ElementTree.tostring(ftnheader).decode("utf-8"))
 
 
-  msg.kludge = {} # overwrite CHRS kludge
+  msg.kludge = {}
   for kludge in ftnheader.findall("KLUDGE"):
     #print(kludge.get("name"), kludge.get("value"))
     msg.kludge[kludge.get("name").encode(charset)] = kludge.get("value").encode(charset)
 
+  # overwrite CHRS kludge
   if charset=="ascii":
     if b"CHRS:" in msg.kludge:
       del msg.kludge[b"CHRS:"]
@@ -213,7 +214,7 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
     else:
       pass # empty path
-  
+
     if my_zone==dest_zone:
 
       for seenby in ftnheader.findall("SEEN-BY"):
@@ -326,7 +327,8 @@ def file_export(db, address, password, what):
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
-    p = pktpacker(ADDRESS, address, '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
+    # set password in netmail packets
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -357,8 +359,8 @@ def file_export(db, address, password, what):
 
     #..firstly send bundles in outbound
 
-    # do not add password get_link_password(db, address) or 
-    p = pktpacker(ADDRESS, address, '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
+    #
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
         bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
 
     subscache = {}
