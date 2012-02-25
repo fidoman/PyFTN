@@ -40,6 +40,9 @@ class PKT:
       if len(h)<58:
         raise FTNFail("packet is too short: header incomplete")
 
+    # fsc-0001 PKT format
+    # fsc-0039 PKT format capability word
+
       (fnode,tnode,year,month,day,hour,minute,second,        # 00-0F
        baud,sig,fnet,tnet, prod_l,rev_h, password,        # 10-21
        qfzone,qtzone,auxnet,CW_xchgcopy, prod_h,rev_l,   # 22-2B
@@ -151,7 +154,7 @@ class PKT:
       self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0,
        self.password,
        self.source[0],self.destination[0],
-       0,0,0,1,self.source[0],self.destination[0],
+       0,0x0100,0,0x0001,self.source[0],self.destination[0],
        self.source[3],self.destination[3],b"XPKT"))
     for m in self.msg:
       f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],

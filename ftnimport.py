@@ -13,6 +13,7 @@ import os
 import time
 from hashlib import sha1
 from ftnconfig import suitable_charset, get_link_password, inbound_dir, ADDRESS, get_addr_id
+from stringutil import *
 
 def modname(n, m):
   return n if m==0 else "%s.%d"%(n, m)
@@ -70,10 +71,7 @@ class file_import:
       return True
 
 
-def clean_str(s):
-  return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
-
-# changed at id=897897
+# clean_str changed at id=897897
 
 
 
@@ -93,6 +91,8 @@ def normalize_message(msg, charset="ascii"):
 
     # - plain
     if msg.area:
+
+      msg.area = msg.area.upper()
 
       # get originator address from Origin or MSGID
       origdom = "node"

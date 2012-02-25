@@ -26,6 +26,8 @@ OUTBOUND="/tank/home/fido/send"
 NODELIST="/home/sergey/PyFTN/routing/NODELIST"
 LOCALNETMAIL="/tank/home/fido/local/netmail"
 MSGMARK="/tank/home/fido/msgmark"
+FILEDIR="/tank/home/fido/files"
+GROUPFILESBY=5000
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -126,7 +128,7 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
 # - 
 
-def get_link_password(db, linkaddr):
+def get_link_password(db, linkaddr, forrobots=False):
   try:
     pw=db.link_passwords
   except:
@@ -138,6 +140,10 @@ def get_link_password(db, linkaddr):
     pwq=db.link_passwords_q=db.prepare("select l.authentication from links l, addresses a "
                     "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
 
+#SELECT address, xpath('/FTNAUTH/ConnectPassword/text()',authentication)
+#  FROM links;
+
+
   authinfo = pw.get(linkaddr)
   if authinfo is None:
     x = pwq(db.FTN_domains["node"], linkaddr)
@@ -145,7 +151,10 @@ def get_link_password(db, linkaddr):
       return None
     authinfo=pw[linkaddr]=x[0][0]
 
-  return authinfo.find("ConnectPassword").text
+  if forrobots:
+    return authinfo.find("RobotsPassword").text
+  else:
+    return authinfo.find("ConnectPassword").text
 
 def get_link_id(db, linkaddr):
   try:

@@ -15,17 +15,16 @@ db = connectdb()
 netmail_domain=db.FTN_domains["node"]
 
 my_id = db.prepare("select id from addresses where domain=$1 and text=$2").first(netmail_domain, ADDRESS)
-downlinks = db.prepare("""select domain, text from addresses where "group"=$1""")(my_id)
-
-#peers = []
-#for paddr in NETMAIL_peers:
-#  peers.append(db.prepare("select id from addresses where domain=$1 and text=$2").first(netmail_domain, paddr))
+downlinks = db.prepare("""select domain, text from addresses where "group"=$1""")(my_id) # need here recursion?
 
 peers = [(netmail_domain, x) for x in NETMAIL_peers]
 
 selfsubscribers = set([(netmail_domain, ADDRESS)] + downlinks + peers)
 
 with session(db) as sess:
+
+
+
   for subs_dom, subs_text in selfsubscribers:
     print("receives own mail:", subs_dom, subs_text)
     sess.add_subscription(True, subs_dom, subs_text, subs_text)

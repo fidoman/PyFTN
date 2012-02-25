@@ -13,6 +13,7 @@ from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS,
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
+from stringutil import *
 
 def get_subscribers(db, target):
     """ query all subscribers including that who are subscribed to group of the target """
@@ -158,7 +159,12 @@ def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=N
 
   fname=(header.find("sendername").text or '').encode(charset)
   tname=(header.find("recipientname").text or '').encode(charset)
-  msg.subj=(header.find("subject").text or '').encode(charset)
+  try:
+    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
+  except:
+    traceback.print_exc()
+    msg.subj=(header.find("subject").text or '').encode(charset)
+
   msg.date=(header.find("date").text or '').encode(charset)
   #print(fname, tname, subj, date)
 
@@ -333,7 +339,7 @@ def file_export(db, address, password, what):
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
-      print("netmail %d recvfrom %d"%(id_msg, recvfrom))
+      print("netmail %d recvfrom %d pack to %s"%(id_msg, recvfrom, repr(address)))
 
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -366,7 +372,7 @@ def file_export(db, address, password, what):
     subscache = {}
     for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
-      print("echomail %d src %d dest %d recvfrom %d subscr %d"%(id_msg, src, dest, recvfrom, withsubscr))
+      print("echomail %d src %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, src, dest, recvfrom, withsubscr, repr(address)))
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)

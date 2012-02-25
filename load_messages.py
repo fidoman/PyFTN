@@ -5,16 +5,13 @@ import struct, mmap
 import ftn.pkt
 import ftn.msg
 import ftn.attr
-from xml.dom.minidom import Document
-import psycopg2
-import psycopg2.errorcodes
 import traceback
 import re
 import time
 import locale
 locale.setlocale(locale.LC_ALL, 'C')
 
-from ftnimport import import_message
+import ftnimport
 from badwriter import badmsgs
 
 SQFRAME_NORMAL = 0

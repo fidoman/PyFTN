@@ -9,25 +9,39 @@ exit()
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.LOCAL"), 
-        "Eugene Palenock", None, "что с фидо?", 
-"""Привет
+        "All", None, "попытка #2", 
+"""Привет Eugene!
 
-MO.IZMAILOVO уже и так на /4441...
+В base64
+
+4C5ZEdwHAgAXABIAGwAiAAAAAgCcE5wTAABLRDM4OUJUNQIAAgAAAAAAAAABAAIAAgAAAAAAWFBL
+VAIA4C5ZEZwTnBMAAAAAMjMgRmViIDEyICAxODoyMzoxMABBbGwAU2VyZ2V5IERvcm9mZWV2AK/g
+rqKl4KqgIOGi76eoAEFSRUE6TU8uSVpNQUlMT1ZPDQFNU0dJRDogMjo1MDIwLzEyMDAwIGI2MzU4
+NTI4ODU5NzRkNzcxYTE0OTBjN2IyZDg2OTM0NTY0MzM0NGQNAUNIUlM6IENQODY2IDINj+CooqXi
+IEFsbA0NnyCkqKquIKinoqit7+7h7Cwgra4g7eKuIJKFkZIuDYjioKogoq6v4K7hOiCspa3vIKKo
+pK2uPyA6KQ0NDS0tLSBQeUZUTg0gKiBPcmlnaW46IGZsdWlkLmZpZG9tYW4ucnUgKDI6NTAyMC8x
+MjAwMCkNU0VFTi1CWTogNTAyMC83NyA4NDggMTk1NSAyMDY1IDQ0NDEgMTIwMDANAVBBVEg6IDUw
+MjAvMTIwMDANAAAA
+
 
 """)
-
 exit()
+
+
 
 
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", 
-                    ("node", "2:5020/715"), "Alexey Barinov", 
-                    None, "строчка для нодлиста", 
+                    ("node", "2:5020/4441"), "Yuri Myakotin", 
+                     None, "прохождение почты", 
 """Привет 
 
-Hub,12000,Fluid,Vidnoe,Sergey_Dorofeev,7-495-541-9688,33600,V34,XW,IBN,IFC,INA:fluid.fidoman.ru,U,TDL
+Нашёл у себя один косяк - capability word с перестановленными
+байтами не записывалось. Из-за этого может в бэды выпадать?
+Сейчас ещё раз мо.измайлово отресканил.
 
 """)
-
 exit()
+
+

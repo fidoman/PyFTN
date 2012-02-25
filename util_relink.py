@@ -1,13 +1,29 @@
 #!/usr/local/bin/python3
 
-area="MO.IZMAILOVO"
+link='2:5020/758'
 
 import ftnconfig
 import ftnimport
 
 db=ftnconfig.connectdb()
 
-vital = db.prepare("select s.id, sr.domain, sr.text from subscriptions s, addresses t, addresses sr where s.target=t.id and t.domain=$1 and t.text=$2 and s.subscriber=sr.id and s.vital=true")
+lid=db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], link)
 
-for subs, srd, srt in vital(db.FTN_domains["echo"], area):
-    print (subs, "%d|%s"%(srd,srt))
+outp=[]
+
+pw = ftnconfig.get_link_password(db, link, True)
+#print(pw)
+
+for echo in db.prepare("select a.text from subscriptions s, addresses a "
+            "where a.id=s.target and s.subscriber=$1 and a.domain=$2")(lid, db.FTN_domains["echo"]):
+
+    outp.append("+"+echo[0]+"\n")
+
+if len(outp)==0:
+    print ("nothing to relink")
+else:
+    print ("".join(outp))
+
+    with ftnimport.session(db) as sess:
+        sess.send_message("Sergey Dorofeev", ("node", link),
+                            "AreaFix", None, pw, "".join(outp))

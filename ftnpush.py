@@ -34,9 +34,9 @@ def isbundle(f):
 from badwriter import badmsgs, dupmsgs, secmsgs
 
 
-def import_msg(sess, m, recv_from):
+def import_msg(sess, m, recv_from, bulk=False):
   try:
-    sess.import_message(m, recv_from, False)
+    sess.import_message(m, recv_from, bulk)
   except FTNDupMSGID as e:
     # move duplicate to dup-area
     dupmsgs.write(m.pack(), "Duplicate message received from %s"%recv_from+"\n"+traceback.format_exc())
@@ -51,7 +51,7 @@ def import_msg(sess, m, recv_from):
     secmsgs.write(m.pack(), "Cannot post message received from %s"%recv_from+"\n"+traceback.format_exc())
 
 
-def import_pkt(sess, fo, recv_from):
+def import_pkt(sess, fo, recv_from, bulk=False):
   """ imports FTN incoming file as one transaction.
       returns True if file is successfully imported
         (if some msgs refused, they are saved separately)
@@ -73,7 +73,7 @@ def import_pkt(sess, fo, recv_from):
   if recv_from!=pktsrc:
     raise FTNFail("packet source (%s) does not match node address from which it was received (%s)"%(pktsrc, recv_from))
   for m in x.msg:
-    import_msg(sess, m, pktsrc)
+    import_msg(sess, m, pktsrc, bulk)
 
 
 

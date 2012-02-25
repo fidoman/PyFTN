@@ -9,6 +9,7 @@ import postgresql
 import xml.etree.ElementTree
 
 from ftnimport import normalize_message
+from stringutil import *
 
 db=connectdb()
 
@@ -17,6 +18,7 @@ Q_msgget = db.prepare("select m.msgid, m.header, m.body, s.domain, s.text, d.dom
             "where m.msgid=$1 and m.source=s.id and m.destination=d.id")
 
 
+print(DUPDIR)
 for f in os.listdir(DUPDIR):
   if f.endswith(".msg"):
 
@@ -28,6 +30,10 @@ for f in os.listdir(DUPDIR):
     (origdomname, origaddr), (destdomname, destaddr), msgid, header, body = normalize_message(m)
 
     print(msgid)
+
+    if destdomname!="echo":
+        print ("not echomail")
+        continue
 
     print("----------------------------------------------------------------------")
     print(header.find("sendername").text, origdomname, origaddr)
@@ -46,7 +52,26 @@ for f in os.listdir(DUPDIR):
     print(dbheader.find("subject").text)
     print("----------------------------------------------------------------------")
 
-    match= header.find("subject").text==dbheader.find("subject").text and body==dbbody
+    body = body.strip()
+    dbbody = dbbody.strip()
+
+    subj1 = header.find("subject").text
+    subj2 = dbheader.find("subject").text
+
+    if subj1 is None:
+        subj1 = ""
+
+    if subj2 is None:
+        subj2 = ""
+
+    #print (subj1==subj2, body==dbbody)
+
+    subjmatch = subj1==subj2
+    if not subjmatch:
+        subjmatch = subj1==clean_str(subj2)
+
+    print (subjmatch)
+    match = subjmatch and body==dbbody
 
     print(match, origdomname, destdomname)
     if destdomname=="echo" and match:
@@ -54,8 +79,8 @@ for f in os.listdir(DUPDIR):
       os.unlink(os.path.join(DUPDIR,f[:-4]+".status"))
 
     else:
-      pass
-      #open("check1", "w").write(body)
-      #open("check2", "w").write(dbbody)
-      #print("look at check1, check2")
-      
+      print (repr(subj1), repr(subj2))
+      open("check1", "w").write(body)
+      open("check2", "w").write(dbbody)
+      print("look at check1, check2")
+      break
