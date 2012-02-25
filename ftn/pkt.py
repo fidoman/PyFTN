@@ -42,6 +42,7 @@ class PKT:
 
     # fsc-0001 PKT format
     # fsc-0039 PKT format capability word
+    # http://www.ftsc.org/docs/fsc-0048.002 2+ extensions
 
       (fnode,tnode,year,month,day,hour,minute,second,        # 00-0F
        baud,sig,fnet,tnet, prod_l,rev_h, password,        # 10-21
@@ -59,7 +60,7 @@ class PKT:
       self.destination=(tzone or qtzone,tnet,tnode,tpoint)
       if year<1900:
         year+=1900
-      self.date=(year,month,day,hour,minute,second)
+      self.date=(year,month+1,day,hour,minute,second)
 
       #print self.source, self.destination
 
@@ -150,7 +151,7 @@ class PKT:
     #print(repr(self.source), repr(self.destination))
     #print(repr(self.date),repr(self.password))
     f.write(struct.pack("<13H8s10H4s",self.source[2],self.destination[2],
-      self.date[0],self.date[1],self.date[2],self.date[3],
+      self.date[0],self.date[1]-1,self.date[2],self.date[3],
       self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0xFE,
        self.password,
        self.source[0],self.destination[0],

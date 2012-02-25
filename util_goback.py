@@ -3,8 +3,8 @@
 #LINK="2:5020/758"
 LINK="2:5020/4441"
 #ECHO="$CRACK$%"
-#ECHO='%'
-ECHO='%TEST%'
+ECHO='%'
+#ECHO='%TEST%'
 
 
 import ftnconfig

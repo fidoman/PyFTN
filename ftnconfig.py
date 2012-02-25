@@ -33,6 +33,8 @@ NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
 NETMAIL_peers += ["2:5020/181", "2:5020/1453", "2:50/10", "2:5059/37"] # downliks
 
+NETMAIL_peers += ["2:5020/4441"] # echomail uplink
+
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5051/0", "2:5020/845")]
@@ -92,7 +94,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.")
 
-RE_latin=re.compile("IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE")
+RE_latin=re.compile("IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|BBS_ADS")
 
 RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
