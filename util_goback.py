@@ -4,7 +4,7 @@
 LINK="2:5020/4441"
 #ECHO="$CRACK$%"
 #ECHO='%'
-ECHO='MO.IZMAILOVO'
+ECHO='%TEST%'
 
 
 import ftnconfig

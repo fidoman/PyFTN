@@ -20,21 +20,6 @@ def get_subscribers(db, target):
     1/0
     pass
 
-def _get_node_subscriptions(db, addr, msgdom):
-  """ addr - address of subscriber node
-      msgdom - destination domain of messages (no combining supported)
-  """
-  domains = db.FTN_domains
-  try:
-    Q_get_node_subscriptions = db.Q_get_node_subscriptions
-  except AttributeError as e:
-    # target: any with domain msgdom
-    # subscriber: addr
-    Q_get_node_subscriptions = db.Q_get_node_subscriptions = db.prepare("select s.id, t.id, s.lastsent from subscriptions s, addresses sr, addresses t "
-        "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3")
-
-  return Q_get_node_subscriptions.rows(domains[msgdom], domains["node"], addr)
-
 
 
 
@@ -550,3 +535,17 @@ class bundlepacker:
     if self.packto:
       for x in self.packto.flush():
         yield x
+
+# --------------- auxiliary functions ---------------------
+
+def get_node_subscriptions(db, subscriber, targetdomain):
+    return [x[0] for x in db.prepare("select t.text, s.id, s.lastsent from subscriptions s, addresses sr, addresses t "
+        "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3")(db.FTN_domains[targetdomain], db.FTN_domains["node"], subscriber)]
+
+
+if __name__ == "__main__":
+    from ftnconfig import connectdb
+    for s in get_node_subscriptions(connectdb(), "2:5020/4441", "echo"):
+        if s.find("TEST")!=-1:
+            print (s)
+

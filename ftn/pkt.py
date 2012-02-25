@@ -151,11 +151,11 @@ class PKT:
     #print(repr(self.date),repr(self.password))
     f.write(struct.pack("<13H8s10H4s",self.source[2],self.destination[2],
       self.date[0],self.date[1],self.date[2],self.date[3],
-      self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0,
+      self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0xFE,
        self.password,
        self.source[0],self.destination[0],
        0,0x0100,0,0x0001,self.source[0],self.destination[0],
-       self.source[3],self.destination[3],b"XPKT"))
+       self.source[3],self.destination[3],b"\0\0\0\0")) # b"XPKT"
     for m in self.msg:
       f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
         m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +
