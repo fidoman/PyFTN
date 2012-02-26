@@ -97,7 +97,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_")
 
-RE_utf8 = re.compile("POLITICS")
+RE_utf8 = re.compile("POLITICS|WIN95")
 
 RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
