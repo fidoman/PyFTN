@@ -96,6 +96,8 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
 
 RE_latin=re.compile("IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|BBS_ADS")
 
+RE_utf8=re.compile("POLITICS")
+
 RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
 
@@ -114,7 +116,9 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
     if destdom=="echo":
       #print("area for charset [%s]"%repr(msg.area))
-      if RE_russian.match(destaddr):
+      if RE_utf8.match(destaddr):
+        charset="utf-8"
+      elif RE_russian.match(destaddr):
         charset="cp866"
       elif RE_latin.match(destaddr):
         charset="latin-1"
