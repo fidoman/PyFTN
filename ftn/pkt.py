@@ -51,16 +51,17 @@ class PKT:
        ) = struct.unpack("<12H2B8s4H2B5H4x",h)
 
       if sig!=2:
-        raise Exception("bad PKT signature %s"%repr(fo))
+        raise Exception("bad PKT signature in %s"%repr(fo))
 
       #print fnet,fnode,tnet,tnode,password
 
-      self.password=password
-      self.source=(fzone or qfzone,fnet,fnode,fpoint)
-      self.destination=(tzone or qtzone,tnet,tnode,tpoint)
+      self.password = password
+      self.source = (fzone or qfzone,fnet,fnode,fpoint)
+      self.destination = (tzone or qtzone,tnet,tnode,tpoint)
+      self.auxnet = auxnet
       if year<1900:
         year+=1900
-      self.date=(year,month+1,day,hour,minute,second)
+      self.date = (year,month+1,day,hour,minute,second)
 
       #print self.source, self.destination
 

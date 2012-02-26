@@ -46,8 +46,11 @@ class MSG:
     via
   """  
   def __init__(self,file=None):
-    if( file != None ):
-      f=open(file,"rb")
+    if file is not None:
+      if type(file) is str:
+        f = open(file,"rb")
+      else:
+        f = file
       h=f.read(190)
       if len(h)<190:
         raise FTNFail("msg header incomplete")
@@ -71,6 +74,9 @@ class MSG:
       self.readcount=readcount
       self.replyto=replyto
       self.nextreply=nextreply
+
+      if type(file) is str:
+        f.close()
 
     else:
       pass

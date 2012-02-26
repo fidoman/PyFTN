@@ -97,9 +97,8 @@ with ftnimport.session(db) as sess:
   group_id = sess.check_addr(db.FTN_domains["node"], group_address)
 
   oldgroup_id = db.prepare("""select "group" from addresses where domain=$1 and text=$2""").first(db.FTN_domains["node"], node_address)
-  #print(node_address, node_id, name, oldgroup_id, group_address, group_id)
 
-  print("%s (%d) %s %s --> %s (%d)"%(node_address, node_id, name, str(oldgroup_id), group_address, group_id))
+  #print("%s (%d) %s %s --> %s (%d)"%(node_address, node_id, name, str(oldgroup_id), group_address, group_id))
   if oldgroup_id != group_id:
     update_group(group_id, node_id)
 

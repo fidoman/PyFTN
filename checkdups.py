@@ -17,6 +17,7 @@ Q_msgget = db.prepare("select m.msgid, m.header, m.body, s.domain, s.text, d.dom
             "from messages m, addresses s, addresses d "
             "where m.msgid=$1 and m.source=s.id and m.destination=d.id")
 
+#DUPDIR=BADDIR
 
 print(DUPDIR)
 for f in os.listdir(DUPDIR):

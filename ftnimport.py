@@ -345,15 +345,16 @@ class session:
   def __enter__(self):
     self.x=self.db.xact()
     self.x.start()
+    print ("START")
     return self
 
   def __exit__(self, et, ev, tb):
     if et:
-      print("ROLLBACK")
+      print ("ROLLBACK")
       self.x.rollback()
       return False
     else:
-      print("COMMIT")
+      print ("COMMIT")
       self.x.commit()
       return True
 
@@ -514,6 +515,8 @@ class session:
       if verify_subscription:
         # check if message received from subscribed to the destination's address
         r=self.db.prepare("select count(id) from subscriptions where subscriber=$1 and target=$2")(recvfrom_id, destid)
+        # flaw: allow to flood with messages to non-existent addresses. should be checked with trigger in database
+        #  (allow create node/point only if nodelisted, area only if listed on bone/uplinks)
         if r[0][0]==0:
           raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s (id=%d)"%(destdom, destaddr, destid))
         print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
@@ -526,6 +529,7 @@ class session:
       self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom)"
           " values ($1, $2, $3, $4, $5, $6, $7, $8)")
 
+    print ("Transaction state", self.x.state)
     self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id)
 
 

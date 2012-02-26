@@ -34,7 +34,7 @@ def isbundle(f):
 from badwriter import badmsgs, dupmsgs, secmsgs
 
 
-def import_msg(sess, m, recv_from, bulk=False):
+def import_msg(sess, m, recv_from, bulk):
   try:
     sess.import_message(m, recv_from, bulk)
   except FTNDupMSGID as e:
@@ -51,7 +51,7 @@ def import_msg(sess, m, recv_from, bulk=False):
     secmsgs.write(m.pack(), "Cannot post message received from %s"%recv_from+"\n"+traceback.format_exc())
 
 
-def import_pkt(sess, fo, recv_from, bulk=False):
+def import_pkt(sess, fo, recv_from, bulk):
   """ imports FTN incoming file as one transaction.
       returns True if file is successfully imported
         (if some msgs refused, they are saved separately)
@@ -63,10 +63,10 @@ def import_pkt(sess, fo, recv_from, bulk=False):
   x=ftn.pkt.PKT(fo)
   #..pass to messages address from PKT (it can match with session address or verify by password if differ)
 
-  rc=ftn.addr.str2addr(recv_from)
+  #rc=ftn.addr.str2addr(recv_from)
   if x.source[1]==65535 and x.source[0]==rc[0]:
-    print("fixup for network address %s"%repr(x.source))
-    x.source = (x.source[0], rc[1], x.source[2], x.source[3])
+    print("fixup for pointnet network address %s, NOT TESTED"%repr(x.source))
+    x.source = (x.source[0], x.auxnet, x.source[2], x.source[3])
 
   pktsrc=ftn.addr.addr2str(x.source)
   print("received from: %s, packet src: %s"%(recv_from, pktsrc))
@@ -75,6 +75,65 @@ def import_pkt(sess, fo, recv_from, bulk=False):
   for m in x.msg:
     import_msg(sess, m, pktsrc, bulk)
 
+
+def import_file(sess, fname, fo, recv_from, bulk):
+    if ismsg(fname):
+            print("msg")
+            import_msg(sess, ftn.msg.MSG(fo), recv_from, bulk)
+
+    elif ispkt(fname):
+            print("pkt")
+            import_pkt(sess, fo, recv_from, bulk)
+
+    elif isbundle(fname):
+        sample = fo.read(8192)
+        fo.seek(-len(sample), io.SEEK_CUR)
+        mime=magic.whatis(sample)
+        print("bundle (%s)"%mime)
+        if mime=="application/zip":
+            print("zip file")
+            z=zipfile.ZipFile(fo)
+            for zf in z.namelist():
+                if not ispkt(zf):
+                  raise Exception("non-PKT file in bundle %s"%fname)
+
+            for zf in z.namelist():
+                print(zf)
+                zfo=z.open(zf)
+                import_pkt(sess, zfo, recv_from, bulk)
+                zfo.close()
+
+            
+            z.close()
+
+        elif mime=="application/x-rar":
+            print("rar file")
+            z=rarfile.RarFile(fo)
+            for zf in z.namelist():
+                if not ispkt(zf):
+                  raise Exception("non-PKT file in bundle %s"%fname)
+
+            for zf in z.namelist():
+                print(zf)
+                zfo = z.open(zf)
+                import_pkt(sess, zfo, recv_from, bulk)
+                zfo.close()
+
+            z.close()
+
+        else:
+            raise Exception("dont know how to unpack bundle %s"%fname)
+
+    else:
+        raise Exception("file %s is not FIDO mail file")
+
+#   elif istic(f):
+#           pass #print("tic - ignore")
+#
+#           #fo=file(f, "rb")
+#           #import_file(fo, f, "tic", recv_from)
+#           #fo.close()
+#           #os.unlink(f)
 
 
 
@@ -92,97 +151,33 @@ def find_all(b):
       yield x
   return
 
-db=connectdb()
 
-print(time.asctime(), "start ftnpush")
+if __name__ == "__main__":
 
-#for net_dir in glob.glob(INBOUND+"/*:*"):
-#  for node_dir in glob.glob(net_dir+"/*"):
-for pnode_dir in glob.glob(INBOUND+"/*"):
-    node=ftn.addr.addr2str(map(int, pnode_dir[len(INBOUND)+1:].split(".")))
-#    node=node_dir[len(INBOUND)+1:]
-    #print("source: "+node)
+  db=connectdb()
+
+  print(time.asctime(), "start ftnpush")
+
+  for pnode_dir in glob.glob(INBOUND+"/*"):
+
+    node = ftn.addr.addr2str(map(int, pnode_dir[len(INBOUND)+1:].split(".")))
+    print("source: "+node)
+
     for f in find_all(pnode_dir+"/pwd-in"):
-      #skip for a while
+      #skip non-mail
       if not ismsg(f) and not ispkt(f) and not isbundle(f):
         continue
 
-      print("file: "+f)
+      print("file:", f)
       try:
         with ftnimport.session(db) as sess:
-
-          if ismsg(f):
-            print("msg")
-            import_msg(sess, ftn.msg.MSG(f), node)
-            os.unlink(f)
-
-          elif ispkt(f):
-            print("pkt")
-            import_pkt(sess, f, node)
-            os.unlink(f)
-
-          elif isbundle(f):
-            mime=magic.file(f)
-            print("bundle (%s)"%mime)
-            if mime=="application/zip":
-              print("zip file")
-              z=zipfile.ZipFile(f)
-              for zf in z.namelist():
-                if not ispkt(zf):
-                  raise Exception("non-PKT file in bundle %s"%repr(zf))
-
-              for zf in z.namelist():
-                print(zf)
-                zfo=z.open(zf)
-                import_pkt(sess, zfo, node)
-                zfo.close()
-
-              del z
-              os.unlink(f)
-
-            elif mime=="application/x-rar":
-              print("rar file")
-              z=rarfile.RarFile(f)
-              for zf in z.namelist():
-                if not ispkt(zf):
-                  raise Exception("non-PKT file in bundle %s"%repr(zf))
-
-              for zf in z.namelist():
-                print(zf)
-                zfo = z.open(zf)
-                import_pkt(sess, zfo, node)
-                zfo.close()
-
-              del z
-              os.unlink(f)
-
-
-            else:
-              print("dont know how to unpack")
-              #fo=open(f, "rb")
-              #badbnds.write(fo.read(), "from: "+node+"\n"+"dont know how to unpack")
-              #fo.close()
-              #os.unlink(f)
-
-          elif istic(f):
-            pass #print("tic - ignore")
-
-            #fo=file(f, "rb")
-            #import_file(fo, f, "tic", node)
-            #fo.close()
-            #os.unlink(f)
-
-          else:
-            pass #print("unspecified file, ignore")
-            #fo=file(f, "rb")
-            #import_file(fo, f, "other", node)
-            #fo.close()
-            #os.unlink(f)
-
+          fo = open(f, "rb")
+          import_file(sess, f, fo, node, False)
+          fo.close()
+          os.unlink(f)
 
       except Exception as e:
         print("error on file %s"%repr(f))
-        #traceback.print_exc()
         os.rename(f, f+".bad")
         fx=open(f+".status", "w")
         fx.write(traceback.format_exc())

@@ -13,8 +13,8 @@ from functools import reduce
 locale.setlocale(locale.LC_ALL, 'C')
 
 import ftnimport
+import ftnpush
 import ftnconfig
-from badwriter import badmsgs
 
 SQFRAME_NORMAL = 0
 SQFRAME_FREE = 1
@@ -265,19 +265,6 @@ def jam_message_extractor(f):
   df.close()
   return
 
-def pkt_message_extractor(f):
-  """ iterator for messages in pkt file """
-  pkt=ftn.pkt.PKT(f, True)
-  return pkt.msg
-
-def msg_message_extractor(f):
-  """ iterator for a message in msg file """
-  yield ftn.msg.MSG(f)
-  return
-
-
-
-
 
 if __name__ == "__main__":
     
@@ -285,7 +272,7 @@ if __name__ == "__main__":
 
   if len(files)==0:
     print("No input files")
-    print(" [-p /import as processed/] [-e /get echo name from filename/] -f format /msg|pkt|sq|jam/ file1...")
+    print(" [-p /import as processed/] [-e /get echo name from filename/] -f format /msg|pkt|bundle|sq|jam/ file1...")
     sys.exit(-1)
 
   format=None
@@ -307,21 +294,23 @@ if __name__ == "__main__":
     raise Exception('format not specified')
 
   extractor = {"sq": sq_message_extractor, 
-             "jam": jam_message_extractor,
-             "msg": msg_message_extractor,
-             "pkt": pkt_message_extractor}[format]
+             "jam": jam_message_extractor}.get(format)
 
   db=ftnconfig.connectdb()
 
+  counter = 0
   for f in files:
     with ftnimport.session(db) as sess:
       print(f)
-      for msg in extractor(f):
-        #print unicode(msg).encode("utf-8")
-        try:
-          sess.import_message(msg, recvfrom="2:5020/12000", bulk=processed)
-        except:
-          traceback.print_exc()
-          badmsgs.write(repr(msg), traceback.format_exc())
+      if extractor:
+        for msg in extractor(f):
+          #print unicode(msg).encode("utf-8")
+          ftnpush.import_msg(sess, msg, "2:5020/12000", processed)
+      else:
+        fo = open(f, "rb")
+        ftnpush.import_file(sess, f, fo, "2:5020/12000", processed)
+        fo.close()
+
+        counter += 1
       # no exception, all fine
-      os.unlink(f)
+    os.unlink(f)
