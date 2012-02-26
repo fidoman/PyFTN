@@ -128,7 +128,7 @@ def normalize_message(msg, charset="ascii"):
 
       destdom = "node"
       destname, destaddr = msg.dest[0], ftn.addr.addr2str(msg.dest[1])
-  
+
     # - guess
     guessed=False
     mayusezone=None
@@ -147,8 +147,7 @@ def normalize_message(msg, charset="ascii"):
         print ("AREA:", repr(msg.area))
         raise FTNFail("Zone in sender address is empty and cannot guess from MSGID %s\n"
           		"guess: %s known: %s"%(repr(msg.kludge.get(b"MSGID:")), guessfrom, knownfrom))
-  
-  
+    
     guessed=False
     replyzone=None
     if destdom=="node" and destaddr[0]=='0':
@@ -244,7 +243,7 @@ def normalize_message(msg, charset="ascii"):
       msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
       print("generated MSGID", repr(msgid))
 
-    return (origdom, origaddr), (destdom, destaddr), msgid, header, body
+    return (origdom, origaddr), (destdom, destaddr), msgid, header, body, charset
 
 import re
 
@@ -359,7 +358,7 @@ class session:
       return True
 
   def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
-    target=get_addr_id(self.db, target_domain, target_addr)
+    target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
     subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
@@ -380,7 +379,7 @@ class session:
 
 
   def remove_subscription(self, target_domain, target_addr, subscriber_addr):
-    target=get_addr_id(self.db, target_domain, target_addr)
+    target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
     subscriber=get_addr_id(self.db, self.db.FTN_domains["node"], subscriber_addr)
 
     check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
@@ -470,13 +469,13 @@ class session:
     #print ("header  :")
     #xml.etree.ElementTree.dump(header)
     #print ("body    :", body)
-    return self.save_message(orig, dest, msgid, header, body, ADDRESS)
+    return self.save_message(orig, dest, msgid, header, body, None, ADDRESS)
 
   def import_message(self, msg, recvfrom, bulk):
-    orig, dest, msgid, header, body = normalize_message(msg)
-    return self.save_message(orig, dest, msgid, header, body, recvfrom, processed=5 if bulk else 0, bulkload=bulk)
+    orig, dest, msgid, header, body, origcharset = normalize_message(msg)
+    return self.save_message(orig, dest, msgid, header, body, origcharset, recvfrom, processed=5 if bulk else 0, bulkload=bulk)
 
-  def save_message(self, sender, recipient, msgid, header, body, recvfrom, processed=0, bulkload=False):
+  def save_message(self, sender, recipient, msgid, header, body, origcharset, recvfrom,  processed=0, bulkload=False):
     """import msg as part of transaction.
        if msg is correct then it is stored in base.
        if msg fails validation then it will be saved in bad messages' directory """
@@ -499,8 +498,12 @@ class session:
 
     # database must have trigger to check address to be created for nodelist and area for echolist and uplinks
 
-    if not bulkload:
+    if recvfrom:
       recvfrom_id = get_addr_id(self.db, self.FIDOADDR, recvfrom)
+    else:
+      recvfrom_id = None
+
+    if not bulkload:
 
       # check domain's "verifysubscription" and if true refuse if not subscribed
       r=self.db.prepare("select verifysubscriptions from domains where id=$1")(destdom)
@@ -515,17 +518,15 @@ class session:
           raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s (id=%d)"%(destdom, destaddr, destid))
         print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
 
-    else:
-       recvfrom_id=None
   
     if len(self.db.prepare("select id from messages where msgid=$1")(msgid)):
       raise FTNDupMSGID(msgid)
 
     if not self.Q_msginsert:
-      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, processed, receivedfrom)"
-          " values ($1, $2, $3, $4, $5, $6, $7)")
+      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom)"
+          " values ($1, $2, $3, $4, $5, $6, $7, $8)")
 
-    self.Q_msginsert(origid, destid, msgid, header, body, processed, recvfrom_id)
+    self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id)
 
 
 
