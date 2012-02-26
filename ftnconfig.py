@@ -94,9 +94,10 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.")
 
-RE_latin=re.compile("IC$|ENET\.|FN_|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|BBS_ADS")
 
-RE_utf8=re.compile("POLITICS")
+RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_")
+
+RE_utf8 = re.compile("POLITICS")
 
 RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
@@ -120,8 +121,8 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
         charset="utf-8"
       elif RE_russian.match(destaddr):
         charset="cp866"
-      elif RE_latin.match(destaddr):
-        charset="latin-1"
+      elif RE_cp437.match(destaddr):
+        charset="cp437"
       elif RE_ukrainian.match(destaddr):
         charset="cp1125"
 
