@@ -27,7 +27,7 @@ for f in os.listdir(DUPDIR):
 
     m=ftn.msg.MSG(os.path.join(DUPDIR,f))
 
-    (origdomname, origaddr), (destdomname, destaddr), msgid, header, body = normalize_message(m)
+    (origdomname, origaddr), (destdomname, destaddr), msgid, header, body, charset = normalize_message(m)
 
     print(msgid)
 
