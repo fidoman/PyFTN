@@ -41,7 +41,7 @@ def get_subscriber_messages_n(db, subscriber, domain):
               and (select count(id) from subscriptions where target=a.id) = 0
     )
 
-    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.origcharset, m.receivedfrom
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
           m.processed=0 and m.destination=alls.target
@@ -73,7 +73,7 @@ def get_subscriber_messages_e(db, subscriber, domain):
         where a.group = s.target
     )
 
-    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.receivedfrom, alls.id
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.origcharset, m.receivedfrom, alls.id
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
           m.id>alls.lastsent and m.destination=alls.target and
@@ -130,11 +130,12 @@ def update_subscription_watermark(db, subscription, id):
 
 
 
-def denormalize_message(orig, dest, msgid, header, body, echodest=None, addvia=None, addseenby=[], addpath=None):
+def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None, addvia=None, addseenby=[], addpath=None):
   (origdom, origaddr) = orig
   (destdom, destaddr) = dest
 
-  charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr)
+  if charset is None:
+    charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr)
   #print(charset)
 
   if origdom!="node":
@@ -322,7 +323,7 @@ def file_export(db, address, password, what):
     p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
 
     #..firstly send pkts in outbound
-    for id_msg, src, dest, msgid, header, body, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
+    for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
       print("netmail %d recvfrom %d pack to %s"%(id_msg, recvfrom, repr(address)))
 
@@ -334,7 +335,7 @@ def file_export(db, address, password, what):
         msg = denormalize_message(
             (db.FTN_backdomains[srca[0]], srca[1]),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
-            msgid, header, body, address, addvia = myvia)
+            msgid, header, body, origcharset, address, addvia = myvia)
       except:
         raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
@@ -355,7 +356,7 @@ def file_export(db, address, password, what):
         bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
 
     subscache = {}
-    for id_msg, src, dest, msgid, header, body, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
+    for id_msg, src, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
       print("echomail %d src %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, src, dest, recvfrom, withsubscr, repr(address)))
 
@@ -396,7 +397,7 @@ def file_export(db, address, password, what):
         msg = denormalize_message(
             (db.FTN_backdomains[srca[0]], srca[1]),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
-            msgid, header, body, address, addseenby=subscribers, addpath=ADDRESS)
+            msgid, header, body, origcharset, address, addseenby=subscribers, addpath=ADDRESS)
       except:
         raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
