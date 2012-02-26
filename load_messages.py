@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3 -bb
 
 import sys, getopt, os
 import struct, mmap
@@ -9,9 +9,11 @@ import traceback
 import re
 import time
 import locale
+from functools import reduce
 locale.setlocale(locale.LC_ALL, 'C')
 
 import ftnimport
+import ftnconfig
 from badwriter import badmsgs
 
 SQFRAME_NORMAL = 0
@@ -62,25 +64,25 @@ def sq_message_extractor(f):
   frame = begin_frame
   
   while frame:
-    print "%10d %s"%(frame, "="*69)
+    print("%10d %s"%(frame, "="*69))
     try:
       id, next_frame, prev_frame, frame_length, msg_length, clen, frame_type, rsv = \
         struct.unpack_from(Squish_SQHDR, fmap, frame)
-    except Exception, e:
-      print "file info:", hlen, rsv, num_msg, high_msg, skip_msg, high_water, uid, `base`, begin_frame, \
-        last_frame, free_frame, last_free_frame, end_frame, max_msg, keep_days, sz_sqhdr, `rsv2`, "$"
-      print "error reading header of frame at offset %d"%frame
+    except Exception as e:
+      print("file info:", hlen, rsv, num_msg, high_msg, skip_msg, high_water, uid, repr(base), begin_frame, \
+        last_frame, free_frame, last_free_frame, end_frame, max_msg, keep_days, sz_sqhdr, repr(rsv2), "$")
+      print("error reading header of frame at offset %d"%frame)
       raise e
       
-    print id, "n%d"%next_frame,  "p%d"%prev_frame,  "fl%d"%frame_length,  "ml%d"%msg_length,  "clen%d"%clen, frame_type, rsv
+    print(id, "n%d"%next_frame,  "p%d"%prev_frame,  "fl%d"%frame_length,  "ml%d"%msg_length,  "clen%d"%clen, frame_type, rsv)
     if frame_type == SQFRAME_NORMAL:
      try:
       msg=ftn.msg.MSG()
 
       mattr, mfrom, mto, msubject, morigz, morign, morigf, morigp, \
-    				   mdestz, mdestn, mdestf, mdestp,\
-    				   mdate_written, mtime_written,\
-    				   mdate_arrived, mtime_arrived, mutc_ofs, \
+            			   mdestz, mdestn, mdestf, mdestp,\
+            			   mdate_written, mtime_written,\
+            			   mdate_arrived, mtime_arrived, mutc_ofs, \
         mreply_to, mreplies1, mreplies2,  mreplies3,  mreplies4,  mreplies5,  \
         mreplies6,  mreplies7,  mreplies8,  mreplies9, mumsgid, mftsc_date = \
            struct.unpack_from(Squish_XMSG, fmap, frame+sqhdr_len)
@@ -109,21 +111,21 @@ def sq_message_extractor(f):
       else:
         cbody=""
 
-      cbody+=reduce(str.__add__, map(lambda x: "\x01"+x+"\n", filter(lambda x: x, header.split("\x01"))), "")
+      cbody+=reduce(str.__add__, ["\x01"+x+"\n" for x in [x for x in header.split("\x01") if x]], "")
       cbody+=body
 
       #print `cbody`
 
       msg.load( (mfrom.strip("\0"), (morigz, morign, morigf, morigp)), (mto.strip("\0"), (mdestz, mdestn, mdestf, mdestp)),
-    		msubject.strip("\0"), mftsc_date.strip("\0"), mattr, 0, cbody )
-    		
+            	msubject.strip("\0"), mftsc_date.strip("\0"), mattr, 0, cbody )
+            	
       yield msg
-     except Exception, e:
-      print "Exception in message at offset %d"%frame
+     except Exception as e:
+      print("Exception in message at offset %d"%frame)
       raise e
 
     else:
-      print "frame type", frame_type
+      print("frame type", frame_type)
 
     frame = next_frame
   
@@ -143,7 +145,7 @@ def jam_message_extractor(f):
   hmap=mmap.mmap(hf.fileno(), 0)
   dmap=mmap.mmap(df.fileno(), 0)
   bSignature, bdatecreated, bmodcounter, bactivemsgs, bpasswordcrc, basemsgnum, _ = \
-	struct.unpack_from("<4sLLLLL1000s", hmap, 0)
+        struct.unpack_from("<4sLLLLL1000s", hmap, 0)
 #  print bSignature
 
   pos=1024
@@ -172,58 +174,58 @@ def jam_message_extractor(f):
       LoID, HiID, datlen=struct.unpack_from("<HHL", hmap, pos+subpos)
       subpos+=struct.calcsize("<HHL")
       if HiID!=0:
-	raise Exception("JAM HiID not supported")
+        raise Exception("JAM HiID not supported")
 #      print "subheader", LoID, datlen, "bytes"
       val=hmap[pos+subpos:pos+subpos+datlen]
       if LoID==0:
-	#print "senderaddress", val
-	msgattr["senderaddress"]=val
+        #print "senderaddress", val
+        msgattr["senderaddress"]=val
       elif LoID==1:
-	#print "recipientaddress", val
-	msgattr["recipientaddress"]=val
+        #print "recipientaddress", val
+        msgattr["recipientaddress"]=val
       elif LoID==2:
-	#print "sendername", val
-	msgattr["sendername"]=val
+        #print "sendername", val
+        msgattr["sendername"]=val
       elif LoID==3:
-	#print "recipientname", val
-	msgattr["recipientname"]=val
+        #print "recipientname", val
+        msgattr["recipientname"]=val
       elif LoID==4:
-	#print "msgid", val
-	msgkludge.append(("MSGID:", val))
+        #print "msgid", val
+        msgkludge.append(("MSGID:", val))
       elif LoID==5:
-	#print "reply", val
-	msgkludge.append(("REPLY:", val))
+        #print "reply", val
+        msgkludge.append(("REPLY:", val))
       elif LoID==6:
-	#print "subject", val.decode("cp866")
-	msgattr["subject"]=val
+        #print "subject", val.decode("cp866")
+        msgattr["subject"]=val
       elif LoID==7:
-	#print "PID", val.decode("cp866")
-	msgkludge.append(("PID:", val))
+        #print "PID", val.decode("cp866")
+        msgkludge.append(("PID:", val))
       elif LoID==8:
-	print "Via", val.decode("cp866")
+        print("Via", val.decode("cp866"))
       elif LoID==9:
-	print "File", val.decode("cp866")
-	ignore=True
+        print("File", val.decode("cp866"))
+        ignore=True
       elif LoID==11:
-	print "FREQ", val.decode("cp866")
-	ignore=True
+        print("FREQ", val.decode("cp866"))
+        ignore=True
       elif LoID==2000:
-	#print "KLUGE", val.decode("cp866")
-	kv=val.split(" ",1)
-	if len(kv)==1:
-	  kv.append("")
-	msgkludge.append(kv)
+        #print "KLUGE", val.decode("cp866")
+        kv=val.split(" ",1)
+        if len(kv)==1:
+          kv.append("")
+        msgkludge.append(kv)
       elif LoID==2003:
-	#print "FLAG", 
-	#for f in val.split(" "):
-	#  print f,
-	#  print ftn.attr.short_to_long(f),
-	pass
+        #print "FLAG", 
+        #for f in val.split(" "):
+        #  print f,
+        #  print ftn.attr.short_to_long(f),
+        pass
       elif LoID==2004:
-	#print "TZ", val.decode("cp866")
-	msgkludge.append(("TZUTC:", val))
+        #print "TZ", val.decode("cp866")
+        msgkludge.append(("TZUTC:", val))
       else:
-	raise Exception("unknown LoID %d"%LoID)
+        raise Exception("unknown LoID %d"%LoID)
 
       subpos+=datlen
       if subpos>SubfieldLen: # must be strict equal at end of last subheader
@@ -232,17 +234,17 @@ def jam_message_extractor(f):
     if not ignore:
 
       try:
-        bhead=reduce(str.__add__, map(lambda x: "\01"+x[0]+" "+x[1]+"\n", msgkludge), "")
-      except Exception, e:
-        print `msgkludge`
+        bhead=reduce(str.__add__, ["\01"+x[0]+" "+x[1]+"\n" for x in msgkludge], "")
+      except Exception as e:
+        print(repr(msgkludge))
         raise e
 
       body=dmap[Offset:Offset+TxtLen]
 
       msg=ftn.msg.MSG()
       msg.load( (msgattr.get("sendername", "Sysop"), ftn.addr.str2addr(msgattr["senderaddress"])), 
-	      (msgattr["recipientname"], ftn.addr.str2addr(msgattr["recipientaddress"])),
-	      msgattr.get("subject", ""), msgattr["date"], Attribute, 0, bhead+body )
+              (msgattr["recipientname"], ftn.addr.str2addr(msgattr["recipientaddress"])),
+              msgattr.get("subject", ""), msgattr["date"], Attribute, 0, bhead+body )
 
       #print unicode(msg).encode("utf-8")
       yield msg
@@ -255,7 +257,7 @@ def jam_message_extractor(f):
     1000: "EMBINDAT",
     2001: "SEENBY2D",
     2002: "PATH2D",
-	}
+        }
 
     pos+=SubfieldLen
 
@@ -282,8 +284,8 @@ if __name__ == "__main__":
   args, files = getopt.getopt(sys.argv[1:], 'pf:e')
 
   if len(files)==0:
-    print "No input files"
-    print " [-p /import as processed/] [-e /get echo name from filename/] -f format /msg|pkt|sq|jam/ file1..."
+    print("No input files")
+    print(" [-p /import as processed/] [-e /get echo name from filename/] -f format /msg|pkt|sq|jam/ file1...")
     sys.exit(-1)
 
   format=None
@@ -299,24 +301,27 @@ if __name__ == "__main__":
     elif arg=='-e':
       areabyname=True
     
-  print format, processed, files
+  print(format, processed, files)
 
   if not format:
     raise Exception('format not specified')
 
   extractor = {"sq": sq_message_extractor, 
-	     "jam": jam_message_extractor,
-	     "msg": msg_message_extractor,
-	     "pkt": pkt_message_extractor}[format]
+             "jam": jam_message_extractor,
+             "msg": msg_message_extractor,
+             "pkt": pkt_message_extractor}[format]
+
+  db=ftnconfig.connectdb()
 
   for f in files:
-    print f
-    for msg in extractor(f):
-      #print unicode(msg).encode("utf-8")
-      try:
-        import_message(msg, None, processed=5, bulkload=True)
-      except:
-        traceback.print_exc()
-        badmsgs.write(`msg`, traceback.format_exc())
-    # no exception, all fine
-    os.unlink(f)
+    with ftnimport.session(db) as sess:
+      print(f)
+      for msg in extractor(f):
+        #print unicode(msg).encode("utf-8")
+        try:
+          sess.import_message(msg, recvfrom="2:5020/12000", bulk=processed)
+        except:
+          traceback.print_exc()
+          badmsgs.write(repr(msg), traceback.format_exc())
+      # no exception, all fine
+      os.unlink(f)
