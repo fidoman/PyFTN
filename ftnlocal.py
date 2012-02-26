@@ -84,7 +84,7 @@ fixes_f = []
 my = []
 
 
-for id_msg, src, dest, msgid, header, body, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
+for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
 
   if header.find("recipientname").text.lower() == "areafix":
     fixes_e.append((id_msg, src, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), 
@@ -104,7 +104,7 @@ for id_msg, src, dest, msgid, header, body, recvfrom in ftnexport.get_subscriber
     m = ftnexport.denormalize_message(
         (db.FTN_backdomains[srca[0]], srca[1]),
         (db.FTN_backdomains[dsta[0]], dsta[1]),
-        msgid, header, body)
+        msgid, header, body, origcharset)
 
     my.append((id_msg, time.mktime(time.strptime(header.find("date").text, "%d %b %y  %H:%M:%S")), m))
 
@@ -129,13 +129,13 @@ for id_msg, _, m in my:
 
 for id_msg, src, _, sn, h, mi, b in fixes_e:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "AreaFix", db.FTN_domains["echo"], h, mi, b)
+    fix(db, sess, src, sn, "AreaFix", "echo", h, mi, b)
     db.prepare("update messages set processed=1 where id=$1")(id_msg)
     
 
 for id_msg, src, _, sn, h, mi, b in fixes_f:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "FileFix", db.FTN_domains["fileecho"], h, mi, b)
+    fix(db, sess, src, sn, "FileFix", "fileecho", h, mi, b)
     db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
 exit()
