@@ -543,6 +543,14 @@ def get_node_subscriptions(db, subscriber, targetdomain):
     return [x[0] for x in db.prepare("select t.text, s.id, s.lastsent from subscriptions s, addresses sr, addresses t "
         "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3")(db.FTN_domains[targetdomain], db.FTN_domains["node"], subscriber)]
 
+def get_all_targets(db, targetdomain):
+    return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1")(db.FTN_domains[targetdomain])]
+
+def get_matching_targets(db, targetdomain, mask):
+    mask = mask.replace("+", "++").replace("%", "+%").replace("_", "_%").replace("*", "%").replace("?", "_")
+    return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 and t.text like $2 escape '+'")\
+        (db.FTN_domains[targetdomain], mask)]
+
 
 if __name__ == "__main__":
     from ftnconfig import connectdb

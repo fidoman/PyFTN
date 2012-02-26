@@ -12,6 +12,31 @@ from badwriter import BadWriter
 
 localmsgs=BadWriter(LOCALNETMAIL, os.path.join(LOCALNETMAIL, "next"), "msg")
 
+def subscribe(db, sess, node, targetdomain, pattern):
+    r = []
+    for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
+        try:
+          r.append(sess.add_subscription(False, targetdomain, target, node) + ": " + target)
+        except FTNNoAddressInBase:
+          r.append("no such area: " + target)
+        except FTNAlreadySubscribed:
+          r.append("seems you are uplink for it: " + target)
+    if len(r)==0:
+          r.append("no matching area: " + pattern)
+    return r
+
+def unsubscribe(db, sess, node, targetdomain, pattern):
+    r = []
+    for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
+        try:
+          r.append(sess.remove_subscription(False, targetdomain, target, node) + ": " + pattern)
+        except FTNNoAddressInBase:
+          r.append("no such area: " + target)
+    if len(r)==0:
+          r.append("no matching area: " + pattern)
+    return r
+
+
 def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
   dom, text = db.prepare("select domain, text from addresses where id=$1").first(src)
   if dom != db.FTN_domains["node"]:
@@ -31,40 +56,30 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
       elif cmd.startswith("%PING"):
         reply.append("NOP: "+cmd)
       elif cmd.startswith("%QUERY"):
-        reply.append("Sorry not implemented: "+cmd)
+        for area in ftnexport.get_node_subscriptions(db, text, domain):
+          reply.append(area)
       elif cmd.startswith("%INFO"):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%HELP"):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%LIST"):
-        reply.append("Sorry not implemented: "+cmd)
+        for area in ftnexport.get_all_targets(db, domain):
+          reply.append(area)
       elif cmd.startswith("%AVAIL"):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%PAUSE"):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("-"):
-        try:
-          reply.append(sess.remove_subscription(domain, cmd[1:], text) + ": " + cmd)
-        except FTNNoAddressInBase:
-          reply.append("no such area: " + cmd)
+        reply += unsubscribe(db, sess, text, domain, cmd[1:])
       elif cmd.startswith("+"):
-        try:
-          reply.append(sess.add_subscription(False, domain, cmd[1:], text) + ": " + cmd)
-        except FTNNoAddressInBase:
-          reply.append("no such area: " + cmd)
-        except FTNAlreadySubscribed:
-          reply.append("seems you are uplink for it: " + cmd)
+        reply += subscribe(db, sess, text, domain, cmd[1:])
       elif cmd.startswith("%"):
         reply.append("Unknown command: "+cmd)
         print(cmd)
 #        1/0
       else:
-        try:
-          reply.append(sess.add_subscription(False, domain, cmd, text) + ": " + cmd)
-        except FTNNoAddressInBase:
-          reply.append("no such area: " + cmd)
-        except FTNAlreadySubscribed:
-          reply.append("seems you are uplink for it: " + cmd)
+        reply+=subscribe(db, sess, text, domain, cmd)
+
   reply.append("")
   sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply))
   print(reply)

@@ -69,7 +69,7 @@ def import_pkt(sess, fo, recv_from, bulk):
     x.source = (x.source[0], x.auxnet, x.source[2], x.source[3])
 
   pktsrc=ftn.addr.addr2str(x.source)
-  print("received from: %s, packet src: %s"%(recv_from, pktsrc))
+  #print("received from: %s, packet src: %s"%(recv_from, pktsrc))
   if recv_from!=pktsrc:
     raise FTNFail("packet source (%s) does not match node address from which it was received (%s)"%(pktsrc, recv_from))
   for m in x.msg:
@@ -161,7 +161,7 @@ if __name__ == "__main__":
   for pnode_dir in glob.glob(INBOUND+"/*"):
 
     node = ftn.addr.addr2str(map(int, pnode_dir[len(INBOUND)+1:].split(".")))
-    print("source: "+node)
+    #print("source: "+node)
 
     for f in find_all(pnode_dir+"/pwd-in"):
       #skip non-mail
