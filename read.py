@@ -6,11 +6,11 @@ import ftnconfig
 db=ftnconfig.connectdb()
 
 #did=db.prepare("select id from addresses where text='N5020.CRISIS' and domain=2").first()
-did=db.prepare("select id from addresses where text='N5020.SYSOP' and domain=2").first()
+#did=db.prepare("select id from addresses where text='N5020.SYSOP' and domain=2").first()
 #did=db.prepare("select id from addresses where text='R50.SYSOP' and domain=2").first()
 #did=db.prepare("select id from addresses where text='R50.SYSOP.TALK' and domain=2").first()
 #did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
-#did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2").first()
+did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2").first()
 #did=db.prepare("select id from addresses where text='PUSHKIN.LOCAL' and domain=2").first()
 #did=db.prepare("select id from addresses where text='MO.IZMAILOVO' and domain=2").first()
 #did=db.prepare("select id from addresses where text='MO.VIDNOE' and domain=2").first()
@@ -19,11 +19,15 @@ did=db.prepare("select id from addresses where text='N5020.SYSOP' and domain=2")
 #did=db.prepare("select id from addresses where text='RU.PSYCHOLOGY' and domain=2").first()
 #did=db.prepare("select id from addresses where text='TESTING' and domain=2").first()
 #did=db.prepare("select id from addresses where text='FIDOTEST' and domain=2").first()
+#did=db.prepare("select id from addresses where text='$CRACK$' and domain=2").first()
+#did=db.prepare("select id from addresses where text='$CRACK$.TALKS' and domain=2").first()
+#did=db.prepare("select id from addresses where text='FN_SYSOP' and domain=2").first()
+#did=db.prepare("select id from addresses where text='IC' and domain=2").first()
 
-#for src, dst, header, body in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):
-for mid, src, dst, header, body in db.prepare(
-    "select id, source, destination, header, body from messages "
-        "where destination=$1 and id>1170000 "
+#for src, dst, header, body, origcharset in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):
+for mid, src, dst, header, body, origcharset in db.prepare(
+    "select id, source, destination, header, body, origcharset from messages "
+        "where destination=$1 and id>1170000 and processed<>5"
         "order by id")(did):
     print ("*"*79)
     print (mid, src, dst)
