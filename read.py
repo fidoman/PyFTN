@@ -10,7 +10,7 @@ db=ftnconfig.connectdb()
 #did=db.prepare("select id from addresses where text='R50.SYSOP' and domain=2").first()
 #did=db.prepare("select id from addresses where text='R50.SYSOP.TALK' and domain=2").first()
 #did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
-did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2").first()
+#did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2").first()
 #did=db.prepare("select id from addresses where text='PUSHKIN.LOCAL' and domain=2").first()
 #did=db.prepare("select id from addresses where text='MO.IZMAILOVO' and domain=2").first()
 #did=db.prepare("select id from addresses where text='MO.VIDNOE' and domain=2").first()
@@ -23,6 +23,7 @@ did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2")
 #did=db.prepare("select id from addresses where text='$CRACK$.TALKS' and domain=2").first()
 #did=db.prepare("select id from addresses where text='FN_SYSOP' and domain=2").first()
 #did=db.prepare("select id from addresses where text='BBS_ADS' and domain=2").first()
+#did=db.prepare("select id from addresses where text='ESTAR.LOCAL' and domain=2").first()
 
 #for src, dst, header, body, origcharset in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):
 for mid, src, dst, header, body, origcharset in db.prepare(

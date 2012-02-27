@@ -195,7 +195,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     dest_zone=ftn.addr.str2addr(echodest)[0]
     my_zone=ftn.addr.str2addr(addpath)[0] # addpath should be this node's address
 
-    if my_zone==dest_zone:
+    if True: #my_zone==dest_zone: - always add path
       for path in ftnheader.findall("PATH"):
         #print(path.get("record"))
         msg.add_path(path.get("record"))
@@ -204,8 +204,9 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
         #print("additional path", addpath)
         msg.add_path(addpath)
 
-    else:
-      pass # empty path
+#    else:
+#      pass # empty path
+
 
     if my_zone==dest_zone:
 
@@ -356,9 +357,10 @@ def file_export(db, address, password, what):
         bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
 
     subscache = {}
-    for id_msg, src, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
+    for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
-      print("echomail %d src %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, src, dest, recvfrom, withsubscr, repr(address)))
+      print("echomail %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, dest, recvfrom, withsubscr, repr(address)))
+      # ignore src - for echomail it is just recv_from
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -387,15 +389,14 @@ def file_export(db, address, password, what):
 #      if withsubscr not in subscribers:
 #        raise Exception("strange: exporting to non-existent subscription", withsubscr)
 
-      srca=db.prepare("select domain, text from addresses where id=$1").first(src)
-      dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
+      dsta = db.prepare("select domain, text from addresses where id=$1").first(dest)
 
       # modify path and seen-by
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
       try:
-        msg = denormalize_message(
-            (db.FTN_backdomains[srca[0]], srca[1]),
+        msg = denormalize_message( 
+            ("node", ADDRESS),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
             msgid, header, body, origcharset, address, addseenby=subscribers, addpath=ADDRESS)
       except:

@@ -234,6 +234,7 @@ def normalize_message(msg, charset="ascii"):
     subjel=xml.etree.ElementTree.SubElement(header, "subject")
     subjel.text = clean_str(msg.subj.decode(charset))
     
+    # may be autodetect is needed
     body = (b"\n".join(msg.body)+b"\n").decode(charset)
 
     if msgid is None:

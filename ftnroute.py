@@ -2,7 +2,7 @@
 
 """ Create vital netmail subscription (and remove unneeded) """
 
-from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks
+from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, get_addr_id
 from ftnimport import session
 from ftn.ftn import FTNAlreadySubscribed
 import ftn
@@ -12,18 +12,15 @@ import ftn
 
 db = connectdb()
 
-netmail_domain=db.FTN_domains["node"]
+my_id = get_addr_id(db, db.FTN_domains["node"], ADDRESS)
+downlinks = [(db.FTN_backdomains[x[0]], x[1]) for 
+    x in db.prepare("""select domain, text from addresses where "group"=$1""")(my_id)] # need here recursion?
 
-my_id = db.prepare("select id from addresses where domain=$1 and text=$2").first(netmail_domain, ADDRESS)
-downlinks = db.prepare("""select domain, text from addresses where "group"=$1""")(my_id) # need here recursion?
+peers = [("node", x) for x in NETMAIL_peers]
 
-peers = [(netmail_domain, x) for x in NETMAIL_peers]
-
-selfsubscribers = set([(netmail_domain, ADDRESS)] + downlinks + peers)
+selfsubscribers = set([("node", ADDRESS)] + downlinks + peers)
 
 with session(db) as sess:
-
-
 
   for subs_dom, subs_text in selfsubscribers:
     print("receives own mail:", subs_dom, subs_text)
@@ -33,16 +30,16 @@ with session(db) as sess:
 
   for host, peer in NETMAIL_peerhosts:
     print(peer, "receives for", host)
-    sess.add_subscription(True, netmail_domain, host, peer)
+    sess.add_subscription(True, "node", host, peer)
 
 
   # Create subscriptions for zones to default netmail uplinks
 
-  for (ungrouped,) in (db.prepare("""select text from addresses where "group" is NULL and domain=$1""")(netmail_domain)):
+  for (ungrouped,) in (db.prepare("""select text from addresses where "group" is NULL and domain=$1""")(db.FTN_domains["node"])):
     z, n, f, p = ftn.addr.str2addr(ungrouped)
     if n or f or p or not z: continue # better to check by nodelist
     for subs in NETMAIL_uplinks:
-      sess.add_subscription(True, netmail_domain, ungrouped, subs)
+      sess.add_subscription(True, "node", ungrouped, subs)
       print(subs, "receives mail for", ungrouped)
 
 

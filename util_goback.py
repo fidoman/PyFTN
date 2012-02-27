@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3 -bb
 
-#LINK="2:5020/758"
-LINK="2:5020/4441"
+LINK="2:5020/758"
+#LINK="2:5020/4441"
 #ECHO="$CRACK$%"
 ECHO='%'
 #ECHO='%TEST%'
