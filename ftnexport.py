@@ -77,7 +77,7 @@ def get_subscriber_messages_e(db, subscriber, domain):
     from allsubscription alls, addresses sa, messages m
     where sa.id=alls.target and sa.domain=$2 and 
           m.id>alls.lastsent and m.destination=alls.target and
-          m.receivedfrom<>$1
+          m.receivedfrom<>$1 and m.processed<>5
     order by m.id
     ;
 
