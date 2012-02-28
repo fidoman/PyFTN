@@ -44,6 +44,7 @@ import threading
 import traceback
 import sys
 import time
+import os
 
 logfile = open(sys.argv[1], "ab")
 
@@ -52,12 +53,33 @@ def log(s):
                 str(s).replace("\n", " + ") + "\n").encode("utf-8"))
   logfile.flush()
 
+
+L_unpack = threading.Lock()
+
+def rununpack():
+  global L_unpack
+
+  log("rununpack")
+  is_free = L_unpack.acquire(False)
+  if not is_free: 
+    log("waiting another process")
+    L_unpack.acquire()
+
+  if is_free:
+    log("start to unpack")
+    os.system("./unpack quick >> log/quick.log")
+  else:
+    log("already unpacked")
+
+  L_unpack.release()
+
 log("start")
 
 
 from ftnconfig import *
 from ftnimport import file_import
 from ftnexport import file_export
+from ftn.ftn import FTNWrongPassword
 
 from socketutil import *
 
@@ -125,6 +147,9 @@ def session(s, a):
               classes.add(classstr)
             else:
               raise Excption("invalid mail class")
+
+        rununpack()
+
         log(str(a)+" sending "+", ".join(list(classes)))
 
         for address in addresses:
@@ -151,6 +176,8 @@ def session(s, a):
             log(str(a)+" CONFIRMED")
             committer.commit()
 
+         except FTNWrongPassword:
+            log("address %s excluded due to wrong password"%address)
          except:
             log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
 

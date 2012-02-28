@@ -37,7 +37,8 @@ NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
-                     ("2:5051/0", "2:5020/845")]
+                     ("2:5051/0", "2:5020/845"),
+                     ("2:5097/0", "2:5097/31")]
 
 DAEMONPORT=24555
 DAEMONBIND=[
@@ -82,7 +83,8 @@ def init_domains(db):
 def init_commuter(db):
   db.FTN_commuter = {}
   for id, comm in db.prepare("select id, commuter from subscriptions"):
-    db.FTN_commuter[id] = comm
+    if comm:
+      db.FTN_commuter[id] = comm
 
 
 # -
@@ -95,9 +97,9 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.")
 
 
-RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_")
+RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.")
 
-RE_utf8 = re.compile("POLITICS|WIN95")
+RE_utf8 = re.compile("POLITICS")
 
 RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
 
@@ -199,6 +201,21 @@ def get_addr_id(db, dom, addr):
     raise Exception("multiple address records found (%d)"%len(res))
   raise FTNNoAddressInBase(dom, addr)
 
+def get_addr(db, addr_id):
+  try:
+    addrs=db.addrs
+    addrs_q=db.addrs_q
+  except:
+    addrs=db.addrs={}
+    addrs_q=db.addrs_q=db.prepare("select domain, text from addresses where id=$1")
+
+  if addr_id not in addrs:
+    addrs[addr_id] = addrs_q.first(addr_id)
+
+  return addrs[addr_id]
+
+
+# -
 
 def inbound_dir(address, isprotected, isdaemon):
   base = DINBOUND if isdaemon else INBOUND

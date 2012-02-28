@@ -15,10 +15,20 @@ import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
 from stringutil import *
 
-def get_subscribers(db, target):
+def get_subscribers(db, target, onlyvital=False):
     """ query all subscribers including that who are subscribed to group of the target """
-    1/0
-    pass
+
+    for r in db.prepare(""" 
+    with recursive all_groups(id, level) as
+    (
+        select $1::BIGINT, 0
+      union
+        select a.group, g.level+1 from addresses a, all_groups g where a.id = g.id
+    )
+    select s.subscriber, s.vital, g.level from subscriptions s, all_groups g 
+    where s.target = g.id""" + (" and s.vital = True" if onlyvital else ""))(target):
+
+        yield r
 
 
 
@@ -364,7 +374,7 @@ def file_export(db, address, password, what):
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
-      if subscriber_comm is not None:
+      if subscriber_comm is not None: # must check as None==None => no export at all
         # get subscription through what message was received
         recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
         recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)

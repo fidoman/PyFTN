@@ -482,6 +482,9 @@ class session:
        if msg is correct then it is stored in base.
        if msg fails validation then it will be saved in bad messages' directory """
 
+    if (len(body)+len(repr(header))) > 60000:
+      raise Exception("message too big")
+
     origdomname, origaddr = sender
     destdomname, destaddr = recipient
 
