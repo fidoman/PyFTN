@@ -13,7 +13,7 @@ db=ftnconfig.connectdb()
 
 my_id = ftnconfig.get_addr_id (db, db.FTN_domains["node"], ftnconfig.ADDRESS)
 RE_s = re.compile("\s+")
-RE_quote = re.compile("\s*\S{1,2}\>+")
+RE_quote = re.compile("\s*(\S{0,2})(\>+)\s*(.*)$")
 
 MAXW=79
 
@@ -38,7 +38,7 @@ def quote(qname, block):
 
   outp = []
   qlblock = []
-  qlevel = 
+  qlevel = 0
 
 
   print ("\n".join(block)+"\n")
@@ -66,8 +66,8 @@ E-Mail: bav (at) sirena-travel.ru ICQ: 24466689 Skype: huba-huba
  * Origin: Alex at Work (2:5020/715.1)
 """
   
-quote("AB", txt.splitlines())
-exit()
+#quote("AB", txt.splitlines())
+#exit()
 
 
 
