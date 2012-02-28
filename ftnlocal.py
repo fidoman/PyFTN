@@ -10,7 +10,7 @@ from ftn.ftn import *
 
 from badwriter import BadWriter
 
-localmsgs=BadWriter(LOCALNETMAIL, os.path.join(LOCALNETMAIL, "next"), "msg")
+#localmsgs=BadWriter(LOCALNETMAIL, os.path.join(LOCALNETMAIL, "next"), "msg")
 
 def subscribe(db, sess, node, targetdomain, pattern):
     r = []
@@ -61,7 +61,16 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
       elif cmd.startswith("%INFO"):
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%HELP"):
-        reply.append("Sorry not implemented: "+cmd)
+        reply.append("Use following command:")
+        reply.append("  %QUERY          -- list of subscribed areas")
+        reply.append("  %LIST           -- list of all areas")
+        reply.append("  +areaname       -- subscribe, or:")
+        reply.append("  areaname        -- subscribe")
+        reply.append("  -areaname       -- unsubscribe")
+        reply.append("        you can use ? to substitite any one character an area name")
+        reply.append("        or * to substitude any number of any characters in area name")
+        reply.append("        areaname must be UPPERCASE")
+        reply.append("")
       elif cmd.startswith("%LIST"):
         for area in ftnexport.get_all_targets(db, domain):
           reply.append(area)
@@ -96,7 +105,7 @@ print(time.asctime(), "start ftnlocal")
 
 fixes_e = []
 fixes_f = []
-my = []
+#my = []
 
 
 for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
@@ -110,6 +119,9 @@ for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.g
         header.find("sendername").text, header.find("subject").text, msgid, body))
 
   else:
+    continue
+
+    # leave all other in database for sysop
 
     srca=db.prepare("select domain, text from addresses where id=$1").first(src)
     dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
@@ -136,11 +148,11 @@ for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.g
 
 fixes_e.sort(key = lambda x: x[2])
 fixes_f.sort(key = lambda x: x[2])
-my.sort(key = lambda x: x[1])
+#my.sort(key = lambda x: x[1])
 
-for id_msg, _, m in my:
-  localmsgs.write(m.pack(), None)
-  db.prepare("update messages set processed=1 where id=$1")(id_msg)
+#for id_msg, _, m in my:
+#  localmsgs.write(m.pack(), None)
+#  db.prepare("update messages set processed=1 where id=$1")(id_msg)
 
 for id_msg, src, _, sn, h, mi, b in fixes_e:
   with ftnimport.session(db) as sess:

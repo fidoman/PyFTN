@@ -1,14 +1,14 @@
 #!/usr/local/bin/python3 -bb
 
-#LINK="2:5020/758"
+LINK="2:5020/12000"
 #LINK="2:5020/4441"
-LINK="2:5097/31"
+#LINK="2:5097/31"
 
 #ECHO="$CRACK$%"
 #ECHO='%TEST%'
-ECHO='%'
+ECHO='N5020.SYSOP'
 
-MARK=1180780
+MARK=1182278
 
 
 import ftnconfig

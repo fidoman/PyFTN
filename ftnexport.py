@@ -305,6 +305,7 @@ class echomailcommitter:
     for k, v in self.lasts.items():
       self.db.prepare("update subscriptions set lastsent=$1 where id=$2")(v, k)
       print("commit subscription %d up to message #%d"%(k, v))
+    self.lasts = {}
 
 
 def file_export(db, address, password, what):
