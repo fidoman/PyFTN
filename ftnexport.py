@@ -278,6 +278,7 @@ class filecommitter:
 class netmailcommitter:
   def __init__(self, db):
     self.msglist=set()
+    self.msgarqlist=set()
     self.db = db
 
   def add(self, d):
@@ -286,11 +287,17 @@ class netmailcommitter:
         raise Exception("double export of netmail message")
       self.msglist.update(d.msglist)
     else:
-      if d in self.msglist:
+      if d[0] in self.msglist:
         raise Exception("double export of netmail message")
-      self.msglist.add(d)
+      self.msglist.add(d[0])
+      if d[1]:
+        self.msgarqlist.add(d[0])
 
   def commit(self):
+    for msg in self.msgarqlist:
+      print("send audit request for msg #%d"%msg)
+      1/0
+
     for msg in self.msglist:
       self.db.prepare("update messages set processed=2 where id=$1")(msg)
       print("commit msg #%d"%msg)
@@ -380,7 +387,7 @@ def file_export(db, address, password, what):
       except:
         raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
-      for x in p.add_item(msg, id_msg):
+      for x in p.add_item(msg, (id_msg, False)): # add ARQ flag
         yield x
         
     for x in p.flush():
