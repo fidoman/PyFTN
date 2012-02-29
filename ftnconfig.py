@@ -24,6 +24,7 @@ SYSOP="Sergey Dorofeev"
 INBOUND="/tank/home/fido/recv"
 DINBOUND="/tank/home/fido/drecv"
 OUTBOUND="/tank/home/fido/send"
+DOUTBOUND="/tank/home/fido/dsend"
 NODELIST="/home/sergey/PyFTN/routing/NODELIST"
 LOCALNETMAIL="/tank/home/fido/local/netmail"
 MSGMARK="/tank/home/fido/msgmark"
@@ -218,12 +219,15 @@ def get_addr(db, addr_id):
 
 # -
 
-def inbound_dir(address, isprotected, isdaemon):
-  base = DINBOUND if isdaemon else INBOUND
-  if isprotected:
-    return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(address))))
-  else:
-    return os.path.join(base, "unknown")
+def addrdir(base, addr):
+  return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(addr))))
+
+#def inbound_dir(address, isprotected, isdaemon):
+#  base = DINBOUND if isdaemon else INBOUND
+#  if isprotected:
+#    return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(address))))
+#  else:
+#    return os.path.join(base, "unknown")
 
 # -
 
@@ -248,7 +252,6 @@ class FileNumbering:
       r = self.db.prepare("select ticn from links where id=$1").first(link_id)
       self.db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
     return r
-
 
 # -
 

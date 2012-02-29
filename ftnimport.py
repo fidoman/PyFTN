@@ -12,7 +12,7 @@ import re
 import os
 import time
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, inbound_dir, ADDRESS, get_addr_id
+from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id
 from stringutil import *
 
 def modname(n, m):

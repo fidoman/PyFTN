@@ -92,7 +92,10 @@ def session(s, a):
   try:
     s.send(b"hi "+str(a).encode("utf-8")+b"\n")
     while True:
-      l=readline(s).decode("utf-8").rstrip()
+      l=readline(s).decode("utf-8")
+      while l[-1] in ("\n", "\r"):
+        l = l[:-1]
+
       log(str(a)+" got %s"%repr(l))
       arg, val = l.split(" ", 1)
       #log(arg+" is "+val)

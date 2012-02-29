@@ -13,7 +13,7 @@ db=ftnconfig.connectdb()
 
 my_id = ftnconfig.get_addr_id (db, db.FTN_domains["node"], ftnconfig.ADDRESS)
 RE_s = re.compile("\s+")
-RE_quote = re.compile("\s*(\S{0,2})(\>+)\s*(.*)$")
+RE_quote = re.compile("\s*(\S{0,2}?)(\>+)\s*(.*)$")
 
 MAXW=79
 
@@ -37,12 +37,52 @@ def quote(qname, block):
   # reformat text in one quote level 
 
   outp = []
-  qlblock = []
-  qlevel = 0
+  carry = None
+  prv_q = None
+  prv_t = None
 
+  pos=0
+  while pos<len(block) or prv_q:
+    if pos<len(block):
+      l = block[pos]
+    else:
+      l= ""
 
-  print ("\n".join(block)+"\n")
+    q = RE_quote.match(l)
+    if q:
+      qn, qc, qtext = q.groups()
+      qc += ">"
+    else:
+      qn = qname
+      qc = ">"
+      qtext = l
+    qtext = qtext.strip()
 
+    if prv_q:
+      if (qn, qc) != prv_q or qtext=="":
+        qn, qc = prv_q
+        qtext = prv_t
+        prv_q = None
+        prv_t = None
+      else:
+        qtext = prv_t +" "+qtext
+        pos += 1
+    else:
+      pos += 1
+
+    pre_len = 1+len(qn)+len(qc)+1
+    if pre_len + len(qtext) > MAXW:
+      spc = qtext.rfind(" ", 0, MAXW-pre_len+1)
+      if spc==-1:
+        spc = MAXW-pre_len+1
+      prv_t = qtext[spc:].lstrip()
+      prv_q = (qn, qc)
+      qtext = qtext[:spc]
+
+    outp.append(" "+qn+qc+" "+qtext+"\n")
+    #print(" "+qn+qc+" "+qtext)
+
+  return outp
 
 txt="""    Приветствую Вас, Sergey!
 
@@ -66,7 +106,8 @@ E-Mail: bav (at) sirena-travel.ru ICQ: 24466689 Skype: huba-huba
  * Origin: Alex at Work (2:5020/715.1)
 """
   
-#quote("AB", txt.splitlines())
+#for l in quote("AB", txt.splitlines()):
+#  print (l)
 #exit()
 
 
@@ -127,14 +168,7 @@ def reply(srcid, dstid, msgid, header, body):
       tpl.append("\n")
       tpl.append("orig.message to %s %s on "%(destdom, desttext) + header.find("date").text.strip() + "\n")
 
-      for bl in body.splitlines():
-        while len(bl)>72:
-            spc=bl.rfind(" ", 0, 72)
-            if spc==-1:
-              spc=72
-            tpl.append(" "+qname+"> " + bl[:spc] +"\n")
-            bl=bl[spc:].lstrip()
-        tpl.append(" "+qname+"> " + bl +"\n")
+      tpl.extend(quote(qname, body.splitlines()))
 
       tpl.append("\n")
       tpl.append("Sergey\n")
@@ -216,36 +250,3 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in
         committer.commit()
 
     print ()
-
-exit()
-
-#did=db.prepare("select id from addresses where text='N5020.CRISIS' and domain=2").first()
-#did=db.prepare("select id from addresses where text='N5020.SYSOP' and domain=2").first()
-#did=db.prepare("select id from addresses where text='R50.SYSOP' and domain=2").first()
-#did=db.prepare("select id from addresses where text='R50.SYSOP.TALK' and domain=2").first()
-#did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
-did=db.prepare("select id from addresses where text='FLUID.LOCAL' and domain=2").first()
-#did=db.prepare("select id from addresses where text='PUSHKIN.LOCAL' and domain=2").first()
-#did=db.prepare("select id from addresses where text='MO.IZMAILOVO' and domain=2").first()
-#did=db.prepare("select id from addresses where text='MO.VIDNOE' and domain=2").first()
-#did=db.prepare("select id from addresses where text='RU.SOCIONIC' and domain=2").first()
-#did=db.prepare("select id from addresses where text='RU.BIOLOGY' and domain=2").first()
-#did=db.prepare("select id from addresses where text='RU.PSYCHOLOGY' and domain=2").first()
-#did=db.prepare("select id from addresses where text='TESTING' and domain=2").first()
-#did=db.prepare("select id from addresses where text='FIDOTEST' and domain=2").first()
-#did=db.prepare("select id from addresses where text='$CRACK$' and domain=2").first()
-#did=db.prepare("select id from addresses where text='$CRACK$.TALKS' and domain=2").first()
-#did=db.prepare("select id from addresses where text='FN_SYSOP' and domain=2").first()
-#did=db.prepare("select id from addresses where text='BBS_ADS' and domain=2").first()
-#did=db.prepare("select id from addresses where text='ESTAR.TEST' and domain=2").first()
-
-#for src, dst, header, body, origcharset in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):
-for mid, src, dst, header, body, origcharset in db.prepare(
-    "select id, source, destination, header, body, origcharset from messages "
-        "where destination=$1 and id>1170000 and processed<>5"
-        "order by id")(did):
-    print ("*"*79)
-    print (mid, src, dst)
-    print (xml.etree.ElementTree.tostring(header, encoding='utf-8').decode('utf-8'))
-#    print (body.encode(origcharset).decode("cp437"))
-    print (body)

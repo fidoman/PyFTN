@@ -7,9 +7,10 @@ import io
 import traceback
 import time
 import zipfile
+import os
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, \
-                        get_addr_id
+                        get_addr_id, DOUTBOUND, addrdir
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
@@ -263,6 +264,17 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   return msg
 
 
+# ---
+
+
+class filecommitter:
+  def __init__(self, filename):
+    self.filename = filename
+
+  def commit(self):
+    os.unlink(self.filename)
+
+
 class netmailcommitter:
   def __init__(self, db):
     self.msglist=set()
@@ -324,6 +336,23 @@ def file_export(db, address, password, what):
 
   if password != get_link_password(db, address):
       raise FTNWrongPassword()
+
+
+  dsend = addrdir(DOUTBOUND, address)
+  if os.path.isdir(dsend):
+    for f in os.listdir(dsend):
+      fname = os.path.join(dsend, f)
+      if os.path.isfile(fname):
+        obj = outfile()
+        obj.data = open(fname, "rb")
+        obj.filename = f
+        obj.length = os.path.getsize(fname)
+        yield obj, filecommitter(fname)
+
+
+  if password == '':
+    log("unprotected, send only dsend")
+    return
 
   addr_id = get_addr_id(db, db.FTN_domains["node"], address)
 
@@ -437,6 +466,9 @@ def file_export(db, address, password, what):
 class outfile:
   def commit(self):
     self.commitdb()
+  # filename
+  # data
+  # length
 
 class pktpacker:
   def __init__(self, me, node, passw, counter, commitgen, packto=None):
