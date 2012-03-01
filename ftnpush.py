@@ -37,10 +37,9 @@ from badwriter import badmsgs, dupmsgs, secmsgs
 
 def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
-  try:
 
-    if 'AuditRequest' in ftn.attr.binary_to_text(m.attr):
-      print ("Sending audit request to", ftn.addr.addr2str(m.orig), "via", recv_from)
+  if 'AuditRequest' in ftn.attr.binary_to_text(m.attr):
+      print ("Sending audit request to", m.orig[0].decode("ascii"), ftn.addr.addr2str(m.orig[1]), "via", recv_from)
       # create message to m.source
       # pack into packet to revc_from
 
@@ -50,8 +49,7 @@ def import_msg(sess, m, recv_from, bulk):
        time.strftime("%d %b %y  %H:%M:%S").encode("ascii"), 0, 0, 
        ("\nThis reply confirms that your message is received by node "+ADDRESS+".\n"
 "In case of import errors the reply may be sent again when import will be retried. "
-"When your message will have been susscessfully imported and then delivered to recipient "
-"or next FIDO system on the way, the export confirmation will also be sent.\n"
+"If the message must be routed to next FIDO system on the way, the export confirmation will also be sent.\n"
 "\n"
 "If you have received this message for any echomail, please be sure that your system does not "
 "export echomail messages with ARq flag turned on.\n"
@@ -60,7 +58,10 @@ def import_msg(sess, m, recv_from, bulk):
 "\n" +
 """ === < MESSAGE BEGIN > ===\n""").encode("ascii") +
 m.as_str(shorten=True) +
-b""" === < MESSAGE END > ===\n""")
+b""" === < MESSAGE END > ===
+
+--- PyFTN
+\1Via "+ADDRESS.encode("ascii")+" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
 
       audit_p = ftn.pkt.PKT()
       audit_p.msg = [audit_m]
@@ -69,14 +70,12 @@ b""" === < MESSAGE END > ===\n""")
       audit_p.destination = ftn.addr.str2addr(recv_from)
       audit_p.date = time.localtime()[:6]
       destdir = addrdir(DOUTBOUND, recv_from)
-      pkth, pktfn = tempfile.mkstemp(suffix='.pkt', tmp=destdir)
-      pktf = os.fdopen(pkth)
+      os.makedirs(destdir, exist_ok = True)
+      pkth, pktfn = tempfile.mkstemp(prefix="arq", suffix='.pkt', dir=destdir)
+      pktf = os.fdopen(pkth, "wb")
       audit_p.save(pktf)
       pktf.close()
       #open("/tmp/arq.msg", "wb").write(audit_m.pack())
-
-  except:
-    print("ARQ:", traceback.format_exc())
 
 
   try:

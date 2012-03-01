@@ -208,7 +208,7 @@ def view(mid, srcid, dstid, header, body):
     print ("="*79)
 
 
-committer = ftnexport.netmailcommitter(db)
+committer = ftnexport.netmailcommitter()
 
 for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexport.get_subscriber_messages_n(db, my_id, db.FTN_domains["node"]):
     view(mid, srcid, dstid, header, body)
@@ -233,7 +233,7 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
     print ()
 
 
-committer = ftnexport.echomailcommitter(db)
+committer = ftnexport.echomailcommitter()
 
 for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in ftnexport.get_subscriber_messages_e(db, my_id, db.FTN_domains["echo"]):
     view(mid, srcid, dstid, header, body)

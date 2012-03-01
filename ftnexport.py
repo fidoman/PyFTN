@@ -10,7 +10,8 @@ import zipfile
 import os
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, \
-                        get_addr_id, DOUTBOUND, addrdir
+                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb
+import ftnimport
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
@@ -276,37 +277,49 @@ class filecommitter:
 
 
 class netmailcommitter:
-  def __init__(self, db):
+  def __init__(self):
     self.msglist=set()
-    self.msgarqlist=set()
-    self.db = db
+    self.msgarqlist=[]
+    self.db = connectdb()
 
   def add(self, d):
     if type(d) is netmailcommitter:
       if self.msglist.intersection(d.msglist):
         raise Exception("double export of netmail message")
       self.msglist.update(d.msglist)
+      self.msgarqlist.extend(d.msgarqlist)
     else:
       if d[0] in self.msglist:
         raise Exception("double export of netmail message")
       self.msglist.add(d[0])
       if d[1]:
-        self.msgarqlist.add(d[0])
+        self.msgarqlist.append(d[1])
 
   def commit(self):
-    for msg in self.msgarqlist:
-      print("send audit request for msg #%d"%msg)
-      1/0
+    with ftnimport.session(self.db) as sess:
+      for addr, name, deliverto, msg in self.msgarqlist:
+        print("send audit request to", addr)
+        sess.send_message("Audit tracker", addr, name, None, "Audit tracking response", """
+This reply confirms that your message has successfully delivered 
+to node %s
+
+*******************************************************************************
+%s
+*******************************************************************************
+"""%(deliverto, msg.as_str(shorten=True)))
 
     for msg in self.msglist:
       self.db.prepare("update messages set processed=2 where id=$1")(msg)
       print("commit msg #%d"%msg)
 
+    self.msglist=set()
+    self.msgarqlist=[]
+
 
 class echomailcommitter:
-  def __init__(self, db):
+  def __init__(self):
     self.lasts = {} # subscription: lastsent
-    self.db = db
+    self.db = connectdb()
 
   def add_one(self, k, v):
     if k in self.lasts and v<=self.lasts[k]:
@@ -368,7 +381,7 @@ def file_export(db, address, password, what):
     # non-vital (CC) should be processed just like echomail
 
     # set password in netmail packets
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter(db))
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter())
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -387,7 +400,17 @@ def file_export(db, address, password, what):
       except:
         raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
-      for x in p.add_item(msg, (id_msg, False)): # add ARQ flag
+      try:
+        print ("export msg attributes", msg.attr)
+      except:
+        traceback.print_exception()
+
+      if 'AuditRequest' in ftn.attr.binary_to_text(msg.attr):
+        audit_reply = (db.FTN_backdomains[srca[0]], srca[1]), header.find("sendername").text, address, msg
+      else:
+        audit_reply = None
+
+      for x in p.add_item(msg, (id_msg, audit_reply)): # add ARQ flag
         yield x
         
     for x in p.flush():
@@ -400,8 +423,8 @@ def file_export(db, address, password, what):
     #..firstly send bundles in outbound
 
     #
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(db),
-        bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter(db)))
+    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(),
+        bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter()))
 
     subscache = {}
     for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
