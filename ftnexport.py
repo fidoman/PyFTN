@@ -301,7 +301,7 @@ class netmailcommitter:
       for addr, name, deliverto, msg, charset in self.msgarqlist:
         print("send audit request to", addr)
         sess.send_message("Audit tracker", addr, name, None, "Audit tracking response", """
-This reply confirms that your message has successfully delivered 
+This reply confirms that your message has been successfully delivered 
 to node %s
 
 *******************************************************************************
