@@ -38,14 +38,29 @@ def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
   try:
 
-    print(repr(ftn.attr.binary_to_text(m.attr)), m.orig, recv_from, m.date.decode("cp437"))
-    audit_m = ftn.msg.MSG()
-#    audit_m.load(("Audit Tracker", ftn.addr.str2addr(ADDRESS)), m.orig, "Audit tracking responce",
-#       time.,attr,cost,body)
-    
     # if netmail and 'AuditRequest' in ...
     # create message to m.source
     # pack into packet to revc_from
+
+    print(repr(ftn.attr.binary_to_text(m.attr)), m.orig, recv_from, m.date.decode("ascii"))
+    audit_m = ftn.msg.MSG()
+    audit_m.load((b"Audit Tracker", ftn.addr.str2addr(ADDRESS)), m.orig, b"Audit tracking responce",
+       time.strftime("%d %b %y  %H:%M:%S").encode("ascii"), 0, 0, 
+       ("\nThis reply confirms that your message is received by node "+ADDRESS+".\n"
+"In case of import errors the reply may be sent again when import will be retried. "
+"When your message will have been susscessfully imported and then delivered to recipient "
+"or next FIDO system on the way, the export confirmation will also be sent.\n"
+"\n"
+"If you have received this message for any echomail, please be sure that your system does not "
+"export echomail messages with ARq flag turned on.\n"
+"\n"
+"In case of any issues please contact sysop "+SYSOP+" "+ADDRESS+"\n"
+"\n" +
+""" === < MESSAGE BEGIN > ===\n""").encode("ascii") +
+m.as_str(shorten=True) +
+b""" === < MESSAGE END > ===\n""")
+
+    open("/tmp/arq.msg", "wb").write(audit_m.pack())
 
   except:
     print("ARQ:", traceback.format_exc())

@@ -166,7 +166,7 @@ class MSG:
     self.replyto=0
     self.nextreply=0
 
-  def make_body(self, invalidate=0):
+  def make_body(self, invalidate=0, shorten=False):
     if invalidate:
       c=b"@"
       eol=b"\n"
@@ -199,12 +199,18 @@ class MSG:
           s+=c+k+b" "+x+eol
       else:
         s+=c+k+b" "+v+eol
-        
+
     if invalidate:
-      s+=(eol.join(self.body)+eol).replace(b"\n---", b"\n-+-").replace(b"\n * Origin", b"\n + Origin")
+      if shorten and len(self.body)>25:
+        bodypart = self.body[:10] + ["", "[...]", ""] + self.body[-7:]
+      else:
+        bodypart = self.body
+
+      s+=(eol.join(bodypart)+eol).replace(b"\n---", b"\n-+-").replace(b"\n * Origin", b"\n + Origin")
+
     else:
       s+=eol.join(self.body)+eol
-      
+
 
     if invalidate:
       s+=b"".join([b"@"+x[0]+b" "+x[1]+eol for x in self.via])
@@ -222,14 +228,14 @@ class MSG:
     s+=addr_makelist(self.path, c.decode("ascii")+"PATH:", eol.decode("ascii")).encode("ascii")
     return s
 
-  def as_str(self):
+  def as_str(self, shorten=False):
     s = b"From: "+self.orig[0]+b", "+addr2str(self.orig[1]).encode("ascii")+b"\n"
     s+= b"To  : "+self.dest[0]+b", "+addr2str(self.dest[1]).encode("ascii")+b"\n"
     s+= b"Subj: "+self.subj+b"\n"
     s+= b"Date: "+self.date+b"\n"
     s+= b"Attr: "+str(self.readcount).encode("ascii")+b" reads " + \
           b" ".join([x[1].encode("ascii") for x in [x for x in zip(list(range(16)),attrs) if self.attr&(1<<x[0])]]) + b"\n"
-    s+= b"\n" + self.make_body(invalidate=1)
+    s+= b"\n" + self.make_body(invalidate=1, shorten=shorten)
     return s
 
   def pack(self):
