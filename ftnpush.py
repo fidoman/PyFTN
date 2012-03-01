@@ -36,8 +36,20 @@ from badwriter import badmsgs, dupmsgs, secmsgs
 
 def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
-  print(repr(ftn.attr.binary_to_text(m.attr)))
-  # if netmail and 'AuditRequest' in ...
+  try:
+
+    print(repr(ftn.attr.binary_to_text(m.attr)), m.orig, recv_from, m.date.decode("cp437"))
+    audit_m = ftn.msg.MSG()
+#    audit_m.load(("Audit Tracker", ftn.addr.str2addr(ADDRESS)), m.orig, "Audit tracking responce",
+#       time.,attr,cost,body)
+    
+    # if netmail and 'AuditRequest' in ...
+    # create message to m.source
+    # pack into packet to revc_from
+
+  except:
+    print("ARQ:", traceback.format_exc())
+
 
   try:
     sess.import_message(m, recv_from, bulk)
@@ -81,6 +93,17 @@ def import_pkt(sess, fo, recv_from, bulk):
 
 
 def import_file(sess, fname, fo, recv_from, bulk):
+  if fo:
+        raise Exception("unable to use file object with rarfile")
+
+  if fo is None:
+        fo = open(fname, "rb")
+        doclose = True
+  else:
+        doclose = False
+
+  try:
+
     if ismsg(fname):
             print("msg")
             import_msg(sess, ftn.msg.MSG(fo), recv_from, bulk)
@@ -107,12 +130,11 @@ def import_file(sess, fname, fo, recv_from, bulk):
                 import_pkt(sess, zfo, recv_from, bulk)
                 zfo.close()
 
-            
             z.close()
 
         elif mime=="application/x-rar":
-            print("rar file")
-            z=rarfile.RarFile(fo)
+            print("rar file: reopening fname")
+            z=rarfile.RarFile(fname)
             for zf in z.namelist():
                 if not ispkt(zf):
                   raise Exception("non-PKT file in bundle %s"%fname)
@@ -138,6 +160,10 @@ def import_file(sess, fname, fo, recv_from, bulk):
 #           #import_file(fo, f, "tic", recv_from)
 #           #fo.close()
 #           #os.unlink(f)
+
+  finally:
+    if doclose:
+        fo.close()
 
 
 
@@ -175,16 +201,16 @@ if __name__ == "__main__":
       print("file:", f)
       try:
         with ftnimport.session(db) as sess:
-          fo = open(f, "rb")
-          import_file(sess, f, fo, node, False)
-          fo.close()
+          #fo = open(f, "rb")
+          import_file(sess, f, None, node, False)
+          #fo.close()
           os.unlink(f)
 
       except Exception as e:
         print("error on file %s"%repr(f))
-        os.rename(f, f+".bad")
+        #os.rename(f, f+".bad")
         fx=open(f+".status", "w")
         fx.write(traceback.format_exc())
         fx.close()
 
-        exit()
+        #exit()

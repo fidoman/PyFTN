@@ -307,9 +307,9 @@ if __name__ == "__main__":
           #print unicode(msg).encode("utf-8")
           ftnpush.import_msg(sess, msg, "2:5020/12000", processed)
       else:
-        fo = open(f, "rb")
-        ftnpush.import_file(sess, f, fo, "2:5020/12000", processed)
-        fo.close()
+        #fo = open(f, "rb")
+        ftnpush.import_file(sess, f, None, "2:5020/12000", processed)
+        #fo.close()
 
         counter += 1
       # no exception, all fine
