@@ -262,7 +262,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
 
   #print(msg.__dict__)
 
-  return msg
+  return msg, charset
 
 
 # ---
@@ -296,8 +296,9 @@ class netmailcommitter:
         self.msgarqlist.append(d[1])
 
   def commit(self):
-    with ftnimport.session(self.db) as sess:
-      for addr, name, deliverto, msg in self.msgarqlist:
+    try:
+     with ftnimport.session(self.db) as sess:
+      for addr, name, deliverto, msg, charset in self.msgarqlist:
         print("send audit request to", addr)
         sess.send_message("Audit tracker", addr, name, None, "Audit tracking response", """
 This reply confirms that your message has successfully delivered 
@@ -306,7 +307,11 @@ to node %s
 *******************************************************************************
 %s
 *******************************************************************************
-"""%(deliverto, msg.as_str(shorten=True)))
+"""%(deliverto, msg.as_str(shorten=True).decode(charset)))
+
+    except:
+      print("error sending ARq reply")
+      traceback.print_exc()
 
     for msg in self.msglist:
       self.db.prepare("update messages set processed=2 where id=$1")(msg)
@@ -393,7 +398,7 @@ def file_export(db, address, password, what):
       dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
 
       try:
-        msg = denormalize_message(
+        msg, msgcharset = denormalize_message(
             (db.FTN_backdomains[srca[0]], srca[1]),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
             msgid, header, body, origcharset, address, addvia = myvia)
@@ -406,7 +411,7 @@ def file_export(db, address, password, what):
         traceback.print_exception()
 
       if 'AuditRequest' in ftn.attr.binary_to_text(msg.attr):
-        audit_reply = (db.FTN_backdomains[srca[0]], srca[1]), header.find("sendername").text, address, msg
+        audit_reply = (db.FTN_backdomains[srca[0]], srca[1]), header.find("sendername").text, address, msg, msgcharset
       else:
         audit_reply = None
 
@@ -465,7 +470,7 @@ def file_export(db, address, password, what):
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
       try:
-        msg = denormalize_message( 
+        msg, msgcharset = denormalize_message( 
             ("node", ADDRESS),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
             msgid, header, body, origcharset, address, addseenby=subscribers, addpath=ADDRESS)

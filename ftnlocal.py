@@ -128,7 +128,7 @@ for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.g
 
     print(srca)
 
-    m = ftnexport.denormalize_message(
+    m, mcharset = ftnexport.denormalize_message(
         (db.FTN_backdomains[srca[0]], srca[1]),
         (db.FTN_backdomains[dsta[0]], dsta[1]),
         msgid, header, body, origcharset)

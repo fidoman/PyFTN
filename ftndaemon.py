@@ -204,9 +204,16 @@ for af, addr in DAEMONBIND:
   sockets.append((socket.socket(af), addr))
 
 for s, a in sockets:
-  s.bind(a)
-  s.listen(3)
-  log("socket "+str(s)+" listen on "+str(a))
+  ok = False
+  while not ok:
+    try:
+      s.bind(a)
+      s.listen(3)
+      log("socket "+str(s)+" listen on "+str(a))
+      ok = True
+    except:
+      log(traceback.format_exc())
+      time.sleep(5)
 
 #threads = []
 
