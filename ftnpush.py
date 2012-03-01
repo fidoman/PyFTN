@@ -8,6 +8,7 @@ import rarfile
 import traceback
 import io
 import time
+import tempfile
 
 import ftnimport
 import ftn.msg
@@ -38,13 +39,14 @@ def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
   try:
 
-    # if netmail and 'AuditRequest' in ...
-    # create message to m.source
-    # pack into packet to revc_from
+    if 'AuditRequest' in ftn.attr.binary_to_text(m.attr):
+      print ("Sending audit request to", ftn.addr.addr2str(m.orig), "via", recv_from)
+      # create message to m.source
+      # pack into packet to revc_from
 
-    print(repr(ftn.attr.binary_to_text(m.attr)), m.orig, recv_from, m.date.decode("ascii"))
-    audit_m = ftn.msg.MSG()
-    audit_m.load((b"Audit Tracker", ftn.addr.str2addr(ADDRESS)), m.orig, b"Audit tracking responce",
+      #print(repr(), m.orig, recv_from, m.date.decode("ascii"))
+      audit_m = ftn.msg.MSG()
+      audit_m.load((b"Audit Tracker", ftn.addr.str2addr(ADDRESS)), m.orig, b"Audit tracking responce",
        time.strftime("%d %b %y  %H:%M:%S").encode("ascii"), 0, 0, 
        ("\nThis reply confirms that your message is received by node "+ADDRESS+".\n"
 "In case of import errors the reply may be sent again when import will be retried. "
@@ -60,7 +62,18 @@ def import_msg(sess, m, recv_from, bulk):
 m.as_str(shorten=True) +
 b""" === < MESSAGE END > ===\n""")
 
-    open("/tmp/arq.msg", "wb").write(audit_m.pack())
+      audit_p = ftn.pkt.PKT()
+      audit_p.msg = [audit_m]
+      audit_p.password = get_link_password(db, recv_from).encode("ascii")
+      audit_p.source = ftn.addr.str2addr(ADDRESS)
+      audit_p.destination = ftn.addr.str2addr(recv_from)
+      audit_p.date = time.localtime()[:6]
+      destdir = addrdir(DOUTBOUND, recv_from)
+      pkth, pktfn = tempfile.mkstemp(suffix='.pkt', tmp=destdir)
+      pktf = os.fdopen(pkth)
+      audit_p.save(pktf)
+      pktf.close()
+      #open("/tmp/arq.msg", "wb").write(audit_m.pack())
 
   except:
     print("ARQ:", traceback.format_exc())

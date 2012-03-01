@@ -202,7 +202,7 @@ class MSG:
 
     if invalidate:
       if shorten and len(self.body)>25:
-        bodypart = self.body[:10] + ["", "[...]", ""] + self.body[-7:]
+        bodypart = self.body[:10] + [b"", b"[...]", b""] + self.body[-7:]
       else:
         bodypart = self.body
 

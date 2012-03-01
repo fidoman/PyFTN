@@ -156,7 +156,7 @@ def reply(srcid, dstid, msgid, header, body):
       origdom = db.FTN_backdomains[origdom]
       destdom, desttext = ftnconfig.get_addr(db, dstid)
       destdom = db.FTN_backdomains[destdom]
-      
+
       tpl = ["From: " + repr(ftnconfig.SYSOP) + "\n"]
       tpl.append("To: " + repr(header.find("sendername").text) + "\n")
       tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
