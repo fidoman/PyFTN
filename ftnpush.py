@@ -36,6 +36,8 @@ from badwriter import badmsgs, dupmsgs, secmsgs
 
 def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
+  print(repr(ftn.attr.binary_to_text(m.attr)))
+  # if netmail and 'AuditRequest' in ...
 
   try:
     sess.import_message(m, recv_from, bulk)

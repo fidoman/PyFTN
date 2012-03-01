@@ -161,8 +161,13 @@ def reply(srcid, dstid, msgid, header, body):
       tpl.append("To: " + repr(header.find("sendername").text) + "\n")
       tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
       tpl.append("ReplyTo: " + repr(msgid) + "\n")
-      tpl.append("Destination: " + repr((destdom, desttext)) + "\n")
-      tpl.append("#Destination: " + repr((origdom, origtext)) + "\n")
+
+      if destdom == 'echo':
+        tpl.append("Destination: " + repr((destdom, desttext)) + "\n")
+        tpl.append("#Destination: " + repr((origdom, origtext)) + "\n")
+      else:
+        tpl.append("Destination: " + repr((origdom, origtext)) + "\n")
+
       tpl.append("\n")
       tpl.append(" ".join(("Hello", senderfirstname))+",\n")
       tpl.append("\n")
@@ -218,11 +223,11 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
     if cmd == "q":
       break
     elif cmd == "c":
-      committer.add (mid)
+      committer.add ((mid, False))
       committer.commit()
     elif cmd == "r":
       if reply (srcid, dstid, msgid, header, body):
-        committer.add (mid)
+        committer.add ((mid, False))
         committer.commit()
 
     print ()
