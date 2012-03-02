@@ -61,7 +61,7 @@ m.as_str(shorten=True) +
 b""" === < MESSAGE END > ===
 
 --- PyFTN
-\1Via "+ADDRESS.encode("ascii")+" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
+\1Via """+ADDRESS.encode("ascii")+b""" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
 
       audit_p = ftn.pkt.PKT()
       audit_p.msg = [audit_m]
