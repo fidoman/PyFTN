@@ -255,3 +255,7 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in
         committer.commit()
 
     print ()
+
+x = input("Commit all> ")
+if x=="c":
+  committer.commit()

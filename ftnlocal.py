@@ -29,7 +29,7 @@ def unsubscribe(db, sess, node, targetdomain, pattern):
     r = []
     for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
         try:
-          r.append(sess.remove_subscription(False, targetdomain, target, node) + ": " + pattern)
+          r.append(sess.remove_subscription(targetdomain, target, node) + ": " + pattern)
         except FTNNoAddressInBase:
           r.append("no such area: " + target)
     if len(r)==0:

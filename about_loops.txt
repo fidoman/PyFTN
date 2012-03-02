@@ -1,7 +1,0 @@
-There is no need to detect loops specially - the looped message will
-be detected as dupe as it's msgid is already in database.
-But for the same reason looped netmail requires special treating - 
-rearrived message can not be put again in database to have id 
-higher than lastsend and so requires special treating to resubmit.
-
-For example, id of message in database can be updated.

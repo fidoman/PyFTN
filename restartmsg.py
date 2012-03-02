@@ -5,6 +5,7 @@ import glob
 import re
 import os
 import shutil
+import ftnconfig
 
 RE_from=re.compile("from(\:)? (\d+\:\d+\/\d+(\.d+)?)")
 
