@@ -16,7 +16,7 @@ def subscribe(db, sess, node, targetdomain, pattern):
     r = []
     for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
         try:
-          r.append(sess.add_subscription(False, targetdomain, target, node) + ": " + target)
+          r.append(sess.add_subscription(None, targetdomain, target, node) + ": " + target)
         except FTNNoAddressInBase:
           r.append("no such area: " + target)
         except FTNAlreadySubscribed:

@@ -35,7 +35,7 @@ with ftnimport.session(ftnimport.db) as sess:
       except ftnimport.NoAddressInBaseException as e:
         print(e)
         faillist.append([str(e), vital, target_domain, target_addr, ftn.addr.addr2str(subscriber_addr)])
-      first=False
+      first=None
 
  of=open("faillist","w")
  for f in faillist:

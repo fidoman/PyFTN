@@ -33,7 +33,10 @@ GROUPFILESBY=5000
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
+# 2:6090/1
+
 NETMAIL_peers += ["2:5020/181", "2:5020/1453", "2:50/10", "2:5059/37"] # downliks
+
 
 NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 

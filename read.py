@@ -196,6 +196,56 @@ def reply(srcid, dstid, msgid, header, body):
       os.unlink(fname)
       return r
 
+def inval(s):
+  if s.startswith("---"):
+    return "-+-"+s[3:]
+  if s.startswith(" * Origin"):
+    return " + Origin"+s[9:]
+  return s
+
+def forward(srcid, dstid, msgid, header, body):
+
+      origdom, origtext = ftnconfig.get_addr(db, srcid)
+      origdom = db.FTN_backdomains[origdom]
+      destdom, desttext = ftnconfig.get_addr(db, dstid)
+      destdom = db.FTN_backdomains[destdom]
+
+      tpl = ["From: " + repr(ftnconfig.SYSOP) + "\n"]
+      tpl.append("To: ''\n")
+      tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
+      tpl.append("ReplyTo: " + repr(None) + "\n")
+      tpl.append("Destination: ('', '')\n")
+      tpl.append("\n")
+      tpl.append("Hello ,\n")
+      tpl.append("\n")
+      tpl.append(" *** Forwarded message:\n")
+      tpl.append("="*79+"\n")
+      tpl.append("From: %s, %s %s\n"%(header.find("sendername").text or '', origdom, origtext))
+      tpl.append("To  : %s, %s %s\n"%(header.find("recipientname").text or '', destdom, desttext))
+      tpl.append("Subj: %s\n"%(header.find("subject").text or ''))
+      tpl.append("Date: %s\n"%(header.find("date").text or ''))
+      tpl.append("-"*79+"\n")
+      tpl.extend(map(inval, body.splitlines(True)))
+      tpl.append("="*79+"\n")
+      tpl.append("\n")
+      tpl.append("... vim\n")
+
+      newmsg = "".join(tpl)
+      (fh, fname) = tempfile.mkstemp()
+      fo = os.fdopen(fh, "w")
+      fo.write(newmsg)
+      fo.close()
+      os.system ("vi " + fname)
+      editedmsg = open(fname).read()
+      if newmsg == editedmsg:
+        print("no changes")
+        r = False
+      else:
+        submit(editedmsg)
+        r = True
+      os.unlink(fname)
+      return r
+
 
 def view(mid, srcid, dstid, header, body):
     print ("="*10 + " %20d "%mid + "="*47)
@@ -214,8 +264,8 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
     view(mid, srcid, dstid, header, body)
     cmd = None
     while not cmd:
-      x = input("Commit, Reply, Quit> ")
-      if x in ("c", "r", "q"):
+      x = input("Commit, Reply, Quit, Forward> ")
+      if x in ("c", "r", "q", "f"):
         cmd = x
       elif x == "":
         cmd = "m" # more
@@ -229,6 +279,10 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
       if reply (srcid, dstid, msgid, header, body):
         committer.add ((mid, False))
         committer.commit()
+    elif cmd == "f":
+      if forward (srcid, dstid, msgid, header, body):
+        committer.add ((mid, False))
+        committer.commit()
 
     print ()
 
@@ -240,8 +294,8 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in
     committer.add ((subsid, mid))
     cmd = None
     while not cmd:
-      x = input("Commit, Reply, Quit> ")
-      if x in ("c", "r", "q"):
+      x = input("Commit, Reply, Forward, Quit> ")
+      if x in ("c", "r", "q", "f"):
         cmd = x
       elif x == "":
         cmd = "m" # more
@@ -252,6 +306,9 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in
       committer.commit()
     elif cmd == "r":
       if reply (srcid, dstid, msgid, header, body):
+        committer.commit()
+    elif cmd == "f":
+      if forward (srcid, dstid, msgid, header, body):
         committer.commit()
 
     print ()

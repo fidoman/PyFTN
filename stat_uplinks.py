@@ -32,4 +32,9 @@ with ftnimport.session(db) as sess:
     outp.append("\n")
     outp.append("\n")
 
-    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "uplinks by "+d, ("".join(outp)))
+
+
+#    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "uplinks by "+d, ("".join(outp)))
+
+
+print ("".join(outp))
