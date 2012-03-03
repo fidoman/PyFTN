@@ -255,7 +255,7 @@ def sign_invalidate(s):
     return n
 
 
-def compose_message(sender, sendername, recipient, recipientname, replyto, subject, body):
+def compose_message(db, sender, sendername, recipient, recipientname, replyto, subject, body):
 
     header = xml.etree.ElementTree.Element("header")
     ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
@@ -275,9 +275,8 @@ def compose_message(sender, sendername, recipient, recipientname, replyto, subje
     if replyto:
       xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "REPLY:", value = replyto)
 
-    hashdata = "\n".join((str(sender), str(recipient), xml.etree.ElementTree.tostring(header, "unicode"), body))
-    msgid = sender[1] + " " + sha1(hashdata.encode("utf-8")).hexdigest()
-    #print("generated MSGID", repr(msgid))
+    msgid = "%s %08x"%(sender[1], db.prepare("SELECT nextval('msgid_seq')").first())
+    print("generated MSGID", repr(msgid))
 
     xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "MSGID:", value = msgid)
 
@@ -359,35 +358,93 @@ class session:
       self.x.commit()
       return True
 
+
+  def save_watermark(self, target, subscriber, lastsent):
+        createwatermark = True
+        updatewatermark = False
+        # get removed subscription watermark and update or create it
+        for check_id, check_msg in self.db.prepare(
+            "select id, message from deletedvitalsubscriptionwatermarks where target=$1 and subscriber=$2")(target, subscriber):
+          createwatermark = False
+          if check_msg>lastsent:
+            updatewatermark = True
+        if createwatermark:
+          print ("create watermark as %d"%lastsent)
+          self.db.prepare("insert into deletedvitalsubscriptionwatermarks (target, subscriber, message) values ($1, $2, $3)")(target, subscriber, lastsent)
+        if updatewatermark:
+          print ("update watermark %d as %d"%(check_id, lastsent))
+          self.db.prepare("update deletedvitalsubscriptionwatermarks set message=$1 where id=$2")(check_id, lastsent)
+
+  def get_watermark(self, target, subscriber):
+    """ get from saved or if there are nothing there get from current vital subscriptions and as last resort the oldest message """
+    for check_id, check_msg in self.db.prepare(
+            "select id, message from deletedvitalsubscriptionwatermarks where target=$1 and subscriber=$2")(target, subscriber):
+      print ("#get_watermark: saved watermark", check_msg)
+      return check_msg # any exists
+
+    oldest_vital = self.db.prepare("select min(lastsent) from subscriptions where target=$1 and subscriber=$2 and vital=true").first(target, subscriber)
+    if oldest_vital is not None:
+      print ("#get_watermark: oldest sent vital", oldest_vital)
+      return oldest_vital
+
+    # no vital subscriptions
+    oldest_msg = self.db.prepare("select min(id) from messages where destination=$1").first(target)
+    if oldest_msg is not None:
+      print ("#get_watermark: oldest message to", target, oldest_msg)
+      return oldest_msg
+
+    # no messages to this destination, start subscriptions at current
+    print ("#get_watermark: return max from all messages")
+    return self.db.prepare("select max(id) from messages").first()
+
+
   def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
+    """ vital: True, False - set new value; None - leave old or add False """
     target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
     subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
 
-    if vital and (target_domain==self.db.FTN_domains["echo"] or target_domain==self.db.FTN_domains["fileecho"]):
-      1/0 # check removedsubswatermark
-    
-    check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
+    check = self.db.prepare("select id, vital, lastsent from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
+
     if len(check):
-      if check[0][0]!=vital:
-        raise FTNAlreadySubscribed(target, subscriber)
-      else:
+      print ("#add_subscription: subscription exists")
+      oldid, oldvital, lastsent = check[0]
+
+      if vital is None or vital==oldvital:
+        print ("#add_subscription: nothing changed")
         return "already subscribed"
 
-    op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")
-    op(vital, target, subscriber, start)
-    return "subscribed"
+      if vital:
+        print ("#add_subscription: convert to vital")
+        self.db.prepare("update subscriptions set vital=true where id=$1")(oldid)
+        return "converted to vital"
+      else:
+        print ("#add_subscription: convert to non-vital")
+        self.save_watermark(target, subscriber, lastsent)
+        self.db.prepare("update subscriptions set vital=false where id=$1")(oldid)
+        return "converted to non-vital"
+
+    else:
+      print ("#add_subscription: new subscription")
+      if vital:
+        start = self.get_watermark(target, subscriber)
+
+      op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")(vital or False, target, subscriber, start)
+      return "subscribed from %d"%start
 
 
   def remove_subscription(self, target_domain, target_addr, subscriber_addr):
     target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
     subscriber=get_addr_id(self.db, self.db.FTN_domains["node"], subscriber_addr)
 
-    check = self.db.prepare("select vital from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
+    check = self.db.prepare("select vital, lastsent from subscriptions where target=$1 and subscriber=$2")(target, subscriber)
     if len(check):
       if check[0][0]:
-        1/0 # save removedsubswatermark
+        print ("removing vital subscription")
+        lastsent = check[0][1]
+        self.save_watermark(target, subscriber, lastsent)
+
     else:
       return "not subscribed"
 
@@ -464,7 +521,7 @@ class session:
 
 
   def send_message(self, sendername, recipient, recipientname, replyto, subj, body):
-    orig, dest, msgid, header, body = compose_message(("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body)
+    orig, dest, msgid, header, body = compose_message(self.db, ("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body)
     #print ("msg from:", orig)
     #print ("msg to  :", dest)
     #print ("msgid   :", msgid)
