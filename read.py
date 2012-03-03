@@ -257,6 +257,19 @@ def view(mid, srcid, dstid, header, body):
     print (body)
     print ("="*79)
 
+def save(srcid, dstid, msgid, header, body):
+    tr = {}
+    for a in msgid:
+      if not a.isalpha() and not a.isdigit():
+        tr[ord(a)]="_"
+    fn = "save-%d-%s.txt"%(srcid, msgid.translate(tr))
+    f=open(fn, "wb")
+    f.write(xml.etree.ElementTree.tostring(header, encoding="utf-8"))
+    f.write(b"\n\n")
+    f.write(body.encode("utf-8"))
+    f.close()
+    return True
+
 
 committer = ftnexport.netmailcommitter()
 
@@ -265,7 +278,7 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
     cmd = None
     while not cmd:
       x = input("Commit, Reply, Quit, Forward> ")
-      if x in ("c", "r", "q", "f"):
+      if x in ("c", "r", "q", "f", "s"):
         cmd = x
       elif x == "":
         cmd = "m" # more
@@ -281,6 +294,11 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
         committer.commit()
     elif cmd == "f":
       if forward (srcid, dstid, msgid, header, body):
+        committer.add ((mid, False))
+        committer.commit()
+
+    elif cmd == "s":
+      if save (srcid, dstid, msgid, header, body):
         committer.add ((mid, False))
         committer.commit()
 

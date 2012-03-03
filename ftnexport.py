@@ -621,7 +621,7 @@ class bundlepacker:
 def get_node_subscriptions(db, subscriber, targetdomain, asuplink = False):
     return [x[0] for x in db.prepare("select t.text, s.id, s.lastsent from subscriptions s, addresses sr, addresses t "
         "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3"
-        + (" and s.vital = True" if asuplink else ""))(db.FTN_domains[targetdomain], db.FTN_domains["node"], subscriber)]
+        + (" and s.vital = True" if asuplink else "") + " order by t.text")(db.FTN_domains[targetdomain], db.FTN_domains["node"], subscriber)]
 
 def get_all_targets(db, targetdomain):
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1")(db.FTN_domains[targetdomain])]
