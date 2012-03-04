@@ -4,7 +4,7 @@ import re
 
 """ Create vital netmail subscription (and remove unneeded) """
 
-from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, get_addr_id, format1files, format2files, get_link_password, get_addr
+from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, format1files, format2files, get_link_password
 from ftnimport import session
 from ftn.ftn import FTNAlreadySubscribed, FTNNoAddressInBase
 from ftn.addr import addr2str, str2addr, addr_expand
@@ -21,6 +21,12 @@ re_S=re.compile("\s+")
 
 hubs = {}
 links = set(NETMAIL_peers)
+manualrouted = {}
+
+for host, peer in NETMAIL_peerhosts:
+    links.add(peer)
+    hubs.setdefault(peer, set()).add(host)
+    manualrouted[host] = peer
 
 # load routing files and make dict node: downlinks
 # then for keys of this dict check if they are my links
@@ -54,7 +60,13 @@ for f1 in format1files:
 
     for y in x[1:]:
       if y != ADDRESS:
-        hubs.setdefault(x[0], set()).add(y)
+        #if x[0]=='2:50/9999': 
+        #  continue
+        if y in manualrouted:
+          print ("manual route to", y, "config", manualrouted[y], "ignore", x[0])
+        else:
+          hubs.setdefault(x[0], set()).add(y)
+        #routed[y] = x[0]
 
 #print (links)
 #for k, v in hubs.items():
@@ -78,20 +90,13 @@ for f2 in format2files:
         for y in x[1:]:
           hubs.setdefault(y, set()).add(x[0])
 
-
-for host, peer in NETMAIL_peerhosts:
-    links.add(peer)
-    hubs.setdefault(peer, set()).add(host)
-
 #print (links)
 #for k, v in hubs.items():
 #  print ("%-17s: "%k, ", ".join(v))
 #print ()
 #exit()
 
-
-my_id = get_addr_id(db, db.FTN_domains["node"], ADDRESS)
-downlinks = [x[1] for x in db.prepare("""select domain, text from addresses where "group"=$1""")(my_id)] # points and nodes in our hub
+downlinks = ftnexport.get_subnodes(db, ADDRESS)
 #print (downlinks)
 #exit()
 
@@ -106,7 +111,7 @@ for x in list(links) + downlinks:
   else:
     selfsubscribers.add(x)
 
-#print (selfsubscribers)
+#print ("direct:",selfsubscribers)
 #exit()
 
 for l in selfsubscribers:
@@ -116,19 +121,23 @@ for l in selfsubscribers:
 #    print (hub, links)
 #exit()
 
-alls = set()
+# first, we assign to direct links all configured routes
 
-for ss in selfsubscribers:
+dr = {}
+
+def add_chain(peer, hub):
   targets = set()
-  #print ("route via", ss)#, hubs.get(ss))
-  routed = hubs.get(ss)
+  routed = hubs.get(hub)
+  if routed: 
+    filerouted.add(hub)
+
   while routed:
     downlink = routed.pop()
     if downlink in targets:    
       continue
 
     if downlink in selfsubscribers:
-      if downlink == ss:
+      if downlink == peer:
         #print ("add route for self")
         targets.add(downlink)
       else:
@@ -141,26 +150,66 @@ for ss in selfsubscribers:
     if downlink in hubs:
         #print ("target has downlinks", hubs[downlink])
         routed.update(hubs[downlink])
+        filerouted.add(downlink)
 
-      # search hubs in subtree
-    try:
-        xid=get_addr_id(db, db.FTN_domains['node'], downlink)
-        for subid in ftnexport.get_addrtree(db, xid):
-          sublink = get_addr(db, subid[0])[1]
-          if sublink not in selfsubscribers and sublink in hubs:
-            #print ("node", sublink, "in subtree has downlinks", hubs[sublink])
-            routed.update(hubs[sublink])
+  dr.setdefault(peer, set()).update(targets)
 
-    except FTNNoAddressInBase:
-          print ("non-existent address", downlink)
+# 1st pass
 
-#  print (ss, targets)
+filerouted = set()
 
-  for host in targets:
-      #print(ss, "receives for", host)
-      alls.add(("node", host, ss))
+for ss in selfsubscribers:
+  add_chain(ss, ss)
 
-exit()
+for r in filerouted:
+  del hubs[r]
+
+# get superaddresses for remaining hubs and check via which link it can be routed
+#print ("unrouted:", hubs.keys())
+
+# 2nd pass - nodelist routing
+
+for x in list(hubs.keys()):
+  #print (x)
+  for drk, drv in dr.items(): # sanity check
+    if x in drv:
+      print ("route",x,"via", drk,"would be done!")
+      1/0
+
+  s = x
+  group = 0
+  while not group:
+
+    s = ftnexport.get_supernode(db, s) # retry with super super if group = 0
+    if s is None:
+      print (x, "not grouped")
+      break
+
+#    print (x, s)
+    for drk, drv in dr.items():
+      if s in drv:
+        print(x, ">>>", drk)
+        # !!! add to dr with all underlying links!
+        add_chain(drk, x)
+        group = 1
+    if group==1:
+      del hubs[x] # the tree can be found in dr and must not be found in hubs
+
+    if group == 0:
+      #  if not linked to dr try to find hub with this downlink
+      for hk, hv in hubs.items():
+        if s in hv:
+          print(x, "}}}", hk)
+          hubs[hk].update(hubs[x])
+          group = 2
+
+
+alls = set()
+for peer, targets in dr.items():
+  for t in targets:
+#      print(peer, "receives for", t)
+      alls.add(("node", t, peer))
+
 
 with session(db) as sess:
   # fetch old subscriptions
