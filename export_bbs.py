@@ -18,6 +18,7 @@ fa.close()
 
 pw=open("/tank/home/fido/passwd", "w")
 for a in db.prepare("select a.text from links l, addresses a "
-            "where l.address=a.id and a.domain=1")():
+            "where l.address=a.id and a.domain=1 order by a.text")():
+  #print (a[0])
   pw.write("password %-23s %s\n"%(a[0], get_link_password(db, a[0])))
 pw.close()
