@@ -34,7 +34,7 @@ with ftnimport.session(db) as sess:
 
 
 
-#    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "uplinks by "+d, ("".join(outp)))
+    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "uplinks by "+d, ("".join(outp)))
 
 
-print ("".join(outp))
+#print ("".join(outp))

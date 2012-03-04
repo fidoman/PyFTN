@@ -285,24 +285,25 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom in ftnexpo
 
     if cmd == "q":
       break
+
     elif cmd == "c":
       committer.add ((mid, False))
-      committer.commit()
+
     elif cmd == "r":
       if reply (srcid, dstid, msgid, header, body):
         committer.add ((mid, False))
-        committer.commit()
+
     elif cmd == "f":
       if forward (srcid, dstid, msgid, header, body):
         committer.add ((mid, False))
-        committer.commit()
 
     elif cmd == "s":
       if save (srcid, dstid, msgid, header, body):
         committer.add ((mid, False))
-        committer.commit()
 
     print ()
+
+committer.commit()
 
 
 committer = ftnexport.echomailcommitter()
@@ -331,6 +332,6 @@ for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in
 
     print ()
 
-x = input("Commit all> ")
+x = input("Commit echomail> ")
 if x=="c":
   committer.commit()

@@ -31,13 +31,15 @@ MSGMARK="/tank/home/fido/msgmark"
 FILEDIR="/tank/home/fido/files"
 GROUPFILESBY=5000
 
+# routing files
+format1files = ["/tank/home/fido/fareas/r50route/R50.ROU", "/tank/home/fido/fareas/net5020/N5020.ROU"]
+format2files = ["/tank/home/fido/fareas/r50route/R50.TRU", "/tank/home/fido/fareas/net5020/N5020.TRU"]
+
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
-NETMAIL_peers = ["2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
+NETMAIL_peers = [] #"2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
 # 2:6090/1
 
-NETMAIL_peers += ["2:5020/181", "2:5020/1453", "2:50/10", "2:5059/37"] # downliks
-
-
+#NETMAIL_peers += ["2:5020/181", "2:5020/1453", "2:50/10", "2:5059/37"] # downliks
 NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 
 # only links must be here!
@@ -263,6 +265,7 @@ if __name__ == "__main__":
   for i in range(100):
     print(get_link_password(db, "2:5020/2065"))
     print(get_link_password(db, "2:5020/715"))
+    print(get_link_password(db, "2:5020/570"))
 
 #  print(filen.get_pkt_n(113))
 #  print(filen.get_tic_n(113))

@@ -32,6 +32,18 @@ def get_subscribers(db, target, onlyvital=False):
 
         yield r
 
+def get_addrtree(db, addr):
+    for a in db.prepare("""
+    with recursive all_nested(id, level) as
+    (
+        select $1::BIGINT, 0
+      union
+        select a.id, n.level+1 from addresses a, all_nested n where a.group = n.id
+    )
+    select id from all_nested where level>0""")(addr):
+        yield a
+
+
 
 
 
@@ -378,6 +390,10 @@ def file_export(db, address, password, what):
   if password == '':
     log("unprotected, send only dsend")
     return
+
+  # WARNING!
+  # unprotected sessions never must do queries as it may result in leaking netmail
+  # if address of some hub is spoofed
 
   addr_id = get_addr_id(db, db.FTN_domains["node"], address)
 
