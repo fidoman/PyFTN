@@ -265,7 +265,10 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     attrs=[]
     for attr in ftnheader.findall("ATTR"):
       attrs.append(attr.get("id"))
-    msg.attr = ftn.attr.text_to_binary(attrs)
+    try:
+      msg.attr = ftn.attr.text_to_binary(attrs)
+    except:
+      traceback.print_exc()
 
   msg.cost=0
   msg.readcount=0
