@@ -219,12 +219,12 @@ with session(db) as sess:
       alls.remove(('node', target, subscriber))
     else:
       print ("remove subscription to", target, "for", subscriber)
-      #db.prepare("delete from subscriptions where id = $1")(sid)
+      db.prepare("delete from subscriptions where id = $1")(sid)
     
   for domain, target, subscriber in alls:
     print (target,"via",subscriber)
     try:
-        #sess.add_subscription(True, "node", target, subscriber)
+        sess.add_subscription(True, "node", target, subscriber)
         pass
     except FTNNoAddressInBase:
         print ("non-existent address")

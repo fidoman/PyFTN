@@ -5,7 +5,7 @@ import ftnconfig
 
 db=ftnconfig.connectdb()
 
-START = 1188471
+START = 1188000
 
 did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
 

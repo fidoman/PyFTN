@@ -359,30 +359,31 @@ class session:
       return True
 
 
-  def save_watermark(self, target, subscriber, lastsent):
+  def save_watermark(self, target, lastsent):
         createwatermark = True
         updatewatermark = False
         # get removed subscription watermark and update or create it
         for check_id, check_msg in self.db.prepare(
-            "select id, message from deletedvitalsubscriptionwatermarks where target=$1 and subscriber=$2")(target, subscriber):
+            "select id, message from deletedvitalsubscriptionwatermarks where target=$1")(target):
           createwatermark = False
           if check_msg>lastsent:
             updatewatermark = True
         if createwatermark:
           print ("create watermark as %d"%lastsent)
-          self.db.prepare("insert into deletedvitalsubscriptionwatermarks (target, subscriber, message) values ($1, $2, $3)")(target, subscriber, lastsent)
+          self.db.prepare("insert into deletedvitalsubscriptionwatermarks (target, message) values ($1, $2)")(target, lastsent)
         if updatewatermark:
           print ("update watermark %d as %d"%(check_id, lastsent))
           self.db.prepare("update deletedvitalsubscriptionwatermarks set message=$1 where id=$2")(check_id, lastsent)
 
-  def get_watermark(self, target, subscriber):
+  def get_watermark(self, target):
     """ get from saved or if there are nothing there get from current vital subscriptions and as last resort the oldest message """
     for check_id, check_msg in self.db.prepare(
-            "select id, message from deletedvitalsubscriptionwatermarks where target=$1 and subscriber=$2")(target, subscriber):
+            "select id, message from deletedvitalsubscriptionwatermarks where id = (select min(id) from deletedvitalsubscriptionwatermarks where target=$1)"
+            )(target):
       print ("#get_watermark: saved watermark", check_msg)
       return check_msg # any exists
 
-    oldest_vital = self.db.prepare("select min(lastsent) from subscriptions where target=$1 and subscriber=$2 and vital=true").first(target, subscriber)
+    oldest_vital = self.db.prepare("select min(lastsent) from subscriptions where target=$1 and vital=true").first(target)
     if oldest_vital is not None:
       print ("#get_watermark: oldest sent vital", oldest_vital)
       return oldest_vital
@@ -428,7 +429,7 @@ class session:
     else:
       print ("#add_subscription: new subscription")
       if vital:
-        start = self.get_watermark(target, subscriber)
+        start = self.get_watermark(target)
 
       op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")(vital or False, target, subscriber, start)
       return "subscribed from %d"%start

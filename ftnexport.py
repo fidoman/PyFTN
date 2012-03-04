@@ -647,10 +647,21 @@ def get_matching_targets(db, targetdomain, mask):
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 and t.text like $2 escape '+'")\
         (db.FTN_domains[targetdomain], mask)]
 
+def get_subnodes(db, addr):
+  return [x[0] for x in db.prepare("select s.text from addresses n, addresses s where s.group=n.id and n.text=$1 and n.domain=$2")(addr, db.FTN_domains["node"])]
+
+def get_supernode(db, addr):
+  r = db.prepare("select s.text from addresses n, addresses s where s.id=n.group and n.text=$1 and n.domain=$2")(addr, db.FTN_domains["node"])
+  if len(r):
+    return r[0][0]
+  else:
+    return None
 
 if __name__ == "__main__":
     from ftnconfig import connectdb
-    for s in get_node_subscriptions(connectdb(), "2:5020/4441", "echo"):
-        if s.find("TEST")!=-1:
-            print (s)
+#    for s in get_node_subscriptions(connectdb(), "2:5020/4441", "echo"):
+#        if s.find("TEST")!=-1:
+#            print (s)
+
+    print (get_subnodes(connectdb(), '2:5020/733315'))
 

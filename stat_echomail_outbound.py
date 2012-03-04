@@ -17,6 +17,8 @@ for subs, count in Q_stat(db.FTN_domains["node"]):
     outp.append("%-23s %d\n"%(subs, count))
 
 
+print("".join(outp))
+exit()
 
 with ftnimport.session(db) as sess:
     sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "новый эхомейл для линков",
