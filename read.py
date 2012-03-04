@@ -131,6 +131,8 @@ def submit(file):
         msgid = ast.literal_eval(l[9:])
       elif l.startswith("Destination: "):
         dest = ast.literal_eval(l[13:])
+      elif l.startswith("Attr: "):
+        flags = ast.literal_eval(l[6:])
       else:
         if l[0]!="#":
           raise Exception("invalid header %s"%repr(l))
@@ -138,7 +140,7 @@ def submit(file):
       body.append(l)
 
   with ftnimport.session(db) as sess:
-    sess.send_message(fromname, dest, toname, msgid, subj, "\n".join(body))
+    sess.send_message(fromname, dest, toname, msgid, subj, "\n".join(body), flags)
 
 
 def reply(srcid, dstid, msgid, header, body):
@@ -167,6 +169,7 @@ def reply(srcid, dstid, msgid, header, body):
         tpl.append("#Destination: " + repr((origdom, origtext)) + "\n")
       else:
         tpl.append("Destination: " + repr((origdom, origtext)) + "\n")
+      tpl.append("Attr: []\n")
 
       tpl.append("\n")
       tpl.append(" ".join(("Hello", senderfirstname))+",\n")
@@ -215,6 +218,7 @@ def forward(srcid, dstid, msgid, header, body):
       tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
       tpl.append("ReplyTo: " + repr(None) + "\n")
       tpl.append("Destination: ('', '')\n")
+      tpl.append("Attr: []\n")
       tpl.append("\n")
       tpl.append("Hello ,\n")
       tpl.append("\n")

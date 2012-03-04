@@ -255,7 +255,7 @@ def sign_invalidate(s):
     return n
 
 
-def compose_message(db, sender, sendername, recipient, recipientname, replyto, subject, body):
+def compose_message(db, sender, sendername, recipient, recipientname, replyto, subject, body, flags):
 
     header = xml.etree.ElementTree.Element("header")
     ftnel = xml.etree.ElementTree.SubElement(header, "FTN")
@@ -279,6 +279,9 @@ def compose_message(db, sender, sendername, recipient, recipientname, replyto, s
     print("generated MSGID", repr(msgid))
 
     xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "MSGID:", value = msgid)
+
+    for attr1 in flags:
+      xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)
 
     body = RE_ftnsign.sub(sign_invalidate, body) + "\n--- PyFTN\n" + \
         ((" * Origin: fluid.fidoman.ru ("+sender[1]+")\n") if recipient[0]=="echo" else "")
@@ -521,8 +524,8 @@ class session:
           print ("OK")
 
 
-  def send_message(self, sendername, recipient, recipientname, replyto, subj, body):
-    orig, dest, msgid, header, body = compose_message(self.db, ("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body)
+  def send_message(self, sendername, recipient, recipientname, replyto, subj, body, flags = []):
+    orig, dest, msgid, header, body = compose_message(self.db, ("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body, flags)
     #print ("msg from:", orig)
     #print ("msg to  :", dest)
     #print ("msgid   :", msgid)
