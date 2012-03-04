@@ -7,16 +7,17 @@ import os
 db=connectdb()
 
 SENDERNAME=SYSOP
+REPLY = None
+FLAGS = ['AuditRequest']
+
+DESTDOM, DESTTXT, DESTNAME = "node", "2:5020/12000.1", "Sysop"
+SUBJ = "test"
+BODY = "this is audit test"
 
 #REPLY = None
-#DESTDOM,DESTTXT, DESTNAME = "node", "2:5020/4441", "Yuri Myakotin"
-#SUBJ = "косяк"
-#BODY = "у меня при переподписке косяк произошёл, и поехала старая почта. Я прибил как только заметил, но уехало прилично."
-
-REPLY = None
-DESTDOM,DESTTXT, DESTNAME = "echo", "RU.PYTHON", "All"
-SUBJ = "MSGID"
-BODY = "а кто-нибудь конструкции for..else или while..else использует?"
+#DESTDOM,DESTTXT, DESTNAME = "echo", "RU.PYTHON", "All"
+#SUBJ = "MSGID"
+#BODY = "а кто-нибудь конструкции for..else или while..else использует?"
 
 
 with ftnimport.session(db) as sess:
@@ -26,4 +27,4 @@ with ftnimport.session(db) as sess:
 
 %s
 
-"""%(DESTNAME.split(" ")[0], BODY))
+"""%(DESTNAME.split(" ")[0], BODY), FLAGS)

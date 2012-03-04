@@ -16,19 +16,20 @@ def connectdb():
   db.filen=FileNumbering(db)
   return db
 
-DUPDIR="/tank/home/fido/refuse/dupmsg"
-BADDIR="/tank/home/fido/refuse/badmsg"
-SECDIR="/tank/home/fido/refuse/secmsg"
+FIDODIR="/tank/home/fido"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
-INBOUND="/tank/home/fido/recv"
-DINBOUND="/tank/home/fido/drecv"
-OUTBOUND="/tank/home/fido/send"
-DOUTBOUND="/tank/home/fido/dsend"
-NODELIST="/home/sergey/PyFTN/routing/NODELIST"
-LOCALNETMAIL="/tank/home/fido/local/netmail"
-MSGMARK="/tank/home/fido/msgmark"
-FILEDIR="/tank/home/fido/files"
+NODELIST=os.path.join(FIDODIR, "fareas/dailylst/NODELIST.064")
+
+DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
+BADDIR=os.path.join(FIDODIR, "refuse/badmsg")
+SECDIR=os.path.join(FIDODIR, "refuse/secmsg")
+INBOUND = os.path.join(FIDODIR, "recv")
+DINBOUND = os.path.join(FIDODIR, "drecv")
+OUTBOUND = os.path.join(FIDODIR, "send")
+DOUTBOUND = os.path.join(FIDODIR, "dsend")
+MSGMARK = os.path.join(FIDODIR, "msgmark")
+FILEDIR = os.path.join(FIDODIR, "files")
 GROUPFILESBY=5000
 
 # routing files
