@@ -378,6 +378,10 @@ class session:
           print ("update watermark %d as %d"%(check_id, lastsent))
           self.db.prepare("update deletedvitalsubscriptionwatermarks set message=$1 where id=$2")(check_id, lastsent)
 
+  def remove_watermark(self, target):
+    print("#remove_watermark target=%d"%target)
+    self.db.prepare("delete from deletedvitalsubscriptionwatermarks where target=$1")(target)
+
   def get_watermark(self, target):
     """ get from saved or if there are nothing there get from current vital subscriptions and as last resort the oldest message """
     for check_id, check_msg in self.db.prepare(
@@ -422,10 +426,11 @@ class session:
       if vital:
         print ("#add_subscription: convert to vital")
         self.db.prepare("update subscriptions set vital=true where id=$1")(oldid)
+        self.remove_watermark(target)
         return "converted to vital"
       else:
         print ("#add_subscription: convert to non-vital")
-        self.save_watermark(target, subscriber, lastsent)
+        self.save_watermark(target, lastsent)
         self.db.prepare("update subscriptions set vital=false where id=$1")(oldid)
         return "converted to non-vital"
 
@@ -435,6 +440,7 @@ class session:
         start = self.get_watermark(target)
 
       op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")(vital or False, target, subscriber, start)
+      self.remove_watermark(target)
       return "subscribed from %d"%start
 
 
@@ -447,7 +453,7 @@ class session:
       if check[0][0]:
         print ("removing vital subscription")
         lastsent = check[0][1]
-        self.save_watermark(target, subscriber, lastsent)
+        self.save_watermark(target, lastsent)
 
     else:
       return "not subscribed"

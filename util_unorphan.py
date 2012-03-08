@@ -1,10 +1,10 @@
 #!/usr/local/bin/python3
 
-link = '2:5020/4441'
-list = 'lists/ech04441.lst'
-orphans = '758'
+link = '2:5020/758'
+list = 'lists/ech00758.lst'
+orphans = 'upl'
 domain = 'echo'
-oldlink = '2:5020/758'
+oldlink = None #'2:5020/758'
 
 if domain=="echo":
   robot = "AreaFix"
@@ -42,7 +42,6 @@ with ftnimport.session(db) as sess:
     if oldlink: sess.remove_subscription(domain, area, oldlink)
     sess.add_subscription(True, domain, area, link)
     subs.append("+"+area+"\n")
-    sess.remove_watermark(domain, area)
     unsubs.append("-"+area+"\n")
 
   sess.send_message(ftnconfig.SYSOP, ("node", link), robot, None, pw, "".join(subs))
