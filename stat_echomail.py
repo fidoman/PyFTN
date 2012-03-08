@@ -5,7 +5,7 @@ import ftnimport
 
 db=ftnconfig.connectdb()
 try:
-    msgmark = int(open(ftnconfig.MSGMARK).read())
+    msgmark = int(open(ftnconfig.MSGMARKESTAT).read())
 except:
     print("mark not found")
     msgmark = 0
@@ -45,4 +45,4 @@ Last message id: %d
 Вот так
 """%("".join(outp), total, newmsgmark))
 
-    open(ftnconfig.MSGMARK, "w").write(str(newmsgmark))
+    open(ftnconfig.MSGMARKESTAT, "w").write(str(newmsgmark))

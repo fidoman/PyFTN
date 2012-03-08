@@ -280,6 +280,7 @@ if len(sys.argv)==2 and sys.argv[1]=="-n": # new
       tpl.append("To: ''\n")
       tpl.append("Subject: ''\n")
       tpl.append("Destination: ('', '')\n")
+      tpl.append("ReplyTo: None\n")
       tpl.append("Attr: []\n")
       tpl.append("\n")
       tpl.append("Hello ,\n")

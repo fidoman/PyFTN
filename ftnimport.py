@@ -327,7 +327,8 @@ class session:
   def add_addr(self, dom, addr):
       self.db.prepare("insert into addresses (domain, text) values($1, $2)")(dom, addr)
 
-  def check_addr(self, dom, addr):
+  def check_addr(self, domain, addr):
+      dom = self.db.FTN_domains[domain]
       try:
         return get_addr_id(self.db, dom, addr)
       except FTNNoAddressInBase:
@@ -409,7 +410,7 @@ class session:
   def add_subscription(self, vital, target_domain, target_addr, subscriber_addr, start=None):
     """ vital: True, False - set new value; None - leave old or add False """
     target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
-    subscriber=self.check_addr(self.db.FTN_domains["node"], subscriber_addr)
+    subscriber=self.check_addr("node", subscriber_addr)
     if start is None:
       start=self.db.prepare("select max(id) from messages").first()
 
@@ -555,7 +556,7 @@ class session:
     origdomname, origaddr = sender
     destdomname, destaddr = recipient
 
-    origdom=self.domains[origdomname]
+    #origdom=self.domains[origdomname]
     destdom=self.domains[destdomname]
 
     #print "-"*79
@@ -564,8 +565,8 @@ class session:
 
     #  raise Exception("Verify senderaddress and destination address are listed. (area autocreate, destination is listed, ...)")
 
-    origid = self.check_addr(origdom, origaddr) # allow autocreate for source
-    destid = self.check_addr(destdom, destaddr) # check node in nodelist and area exists
+    origid = self.check_addr(origdomname, origaddr) # allow autocreate for source
+    destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
     # no autocreate. only on request and if exists in uplink lists
 
     # database must have trigger to check address to be created for nodelist and area for echolist and uplinks
@@ -607,7 +608,7 @@ class session:
 
 
   def import_link_auth(self, node, connectpassword, robotpassword, echolevel, fecholevel, echogroups, fechogroups):
-    addr_id=check_addr(self.FIDOADDR, node)
+    addr_id=check_addr("node", node)
   
     doc = xml.dom.minidom.Document()
     authel = doc.createElement("FTNAUTH")

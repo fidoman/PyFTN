@@ -28,7 +28,7 @@ def group_points():
     for p_id, p_text in db.prepare("""select id, text from addresses where "group" is NULL and text LIKE '%:%/%.%' and domain=$1""")(db.FTN_domains["node"]):
       newnode=p_text[:p_text.rfind(".")]
       print("point without node:", p_id, p_text, p_text[:p_text.rfind(".")])
-      newid=sess.check_addr(db.FTN_domains["node"], newnode)
+      newid=sess.check_addr("node", newnode)
       print("addind new node and grouping to", newnode)
       update_group(newid, p_id)
 
@@ -93,8 +93,8 @@ with ftnimport.session(db) as sess:
   
   group_address = "%s:%s/%s"%groups[leveln-1]
 
-  node_id = sess.check_addr(db.FTN_domains["node"], node_address)
-  group_id = sess.check_addr(db.FTN_domains["node"], group_address)
+  node_id = sess.check_addr("node", node_address)
+  group_id = sess.check_addr("node", group_address)
 
   oldgroup_id = db.prepare("""select "group" from addresses where domain=$1 and text=$2""").first(db.FTN_domains["node"], node_address)
 

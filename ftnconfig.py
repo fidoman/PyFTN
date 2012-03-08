@@ -28,7 +28,8 @@ INBOUND = os.path.join(FIDODIR, "recv")
 DINBOUND = os.path.join(FIDODIR, "drecv")
 OUTBOUND = os.path.join(FIDODIR, "send")
 DOUTBOUND = os.path.join(FIDODIR, "dsend")
-MSGMARK = os.path.join(FIDODIR, "msgmark")
+MSGMARKESTAT = os.path.join(FIDODIR, "msgestat")
+MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
 FILEDIR = os.path.join(FIDODIR, "files")
 GROUPFILESBY=5000
 
