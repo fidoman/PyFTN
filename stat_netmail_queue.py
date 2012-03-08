@@ -2,6 +2,8 @@
 
 import ftnconfig
 import ftnimport
+import ftnexport
+from functools import *
 
 db=ftnconfig.connectdb()
 
@@ -12,9 +14,19 @@ x=db.prepare("""select m.id, s.domain, s.text, d.domain, d.text, d.id
 outp = []
 
 for mid, sd, st, dd, dt, did in x():
-  outp.append("msg #%d %d|%s->%d|%s (destid %d)\n"%(mid,sd,st,dd,dt,did))
+  s = {}
+  for sid, _, slevel in ftnexport.get_subscribers(db, did, True):
+     s.setdefault(slevel, []).append(sid)
 
-#print(outp)
+  if len(s.keys()):
+    lev=min(s.keys())
+    links = "via " + ", ".join(map(lambda x: ftnexport.get_addr(db, x)[1], s[lev]))
+  else:
+    links = "nowhere to route"
+
+  outp.append("msg #%d %d|%s->%d|%s (destid %d, %s)\n"%(mid,sd,st,dd,dt,did,links))
+
+#print("".join(outp))
 #exit()
 
 with ftnimport.session(db) as sess:
