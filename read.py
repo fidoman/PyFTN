@@ -8,6 +8,7 @@ import xml.etree.ElementTree
 import ftnconfig
 import ftnexport
 import ftnimport
+import sys
 
 db=ftnconfig.connectdb()
 
@@ -274,6 +275,32 @@ def save(srcid, dstid, msgid, header, body):
     f.close()
     return True
 
+if len(sys.argv)==2 and sys.argv[1]=="-n": # new
+      tpl = ["From: " + repr(ftnconfig.SYSOP) + "\n"]
+      tpl.append("To: ''\n")
+      tpl.append("Subject: ''\n")
+      tpl.append("Destination: ('', '')\n")
+      tpl.append("Attr: []\n")
+      tpl.append("\n")
+      tpl.append("Hello ,\n")
+      tpl.append("\n")
+      tpl.append("\n")
+      tpl.append("\n")
+      tpl.append("... vim\n")
+
+      newmsg = "".join(tpl)
+      (fh, fname) = tempfile.mkstemp()
+      fo = os.fdopen(fh, "w")
+      fo.write(newmsg)
+      fo.close()
+      os.system ("vi " + fname)
+      editedmsg = open(fname).read()
+      if newmsg == editedmsg:
+        print("no changes")
+      else:
+        submit(editedmsg)
+      os.unlink(fname)
+      exit()
 
 committer = ftnexport.netmailcommitter()
 
