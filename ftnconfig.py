@@ -269,7 +269,7 @@ if __name__ == "__main__":
   for i in range(100):
     print(get_link_password(db, "2:5020/2065"))
     print(get_link_password(db, "2:5020/715"))
-    print(get_link_password(db, "2:5020/570"))
+    print(get_link_password(db, "2:5020/614"))
 
 #  print(filen.get_pkt_n(113))
 #  print(filen.get_tic_n(113))

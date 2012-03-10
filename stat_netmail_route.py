@@ -45,8 +45,8 @@ outp.append ("Direct links:\n")
 for l in textwrap.wrap(dirstr, 70):
   outp.append ("   %s\n"%l)
 
-#print("".join(outp))
-#exit()
+print("".join(outp))
+exit()
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "схема роутинга нетмейла",

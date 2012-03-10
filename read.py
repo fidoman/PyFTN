@@ -67,6 +67,8 @@ def quote(qname, block):
         prv_t = None
       else:
         qtext = prv_t +" "+qtext
+        prv_t = None
+        prv_q = None
         pos += 1
     else:
       pos += 1
@@ -108,7 +110,7 @@ E-Mail: bav (at) sirena-travel.ru ICQ: 24466689 Skype: huba-huba
 """
   
 #for l in quote("AB", txt.splitlines()):
-#  print (l)
+#  print (l.rstrip())
 #exit()
 
 
