@@ -442,9 +442,9 @@ class session:
       print ("#add_subscription: new subscription")
       if vital:
         start = self.get_watermark(target)
+        self.remove_watermark(target)
 
       op=self.db.prepare("insert into subscriptions (vital, target, subscriber, lastsent) values ($1, $2, $3, $4)")(vital or False, target, subscriber, start)
-      self.remove_watermark(target)
       return "subscribed from %d"%start
 
 
