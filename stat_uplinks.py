@@ -16,7 +16,7 @@ for domain in ["echo", "fileecho"]:
     for x in ftnexport.get_subscribers(db, tid, True):
         ulist.append("%d|%s"%ftnconfig.get_addr(db, x[0])+"!%d"%x[2])
     #print 
-
+    ulist.sort()
     bydomain.setdefault(domain, {}).setdefault(", ".join(ulist), []).append(t)
 
 
@@ -25,6 +25,7 @@ with ftnimport.session(db) as sess:
     outp=[]
     for u, targets in byuplink.items():
       outp.append("  uplink = ["+u+"]\n")
+      targets.sort()
       for t in targets:
         outp.append("    "+t+"\n")
       outp.append("\n")
