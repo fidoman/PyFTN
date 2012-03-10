@@ -33,6 +33,11 @@ MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
 FILEDIR = os.path.join(FIDODIR, "files")
 GROUPFILESBY=5000
 
+robotnames = {
+    "echo": "AreaFix",
+    "fileecho": "FileFix"
+}
+
 # routing files
 format1files = ["/tank/home/fido/fareas/r50route/R50.ROU", "/tank/home/fido/fareas/net5020/N5020.ROU"]
 format2files = ["/tank/home/fido/fareas/r50route/R50.TRU", "/tank/home/fido/fareas/net5020/N5020.TRU"]

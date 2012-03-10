@@ -19,11 +19,9 @@ except:
   print("usage: ./util_subscription.py add|addvital|remove echo|fileecho AREANAME 2:5020/9999")
   exit()
 
-if domain=="echo":
-  robot = "AreaFix"
-elif domain=="fileecho":
-  robot = "FileFix"
-else:
+try:
+  robot = ftnconfig.robotnames[domain]
+except:
   raise Exception("cannot manage subscriptions in domain", domain)
 
 pw = ftnconfig.get_link_password(db, subscriber, forrobots=True)

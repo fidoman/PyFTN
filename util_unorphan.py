@@ -6,14 +6,7 @@ orphans = list #'upl'
 domain = 'fileecho'
 oldlink = ['2:5020/758', '2:5020/1200']
 
-if domain=="echo":
-  robot = "AreaFix"
-elif domain=="fileecho":
-  robot = "FileFix"
-else:
-  raise Exception("cannot manage subscriptions in domain", domain)
-
-
+robotname = ftnconfig.robotnames[domain]
 
 import ftnconfig
 import ftnimport
