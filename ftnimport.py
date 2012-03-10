@@ -327,6 +327,9 @@ class session:
   def add_addr(self, dom, addr):
       self.db.prepare("insert into addresses (domain, text) values($1, $2)")(dom, addr)
 
+  def forget_address(self, dom, addr):
+      self.db.prepare("delete from addresses where domain=$1 and text=$2")(self.db.FTN_domains[dom], addr)
+
   def check_addr(self, domain, addr):
       dom = self.db.FTN_domains[domain]
       try:

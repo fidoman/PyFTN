@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 
-link='2:5020/1200'
+link='2:5020/1042'
 domain = "fileecho"
 
 import ftnconfig
