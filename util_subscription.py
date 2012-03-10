@@ -55,6 +55,14 @@ with ftnimport.session(db) as sess:
     else:
       print ("local subscription")
 
+  elif cmd == "createfrom":
+    sess.check_addr(domain, area)
+    sess.add_subscription(True, domain, area, subscriber)
+    if subscriber != ftnconfig.ADDRESS:
+      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area)
+    else:
+      print ("local subscription")
+
   elif cmd == "query": # send areafix request
     sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%QUERY")
 
