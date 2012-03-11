@@ -9,11 +9,11 @@ db=ftnconfig.connectdb()
 
 x=db.prepare("""select m.id, s.domain, s.text, d.domain, d.text, d.id 
                 from messages m, addresses s, addresses d 
-                where d.id=m.destination and m.processed=0 and d.domain=1 and s.id=m.source""")
+                where d.id=m.destination and m.processed=0 and d.domain=$1 and s.id=m.source""")
 
 outp = []
 
-for mid, sd, st, dd, dt, did in x():
+for mid, sd, st, dd, dt, did in x(db.FTN_domains["node"]):
   s = {}
   for sid, _, slevel in ftnexport.get_subscribers(db, did, True):
      s.setdefault(slevel, []).append(sid)
