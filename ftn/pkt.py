@@ -38,7 +38,7 @@ class PKT:
 
       h=fo.read(58)
       if len(h)<58:
-        raise FTNFail("packet is too short: header incomplete")
+        raise FTNFail("packet is too short (%d bytes): header incomplete"%len(h))
 
     # fsc-0001 PKT format
     # fsc-0039 PKT format capability word

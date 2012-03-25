@@ -11,9 +11,9 @@ REPLY = None
 FLAGS = [] # ['AuditRequest']
 
 #DESTDOM, DESTTXT, DESTNAME = "node", "2:5020/1042", "Michael Dukelsky"
-DESTDOM,DESTTXT, DESTNAME = "echo", "RU.PYTHON", "All"
-SUBJ = "test"
-BODY = "а кто-нибудь конструкции for..else или while..else использует?"
+-DESTDOM,DESTTXT, DESTNAME = "echo", "RU.PYTHON", "All"
+-SUBJ = "test"
+-BODY = "а кто-нибудь конструкции for..else или while..else использует?"
 
 
 with ftnimport.session(db) as sess:

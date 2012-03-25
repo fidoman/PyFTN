@@ -84,12 +84,12 @@ from ftn.ftn import FTNWrongPassword
 from socketutil import *
 
 def session(s, a):
-  db = connectdb()
-  addresses = []
-  password = None
-  filename = None
-  length = None
   try:
+    db = connectdb()
+    addresses = []
+    password = None
+    filename = None
+    length = None
     s.send(b"hi "+str(a).encode("utf-8")+b"\n")
     while True:
       l=readline(s).decode("utf-8")

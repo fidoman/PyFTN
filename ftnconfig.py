@@ -114,7 +114,8 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "614\.|6140\.")
 
 
-RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST")
+RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
+            "ECHOLIST|STATS|COOKING|LINUX|HAM")
 
 RE_utf8 = re.compile("POLITICS")
 
@@ -125,8 +126,10 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
     charset = "ascii"
 
-    if chrs_kludge==b"CP866 2": # can trust
+    if chrs_kludge==b"CP866 2":
       charset="cp866"
+    elif chrs_kludge==b"UTF-8 4":
+      charset="utf-8"
 
 #      charset=msg.kludge[b"CHRS:"].rsplit(b" ", 1)[0].decode("ascii")
       #if charset in set(("IBMPC", "+7 FIDO", "ALT", "+7_FIDO", "CP-866", 
@@ -134,7 +137,7 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
       #      "FTN", "JK", "KOI", "CP808", "RUFIDO", "Russian", "IBM", "+7FIDO")):
       #    charset="cp866"
 
-    if destdom=="echo":
+    elif destdom=="echo":
       #print("area for charset [%s]"%repr(msg.area))
       if RE_utf8.match(destaddr):
         charset="utf-8"
