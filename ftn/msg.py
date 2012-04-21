@@ -42,6 +42,7 @@ class MSG:
     kludge - dict
     body
     path
+    zpth
     seenby
     via
   """  
@@ -79,7 +80,22 @@ class MSG:
         f.close()
 
     else:
-      pass
+      self.body = []
+      self.kludge = {}
+      self.via = []
+      self.path = []
+      self.zpth = []
+      self.seenby = set()
+      self.area=None
+      self.orig=None
+      self.dest=None
+      self.subj=None
+      self.date=None
+      self.attr=0
+      self.cost=0
+      self.readcount=0
+      self.replyto=0
+      self.nextreply=0
 
   def load(self,src,dst,subj,date,attr,cost,body):
     while len(body) and (body[-1]==0): body=body[:-1]
@@ -91,6 +107,7 @@ class MSG:
     self.kludge = {}
     self.via = []
     self.path = []
+    self.zpth = []
     self.seenby = set()
 
     (fname,(fzone,fnet,fnode,fpnt)) = src
@@ -141,6 +158,12 @@ class MSG:
             addr2str, addr_expand(list(filter(bool, value.decode("ascii").split(" "))), (None, None, None, None))))
           except:
             raise FTNFail("MSG: bad PATH "+value)
+        elif name.upper()==b"ZPTH:":
+          try:
+           self.zpth.extend(map(
+            addr2str, addr_expand(list(filter(bool, value.decode("ascii").split(" "))), (None, None, None, None))))
+          except:
+            raise FTNFail("MSG: bad ZPTH "+value)
         else:
           if name in self.kludge:
             if type(self.kludge[name]) is list:
@@ -225,6 +248,7 @@ class MSG:
     else:
       s+=addr_makelist(list(map(addr2str, seenbylist)), "SEEN-BY:", eol.decode("ascii")).encode("ascii")
 
+    s+=addr_makelist(self.zpth, c.decode("ascii")+"ZPTH:", eol.decode("ascii")).encode("ascii")
     s+=addr_makelist(self.path, c.decode("ascii")+"PATH:", eol.decode("ascii")).encode("ascii")
     return s
 
@@ -253,6 +277,10 @@ class MSG:
   def add_path(self, a):
     addr=str2addr(a)
     self.path.append(addr2str((None,addr[1],addr[2],None)))
+
+  def add_zpth(self, a):
+    addr=str2addr(a)
+    self.zpth.append(addr2str((addr[0],addr[1],addr[2],None)))
 
 ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$")
 

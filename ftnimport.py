@@ -12,7 +12,7 @@ import re
 import os
 import time
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id
+from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT
 from stringutil import *
 
 def modname(n, m):
@@ -219,6 +219,10 @@ def normalize_message(msg, charset="ascii"):
     for path1 in msg.path:
       #print(path1)
       pathel=xml.etree.ElementTree.SubElement(ftnel, "PATH", record = clean_str(path1))
+
+    for zpth1 in msg.zpth:
+      #print(zpth1)
+      zpthel=xml.etree.ElementTree.SubElement(ftnel, "ZPTH", record = clean_str(zpth1))
   
 
 
@@ -553,7 +557,7 @@ class session:
        if msg is correct then it is stored in base.
        if msg fails validation then it will be saved in bad messages' directory """
 
-    if (len(body)+len(repr(header))) > 350000:
+    if (len(body)+len(repr(header))) > MSGSIZELIMIT:
       raise Exception("message too big")
 
     origdomname, origaddr = sender

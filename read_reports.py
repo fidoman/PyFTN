@@ -5,9 +5,10 @@ import ftnconfig
 
 db=ftnconfig.connectdb()
 
-START = 1200000
+START = 1224985
 
 did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
+#did=db.prepare("select id from addresses where text='R50.SYSOP' and domain=2").first()
 
 #for src, dst, header, body, origcharset in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):
 for mid, src, dst, header, body, origcharset in db.prepare(

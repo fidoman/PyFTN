@@ -3,6 +3,7 @@ import struct
 import io
 from .msg import MSG
 from .addr import *
+#import os
 
 debug=False
 
@@ -25,14 +26,7 @@ def read_asciiz(fo, maxlen=None):
 
 
 class PKT:
-  def __init__(self, fo=None, ignore_err=False):
-    self.msg = []
-    if fo:
-      self.fn=None
-      if type(fo) in [str, str]:
-        self.fn=fo
-        fo=open(self.fn,"rb")
-
+  def read_pkt2(self, fo):
       #read packet header
       #read messages
 
@@ -120,6 +114,54 @@ class PKT:
         self.msg.append(msg)
         msg_n+=1
 
+  def read_utf8z(self, fo):
+    self.msg = []
+    header = True
+    for l in fo.readlines():
+      l=l.rstrip(b"\n")
+      if header:
+        h=l.split(b"\0")
+        if h[0]!=b"UTF8":
+          raise FTNFail("Invalid header")
+        self.source = str2addr(h[1].decode("utf-8"))
+        self.destination = str2addr(h[2].decode("utf-8"))
+        self.creator = h[3]
+        self.password = h[4]
+        #try:
+        #print(os.fstat(fo).st_mtime)
+        self.date = None
+        header = False
+      else:
+        date, toname, fromname, subj, body, x = l.split(b"\0")
+#        print ("From:", fromname)
+#        print ("To  :", toname)
+#        print ("Subj:", subj)
+#        print ("Date:", date)
+#        print ("X   :", repr(x))
+#        print (body.replace("\r", "\n").replace("\1", "@"))
+        msg = MSG()
+        msg.load( (fromname, self.source), (toname, self.destination),
+                subj, date, 0, 0, body)
+        msg.kludge["CHRS:"] = "UTF-8 4"
+
+        #print (msg.as_str().decode("utf-8"))
+        self.msg.append(msg)
+
+  def __init__(self, fo=None, ignore_err=False, format='pkt2'):
+    self.msg = []
+    if fo:
+      self.fn=None
+      if type(fo) in [str, str]:
+        self.fn=fo
+        fo=open(self.fn,"rb")
+
+      if format=='pkt2':
+        self.read_pkt2(fo)
+      elif format=='utf8z':
+        self.read_utf8z(fo)
+      else:
+        raise FTNFail("cannot load such PKT (%s)"%format)
+
       if self.fn:
         fo.close()
 
@@ -137,7 +179,7 @@ class PKT:
       "Messages: %d\n"%len(self.msg) + \
 "===============================================================================\n".join([""]+list(map(str,self.msg))+[""])
 
-  def save(self, file):
+  def save(self, file, format='pkt2'):
 
     def cut(s, l):
       if len(s)<l:

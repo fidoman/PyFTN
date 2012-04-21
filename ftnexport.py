@@ -10,12 +10,13 @@ import zipfile
 import os
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, \
-                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb
+                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, EXPORTLOCK
 import ftnimport
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
 from stringutil import *
+import postgresql.alock
 
 def get_subscribers(db, target, onlyvital=False):
     """ query all subscribers including that who are subscribed to group of the target """
@@ -58,17 +59,18 @@ def get_subscriber_messages_n(db, subscriber, domain):
 
     with recursive allsubscription(id, target, dir) as 
     (
-        select id, target, 1 from subscriptions where subscriber=$1 and vital=TRUE
+        select s.id, s.target, 1 from subscriptions s, addresses a 
+        where s.subscriber=$1 and s.vital=TRUE and s.target=a.id and a.domain=$2
       Union
         select s.id, a.id, 0 from allsubscription s, addresses a 
         where a.group = s.target
               and (select count(id) from subscriptions where target=a.id) = 0
+              and a.domain = $2
     )
 
     select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.origcharset, m.receivedfrom
-    from allsubscription alls, addresses sa, messages m
-    where sa.id=alls.target and sa.domain=$2 and 
-          m.processed=0 and m.destination=alls.target
+    from allsubscription alls, messages m
+    where m.processed=0 and m.destination=alls.target
     order by m.id
     ;
 
@@ -76,6 +78,8 @@ def get_subscriber_messages_n(db, subscriber, domain):
 
   for m in query(subscriber, domain):
     yield m
+
+# SET cpu_tuple_cost = 0.2; set enable_hashjoin=false; set enable_mergejoin=false;
 
 
 def get_subscriber_messages_e(db, subscriber, domain):
@@ -171,9 +175,12 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   tname=(header.find("recipientname").text or '').encode(charset)
   try:
     msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
-  except:
-    traceback.print_exc()
-    msg.subj=(header.find("subject").text or '').encode(charset)
+#  except:
+#    traceback.print_exc()
+#    msg.subj=(header.find("subject").text or '').encode(charset)
+  except UnicodeEncodeError:
+    charset = "utf-8"
+    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
 
   msg.date=(header.find("date").text or '').encode(charset)
   #print(fname, tname, subj, date)
@@ -181,7 +188,12 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   nltail=len(body)
   while(nltail>0 and body[nltail-1]=="\n"):
     nltail-=1
-  msg.body = body[:nltail].encode(charset).split(b"\n")
+
+  try:
+    msg.body = body[:nltail].encode(charset).split(b"\n")
+  except UnicodeEncodeError:
+    charset = "utf-8"
+    msg.body = body[:nltail].encode(charset).split(b"\n")
 
   #print(xml.etree.ElementTree.tostring(header, encoding="utf-8").decode("utf-8"))
   ftnheader=header.find("FTN")
@@ -197,8 +209,10 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   if charset=="ascii":
     if b"CHRS:" in msg.kludge:
       del msg.kludge[b"CHRS:"]
-  else:
+  elif charset!="utf-8":
     msg.kludge[b"CHRS:"] = (charset.upper() + " 2").encode("ascii")
+  else:
+    msg.kludge[b"CHRS:"] = (charset.upper() + " 4").encode("ascii")
 
 #  print(msg.kludge)
 
@@ -219,7 +233,12 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     dest_zone=ftn.addr.str2addr(echodest)[0]
     my_zone=ftn.addr.str2addr(addpath)[0] # addpath should be this node's address
 
-    if True: #my_zone==dest_zone: - always add path
+
+    for zpth in ftnheader.findall("ZPTH"):
+      zpth_record = zpth.get("record")
+      msg.add_zpth(zpth_record)
+
+    if my_zone==dest_zone:
       for path in ftnheader.findall("PATH"):
         #print(path.get("record"))
         msg.add_path(path.get("record"))
@@ -228,8 +247,15 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
         #print("additional path", addpath)
         msg.add_path(addpath)
 
-#    else:
-#      pass # empty path
+    else:
+      for path in ftnheader.findall("PATH"):
+        pathaddr=str2addr(path.get("record"))
+        msg.add_zpth(addr2str(my_zone, pathaddr[1], pathaddr[2], None))
+
+      if addpath:
+        #print("additional path", addpath)
+        pathaddr=ftn.addr.str2addr(addpath)
+        msg.add_zpth(ftn.addr.addr2str((my_zone, pathaddr[1], pathaddr[2], None)))
 
 
     if my_zone==dest_zone:
@@ -401,6 +427,9 @@ def file_export(db, address, password, what):
   addr_id = get_addr_id(db, db.FTN_domains["node"], address)
 
   if "netmail" in what:
+   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
+   if explock.acquire(False):
+
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
@@ -442,7 +471,11 @@ def file_export(db, address, password, what):
 
     del p
 
+    explock.release()
+
   if "echomail" in what:
+   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["echomail"], addr_id)))
+   if explock.acquire(False):
 
     #..firstly send bundles in outbound
 
@@ -502,17 +535,22 @@ def file_export(db, address, password, what):
     for x in p.flush():
       yield x
 
+    explock.release()
+
   if "filebox" in what:
+   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["filebox"], addr_id)))
+   if explock.acquire(False):
     # ..send freq filebox
     pass #1/0
+    explock.release()
+
 
   if "fileecho" in what:
+   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
+   if explock.acquire(False):
     # ..send fileechoes
     pass #1/0
-
-  if "filebox" in what:
-    # ..send main filebox
-    pass #1/0
+    explock.release()
 
   return
 

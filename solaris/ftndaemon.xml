@@ -19,7 +19,7 @@
 <exec_method type='method' name='stop' exec='/lib/svc/method/ftndaemon stop' timeout_seconds='120' />
 
 <property_group name='ftndaemon' type='application'>
-<propval name='execdir' type='astring' value='/home/sergey/PyFTN' />
+<propval name='execdir' type='astring' value='/opt/PyFTN/bin' />
 <propval name='log' type='astring' value='/tank/home/fido/log/ftndaemon.log' />
 <propval name='run' type='astring' value='/tank/home/fido' />
 </property_group>

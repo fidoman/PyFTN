@@ -65,10 +65,12 @@ DAEMONBIND=[
 PACKETTHRESHOLD = 100*1024
 BUNDLETHRESHOLD = 500*1024
 
+MSGSIZELIMIT = 450000
 
 PKTLOCK=1
 BUNDLELOCK=2
 TICLOCK=3
+EXPORTLOCK={"netmail": 4, "echomail": 5, "fileecho": 6, "filebox": 7}
 
 # ---------------------------------------------------------------------------------------
 
@@ -111,11 +113,11 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
-            "614\.|6140\.")
+            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
-            "ECHOLIST|STATS|COOKING|LINUX|HAM")
+            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED")
 
 RE_utf8 = re.compile("POLITICS")
 
@@ -176,7 +178,7 @@ def get_link_password(db, linkaddr, forrobots=False):
   authinfo = pw.get(linkaddr)
   if authinfo is None:
     x = pwq(db.FTN_domains["node"], linkaddr)
-    if len(x)==0:
+    if len(x)==0 or x[0][0] is None:
       return None
     authinfo=pw[linkaddr]=x[0][0]
 
@@ -184,6 +186,30 @@ def get_link_password(db, linkaddr, forrobots=False):
     return authinfo.find("RobotsPassword").text
   else:
     return authinfo.find("ConnectPassword").text
+
+
+
+def get_link_pkt_format(db, linkaddr):
+  try:
+    pw=db.link_pkt_format
+  except:
+    pw=db.link_pkt_format={}
+
+  try:
+    pwq=db.link_pkt_format_q
+  except:
+    pwq=db.link_pkt_format_q=db.prepare("select l.pktformat from links l, addresses a "
+                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
+
+  pktformat = pw.get(linkaddr)
+  if pktformat is None:
+    x = pwq(db.FTN_domains["node"], linkaddr)
+    if len(x)==0 or x[0][0] is None:
+      return None
+    pktformat=pw[linkaddr]=x[0][0]
+
+  return pktformat
+
 
 def get_link_id(db, linkaddr):
   try:
@@ -276,9 +302,10 @@ class FileNumbering:
 if __name__ == "__main__": 
   db=connectdb()
   for i in range(100):
-    print(get_link_password(db, "2:5020/2065"))
-    print(get_link_password(db, "2:5020/715"))
-    print(get_link_password(db, "2:5020/614"))
+#    print(get_link_password(db, "2:5020/2065"))
+#    print(get_link_password(db, "2:5020/715"))
+    print(get_link_password(db, "2:5020/1955"))
+    print(get_link_password(db, "2:5020/1955", True))
 
 #  print(filen.get_pkt_n(113))
 #  print(filen.get_tic_n(113))

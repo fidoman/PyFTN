@@ -102,3 +102,21 @@ class FTNBase:
 #flush - purge message on timeout, even if unsent
 # add - msg_seenby (indicator that message sent to link)
 #   used as in echomail, as in netmail (but not exports)
+
+
+def ispkt(f):
+  return f[-4:].lower()==".pkt" or f[-5:].lower()==".upkt"
+
+def ismsg(f):
+  return f[-4:].lower()==".msg"
+
+def istic(f):
+  return f[-4:].lower()==".tic"
+
+BUNDLEext=set((".mo",".tu",".we",".th",".fr",".sa",".su"))
+
+def isbundle(f):
+  return f[-4:-1].lower() in BUNDLEext
+
+def ismail(f):
+  return ispkt(f) or isbundle(f) or ismsg(f)

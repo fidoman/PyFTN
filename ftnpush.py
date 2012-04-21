@@ -14,23 +14,8 @@ import ftnimport
 import ftn.msg
 import ftn.pkt
 import ftn.addr
-from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed
+from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, ispkt, ismsg, istic, isbundle
 from ftnconfig import *
-
-def ispkt(f):
-  return f[-4:].lower()==".pkt"
-
-def ismsg(f):
-  return f[-4:].lower()==".msg"
-
-def istic(f):
-  return f[-4:].lower()==".tic"
-
-BUNDLEext=set((".mo",".tu",".we",".th",".fr",".sa",".su"))
-
-def isbundle(f):
-  return f[-4:-1].lower() in BUNDLEext
-
 
 from badwriter import badmsgs, dupmsgs, secmsgs
 
@@ -63,7 +48,10 @@ b""" === < MESSAGE END > ===
 --- PyFTN
 \1Via """+ADDRESS.encode("ascii")+b""" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
 
-      audit_p = ftn.pkt.PKT()
+
+      link_pkt_format = get_link_pkt_format(sess.db, recv_from)
+
+      audit_p = ftn.pkt.PKT(format=link_pkt_format)
       audit_p.msg = [audit_m]
       audit_p.password = get_link_password(db, recv_from).encode("ascii")
       audit_p.source = ftn.addr.str2addr(ADDRESS)
@@ -103,7 +91,10 @@ def import_pkt(sess, fo, recv_from, bulk):
       file type: msg, pkt, tic, other (tic or msg attached file)
       orig_name is optional (for saving 'other' files) """
 
-  x=ftn.pkt.PKT(fo)
+  link_pkt_format = get_link_pkt_format(sess.db, recv_from)
+#  print (recv_from, link_pkt_format)
+
+  x=ftn.pkt.PKT(fo, format=link_pkt_format)
   #..pass to messages address from PKT (it can match with session address or verify by password if differ)
 
   #rc=ftn.addr.str2addr(recv_from)
@@ -137,6 +128,7 @@ def import_file(sess, fname, fo, recv_from, bulk):
 
     elif ispkt(fname):
             print("pkt")
+            # pktformat = ..get from database..
             import_pkt(sess, fo, recv_from, bulk)
 
     elif isbundle(fname):
