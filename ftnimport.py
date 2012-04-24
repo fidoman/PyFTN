@@ -273,6 +273,11 @@ def compose_message(db, sender, sendername, recipient, recipientname, replyto, s
     dateel = xml.etree.ElementTree.SubElement(header, "date")
     dateel.text = time.strftime("%d %b %y  %H:%M:%S")
 
+    tzoffs = -time.timezone//60
+    tzhours = tzoffs//60
+    tzmins = tzoffs%60
+    xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "TZUTC:", value = "%02d%02d"%(tzhours, tzmins))
+
     subjel=xml.etree.ElementTree.SubElement(header, "subject")
     subjel.text = subject
 
@@ -283,6 +288,7 @@ def compose_message(db, sender, sendername, recipient, recipientname, replyto, s
     print("generated MSGID", repr(msgid))
 
     xml.etree.ElementTree.SubElement(ftnel, "KLUDGE", name = "MSGID:", value = msgid)
+
 
     for attr1 in flags:
       xml.etree.ElementTree.SubElement(ftnel, "ATTR", id = attr1)

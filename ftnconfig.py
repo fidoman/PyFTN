@@ -210,6 +210,28 @@ def get_link_pkt_format(db, linkaddr):
 
   return pktformat
 
+def get_link_bundler(db, linkaddr):
+  try:
+    pw=db.link_bundler
+  except:
+    pw=db.link_bundler={}
+
+  try:
+    pwq=db.link_bundler_q
+  except:
+    pwq=db.link_bundler_q=db.prepare("select l.bundle from links l, addresses a "
+                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
+
+  bundler = pw.get(linkaddr)
+  if bundler is None:
+    x = pwq(db.FTN_domains["node"], linkaddr)
+    if len(x)==0 or x[0][0] is None:
+      return None
+    bundler=pw[linkaddr]=x[0][0]
+
+  return bundler
+
+
 
 def get_link_id(db, linkaddr):
   try:

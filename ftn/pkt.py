@@ -142,7 +142,7 @@ class PKT:
         msg = MSG()
         msg.load( (fromname, self.source), (toname, self.destination),
                 subj, date, 0, 0, body)
-        msg.kludge["CHRS:"] = "UTF-8 4"
+        msg.kludge[b"CHRS:"] = b"UTF-8 4"
 
         #print (msg.as_str().decode("utf-8"))
         self.msg.append(msg)
@@ -191,22 +191,46 @@ class PKT:
       f=open(file, "wb")
     else:
       f=file
-    #print(repr(self.source), repr(self.destination))
-    #print(repr(self.date),repr(self.password))
-    f.write(struct.pack("<13H8s10H4s",self.source[2],self.destination[2],
-      self.date[0],self.date[1]-1,self.date[2],self.date[3],
-      self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0xFE,
-       self.password,
-       self.source[0],self.destination[0],
-       0,0x0100,0,0x0001,self.source[0],self.destination[0],
-       self.source[3],self.destination[3],b"\0\0\0\0")) # b"XPKT"
-    for m in self.msg:
-      f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
-        m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +
-        cut(m.dest[0], 36) + cut(m.orig[0], 36) + cut(m.subj, 72)+
-        m.make_body()+b"\0")
 
-    f.write(b"\0\0")
+    if format=='pkt2':
+      #print(repr(self.source), repr(self.destination))
+      #print(repr(self.date),repr(self.password))
+      f.write(struct.pack("<13H8s10H4s",self.source[2],self.destination[2],
+        self.date[0],self.date[1]-1,self.date[2],self.date[3],
+        self.date[4],self.date[5],0,2,self.source[1],self.destination[1],0xFE,
+         self.password,
+         self.source[0],self.destination[0],
+         0,0x0100,0,0x0001,self.source[0],self.destination[0],
+         self.source[3],self.destination[3],b"\0\0\0\0")) # b"XPKT"
+      for m in self.msg:
+        f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
+          m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +
+          cut(m.dest[0], 36) + cut(m.orig[0], 36) + cut(m.subj, 72)+
+          m.make_body()+b"\0")
+
+      f.write(b"\0\0")
+
+    elif format=='utf8z':
+      f.write(b"\0".join((b"UTF8", addr2str(self.source).encode("utf-8"), addr2str(self.destination).encode("utf-8"), b"PyFTN", self.password, b'')))
+      f.write(b"\n")
+      for m in self.msg:
+        if b"CHRS:" in m.kludge:
+          del m.kludge[b"CHRS:"]
+
+        # if m.date in rfc3339 format - leave intact
+        # if m.date in fido format
+        #   get TZUTC kludge
+        #   if no kludge
+        #     guess timezone by fido address
+        #   if present
+        #     convert to rfc3339
+
+        body=m.make_body().replace(b"\n\r", b"\r").replace(b"\r\n", b"\r").replace(b"\n", b"\r")
+        f.write(b"\0".join((m.date, m.dest[0], m.orig[0], m.subj, body, b'')))
+        f.write(b"\n")
+        
+    else:
+      raise FTNFail("Cannot save in such format")
 
     if type(file) is str:
       f.close()

@@ -10,7 +10,7 @@ import zipfile
 import os
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, \
-                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, EXPORTLOCK
+                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, EXPORTLOCK, get_link_pkt_format, get_link_bundler
 import ftnimport
 import ftn.msg
 import ftn.attr
@@ -245,17 +245,20 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
 
       if addpath:
         #print("additional path", addpath)
-        msg.add_path(addpath)
+        pathaddr=ftn.addr.str2addr(addpath)
+        if not pathaddr[3]:
+          msg.add_path(addpath)
 
     else:
       for path in ftnheader.findall("PATH"):
-        pathaddr=str2addr(path.get("record"))
-        msg.add_zpth(addr2str(my_zone, pathaddr[1], pathaddr[2], None))
+        pathaddr=ftn.addr.str2addr(path.get("record"))
+        msg.add_zpth(ftn.addr.addr2str(my_zone, pathaddr[1], pathaddr[2], None))
 
       if addpath:
         #print("additional path", addpath)
         pathaddr=ftn.addr.str2addr(addpath)
-        msg.add_zpth(ftn.addr.addr2str((my_zone, pathaddr[1], pathaddr[2], None)))
+        if not pathaddr[3]:
+          msg.add_zpth(ftn.addr.addr2str((my_zone, pathaddr[1], pathaddr[2], None)))
 
 
     if my_zone==dest_zone:
@@ -269,8 +272,9 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
 
     for seenby in addseenby:
       #print("additional seenby", seenby)
-      seenby_zone=ftn.addr.str2addr(seenby)[0]
-      if seenby_zone==dest_zone:
+      sbaddr=ftn.addr.str2addr(seenby)
+    
+      if sbaddr[0]==dest_zone and not sbaddr[3]:
         msg.add_seenby(seenby)
 
 
@@ -425,6 +429,9 @@ def file_export(db, address, password, what):
   # if address of some hub is spoofed
 
   addr_id = get_addr_id(db, db.FTN_domains["node"], address)
+  link_pkt_format = get_link_pkt_format(db, address)
+  link_bundler = get_link_bundler(db, address)
+
 
   if "netmail" in what:
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
@@ -434,12 +441,16 @@ def file_export(db, address, password, what):
     # non-vital (CC) should be processed just like echomail
 
     # set password in netmail packets
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter())
+    p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter())
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
 
       print("netmail %d recvfrom %d pack to %s"%(id_msg, recvfrom, repr(address)))
+
+      # if exporting to utf8z always use UTF-8
+      if link_pkt_format == "utf8z":
+        origcharset = "utf-8"
 
       myvia = "PyFTN " + ADDRESS + " " + time.asctime()
       srca=db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -480,14 +491,22 @@ def file_export(db, address, password, what):
     #..firstly send bundles in outbound
 
     #
-    p = pktpacker(ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(),
-        bundlepacker(address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter()))
+
+    if link_bundler:
+      p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(),
+        bundlepacker(link_bundler, address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter()))
+    else:
+      p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter())
 
     subscache = {}
     for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
       print("echomail %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, dest, recvfrom, withsubscr, repr(address)))
       # ignore src - for echomail it is just recv_from
+
+      # if exporting to utf8z always use UTF-8
+      if link_pkt_format == "utf8z":
+        origcharset = "utf-8"
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -563,7 +582,8 @@ class outfile:
   # length
 
 class pktpacker:
-  def __init__(self, me, node, passw, counter, commitgen, packto=None):
+  def __init__(self, format, me, node, passw, counter, commitgen, packto=None):
+    self.format = format
     self.packet = None
     self.node = node
     self.me = me
@@ -594,10 +614,14 @@ class pktpacker:
 
   def pack(self):
     p = outfile()
-    p.filename = "%08x.pkt"%self.counter()
+    if self.format=='utf8z':
+      p.filename = "%08x.upkt"%self.counter()
+    else:
+      p.filename = "%08x.pkt"%self.counter()
+
     print("PACKET %s"%p.filename)
     p.data = io.BytesIO()
-    self.packet.save(p.data)
+    self.packet.save(p.data, format=self.format)
     p.length = p.data.tell()
     p.data.seek(0)
     self.packet = None
@@ -617,7 +641,8 @@ class pktpacker:
 
 
 class bundlepacker:
-  def __init__(self, destination, counter, commitgen, packto=None):
+  def __init__(self, bundler, destination, counter, commitgen, packto=None):
+    self.bundler = bundler
     self.destination = destination
     self.counter = counter
     self.bundle = None

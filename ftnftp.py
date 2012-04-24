@@ -10,6 +10,7 @@ import ftnimport
 
 from ftn.ftn import ismail
 from ftnpush import import_file
+from ftnexport import file_export
 
 class FTPFile():
   def __init__(self, b):
@@ -29,6 +30,7 @@ for lid, addr, conn in db.prepare("select id, address, connection from links"):
       #print (addr, ftp.keys(), ftp.get("host"))
       domain, address = ftnconfig.get_addr(db, addr)
       link_pkt_format = ftnconfig.get_link_pkt_format(db, address)
+      password = ftnconfig.get_link_password(db, address)
 
       print (ftp.get("username"), ftp.get("password"), ftp.get("host"), ftp.get("port", 0))
 
@@ -74,3 +76,28 @@ for lid, addr, conn in db.prepare("select id, address, connection from links"):
             ftpc.retrbinary('RETR '+rfile, recipient.feed)
             fo.close()
             ftpc.delete(rfile)
+
+        ftpc.cwd("~")
+        path = ftp.get("putto")
+        if path:
+          ftpc.cwd(path)
+    
+          
+          for outbfile, committer in file_export(db, address, password, ["netmail", "echomail"]):
+            print("outbound file "+outbfile.filename)
+
+            existing = ftpc.nlst()
+            while outbfile.filename in existing:
+              outbfile.filename = "_" + outbfile.filename
+
+#            ff=open("/tmp/test.zip", "wb")
+#            while True:
+#              x=outbfile.data.read(1000)
+#              if not x:
+#                break
+#              ff.write(x)
+#            ff.close()
+
+            ftpc.storbinary("STOR "+outbfile.filename, outbfile.data)
+
+            committer.commit()
