@@ -54,7 +54,9 @@ NETMAIL_peers += ["2:5020/614"] # fileecho uplinks
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5051/0", "2:5020/845"),
-                     ("2:5097/0", "2:5097/31")]
+                     ("2:5097/0", "2:5097/31"),
+                     ("2:5012/0", "2:5012/200"),
+]
 
 DAEMONPORT=24555
 DAEMONBIND=[

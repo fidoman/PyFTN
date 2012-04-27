@@ -1,6 +1,8 @@
 import struct
 #import mmap
 import io
+import re
+import time
 from .msg import MSG
 from .addr import *
 #import os
@@ -24,6 +26,8 @@ def read_asciiz(fo, maxlen=None):
   buf.seek(0)
   return buf.read()
 
+RE_rfc3339 = re.compile("(\d\d\d\d)-(\d\d)-(\d\d)[Tt ](\d\d):(\d\d):(\d\d)(\.\d+)?([Zz]|([+-])(\d\d):(\d\d))")
+# 1 year 2 month 3 day 4 hour 5 minute 6 second 7 fractions 8 tzoffset 9 offset sign 10 offset hours 11 offset minutes
 
 class PKT:
   def read_pkt2(self, fo):
@@ -203,6 +207,17 @@ class PKT:
          0,0x0100,0,0x0001,self.source[0],self.destination[0],
          self.source[3],self.destination[3],b"\0\0\0\0")) # b"XPKT"
       for m in self.msg:
+
+        m.date = m.date.decode("ascii")
+        x = RE_rfc3339.match(m.date)
+        if x:
+          m.kludge[b"TZUTC:"] = ("-" if x.group(9)=='-' else '' + x.group(10) + x.group(11)).encode("ascii")
+          m.date = time.strftime('%d %b %y  %H:%M:%S', time.struct_time((int(x.group(1)), int(x.group(2)), int(x.group(3)), 
+                int(x.group(4)), int(x.group(5)), int(x.group(6)), 0, 0, 0)))
+
+        m.date = m.date.encode("ascii")
+
+
         f.write(struct.pack("<7H20s", 2, m.orig[1][2], m.dest[1][2],
           m.orig[1][1], m.dest[1][1], m.attr, m.cost, m.date) +
           cut(m.dest[0], 36) + cut(m.orig[0], 36) + cut(m.subj, 72)+
@@ -224,6 +239,39 @@ class PKT:
         #     guess timezone by fido address
         #   if present
         #     convert to rfc3339
+
+        m.date = m.date.decode("ascii")
+        tzoffs = None
+
+        if RE_rfc3339.match(m.date):
+          pass
+        else:
+          try:
+            fdate = time.strptime(m.date, '%d %b %y  %H:%M:%S')
+          except ValueError:
+            try:
+              fdate = time.strptime(m.date, '%a %b %d %H:%M:%S ')
+            except ValueError:
+              try:
+                fdate = time.strptime(m.date, '%a, %d %b %Y %H:%M:%S %z')
+                tzoffs = m.date[-5:]
+              except ValueError:
+                fdate = time.strptime(m.date, '%Y-%m-%d %H:%M:%S')
+
+
+#          print (fdate)
+
+          if tzoffs is None:
+            tzoffs = m.kludge.get(b"TZUTC:", b"1155") # TODO: if no kludge evaluate sender TZ by its fidoaddress
+          hroffs = int(tzoffs[0:-2])
+          moffs = int(tzoffs[-2:])
+          m.date = time.strftime("%Y-%m-%d %H:%M:%S", fdate)+"+%02d:%02d"%(hroffs,moffs)
+
+#        print (m.date)
+#        print ()
+        m.date = m.date.encode("ascii")
+        if b"TZUTC:" in m.kludge:
+          del m.kludge[b"TZUTC:"]
 
         body=m.make_body().replace(b"\n\r", b"\r").replace(b"\r\n", b"\r").replace(b"\n", b"\r")
         f.write(b"\0".join((m.date, m.dest[0], m.orig[0], m.subj, body, b'')))

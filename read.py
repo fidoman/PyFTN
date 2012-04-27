@@ -209,7 +209,7 @@ def inval(s):
     return " + Origin"+s[9:]
   return s
 
-def forward(srcid, dstid, msgid, header, body):
+def forward(srcid, dstid, msgid, header, body, tosrc=False, newsubj=None):
 
       origdom, origtext = ftnconfig.get_addr(db, srcid)
       origdom = db.FTN_backdomains[origdom]
@@ -217,13 +217,29 @@ def forward(srcid, dstid, msgid, header, body):
       destdom = db.FTN_backdomains[destdom]
 
       tpl = ["From: " + repr(ftnconfig.SYSOP) + "\n"]
-      tpl.append("To: ''\n")
-      tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
+      if tosrc:
+        tpl.append("To: "+repr(header.find("sendername").text)+"\n")
+      else:
+        tpl.append("To: ''\n")
+
+      if newsubj:
+        tpl.append("Subject: " + repr(newsubj) + "\n")
+      else:
+        tpl.append("Subject: " + repr(header.find("subject").text) + "\n")
+
       tpl.append("ReplyTo: " + repr(None) + "\n")
-      tpl.append("Destination: ('', '')\n")
+
+      if tosrc:
+        tpl.append("Destination: (%s, %s)\n"%(repr(origdom), repr(origtext)))
+      else:
+        tpl.append("Destination: ('', '')\n")
+
       tpl.append("Attr: []\n")
       tpl.append("\n")
-      tpl.append("Hello ,\n")
+      if tosrc:
+        tpl.append("Hello "+header.find("sendername").text+",\n")
+      else:
+        tpl.append("Hello ,\n")
       tpl.append("\n")
       tpl.append(" *** Forwarded message:\n")
       tpl.append("="*79+"\n")
@@ -261,6 +277,9 @@ def view(mid, srcid, dstid, header, body):
     print ("Subj: %s"%header.find("subject").text)
     print ("Date: %s"%header.find("date").text)
     print ("-"*79)
+    ftn=header.find("FTN")
+    for kl in ftn.findall("KLUDGE"):
+      print ("@"+kl.get("name"), kl.get("value"))
     print (body)
     print ("="*79)
 
@@ -304,6 +323,13 @@ if len(sys.argv)==2 and sys.argv[1]=="-n": # new
         submit(editedmsg)
       os.unlink(fname)
       exit()
+
+elif len(sys.argv)==3 and sys.argv[1]=="-b": # bounce message #
+  mid = int(sys.argv[2])
+  srcid, dstid, msgid, header, body, origcharset, receivedfrom = \
+    db.prepare("select source, destination, msgid, header, body, origcharset, receivedfrom from messages where id=$1").first(mid)
+  if forward(srcid, dstid, msgid, header, body, tosrc=True, newsubj="message bounced at "+ftnconfig.ADDRESS):
+    db.prepare("update messages set processed=6 where id=$1")(mid)
 
 committer = ftnexport.netmailcommitter()
 
