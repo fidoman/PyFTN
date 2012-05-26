@@ -564,7 +564,7 @@ class session:
        if msg fails validation then it will be saved in bad messages' directory """
 
     if (len(body)+len(repr(header))) > MSGSIZELIMIT:
-      raise Exception("message too big")
+      raise Exception("message too big (%d)"%(len(body)+len(repr(header))))
 
     origdomname, origaddr = sender
     destdomname, destaddr = recipient

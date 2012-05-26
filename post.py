@@ -11,9 +11,9 @@ with ftnimport.session(db) as sess:
         echopath = os.path.join("post", echo)
         for msg in os.listdir(echopath):
             msgpath = os.path.join(echopath, msg)
-            print (msgpath, msg, echo)
+            #print (msgpath, msg, echo)
             text = open(msgpath).read()
-            print (text)
+            #print (text)
 
             sess.send_message("Sergey Dorofeev", ("echo", echo), 
                 "All", None, msg, text)

@@ -67,7 +67,7 @@ DAEMONBIND=[
 PACKETTHRESHOLD = 100*1024
 BUNDLETHRESHOLD = 500*1024
 
-MSGSIZELIMIT = 450000
+MSGSIZELIMIT = 470000
 
 PKTLOCK=1
 BUNDLELOCK=2
@@ -119,7 +119,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
-            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED")
+            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2")
 
 RE_utf8 = re.compile("POLITICS")
 
@@ -132,6 +132,24 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
     if chrs_kludge==b"CP866 2":
       charset="cp866"
+    elif chrs_kludge==b"CP850 2":
+      charset="cp850"
+    elif chrs_kludge==b"CP858 2":
+      charset="cp858"
+    elif chrs_kludge==b"CP865 2":
+      charset="cp865"
+    elif chrs_kludge==b"CP861 2":
+      charset="cp861"
+    elif chrs_kludge==b"CP437 2":
+      charset="cp437"
+    elif chrs_kludge==b"CP1251 2":
+      charset="cp1251"
+    elif chrs_kludge==b"CP1250 2":
+      charset="cp1250"
+    elif chrs_kludge==b"CP1252 2":
+      charset="cp1252"
+    elif chrs_kludge==b"LATIN-1 2":
+      charset="latin-1"
     elif chrs_kludge==b"UTF-8 4":
       charset="utf-8"
 

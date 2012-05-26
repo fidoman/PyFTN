@@ -101,3 +101,19 @@ for lid, addr, conn in db.prepare("select id, address, connection from links"):
             ftpc.storbinary("STOR "+outbfile.filename, outbfile.data)
 
             committer.commit()
+
+          outdir = ftnconfig.addrdir(ftnconfig.OUTBOUND, address)
+          print("send", outdir)
+          if os.path.isdir(outdir):
+            for outbfile in os.listdir(outdir):
+              fullname = os.path.join(outdir, outbfile)
+              data=open(fullname, "rb")
+
+              print("outbound file "+fullname)
+              existing = ftpc.nlst()
+              while outbfile in existing:
+                outbfile = "_" + outbfile
+
+              ftpc.storbinary("STOR "+outbfile, data)
+              data.close()
+              os.unlink(fullname)

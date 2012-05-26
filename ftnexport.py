@@ -252,7 +252,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     else:
       for path in ftnheader.findall("PATH"):
         pathaddr=ftn.addr.str2addr(path.get("record"))
-        msg.add_zpth(ftn.addr.addr2str(my_zone, pathaddr[1], pathaddr[2], None))
+        msg.add_zpth(ftn.addr.addr2str((my_zone, pathaddr[1], pathaddr[2], None)))
 
       if addpath:
         #print("additional path", addpath)
