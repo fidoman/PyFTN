@@ -26,8 +26,8 @@ for mid, sd, st, dd, dt, did in x(db.FTN_domains["node"]):
 
   outp.append("msg #%d %d|%s->%d|%s (destid %d, %s)\n"%(mid,sd,st,dd,dt,did,links))
 
-#print("".join(outp))
-#exit()
+print("".join(outp))
+exit()
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "почтовая очередь",

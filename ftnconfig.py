@@ -115,11 +115,11 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
-            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.")
+            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
-            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2")
+            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS")
 
 RE_utf8 = re.compile("POLITICS")
 
@@ -132,6 +132,8 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
 
     if chrs_kludge==b"CP866 2":
       charset="cp866"
+    elif chrs_kludge==b"CP1125 2":
+      charset="cp1125"
     elif chrs_kludge==b"CP850 2":
       charset="cp850"
     elif chrs_kludge==b"CP858 2":
@@ -169,6 +171,10 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
         charset="cp437"
       elif RE_ukrainian.match(destaddr):
         charset="cp1125"
+      else:
+        # unknown echo, relax kludge checks
+        if chrs_kludge==b"UTF-8 2":
+          charset="utf-8"
 
     else:
       # netmail default charset

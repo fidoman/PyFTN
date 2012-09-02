@@ -163,7 +163,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   (destdom, destaddr) = dest
 
   if charset is None:
-    charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr)
+    charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr) or 'utf-8'
   #print(charset)
 
   if origdom!="node":
@@ -171,29 +171,25 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
 
   msg=ftn.msg.MSG()
 
-  fname=(header.find("sendername").text or '').encode(charset)
-  tname=(header.find("recipientname").text or '').encode(charset)
-  try:
-    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
-#  except:
-#    traceback.print_exc()
-#    msg.subj=(header.find("subject").text or '').encode(charset)
-  except UnicodeEncodeError:
-    charset = "utf-8"
-    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
-
-  msg.date=(header.find("date").text or '').encode(charset)
-  #print(fname, tname, subj, date)
-
   nltail=len(body)
   while(nltail>0 and body[nltail-1]=="\n"):
     nltail-=1
 
   try:
+    fname=(header.find("sendername").text or '').encode(charset)
+    tname=(header.find("recipientname").text or '').encode(charset)
+    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
+    msg.date=(header.find("date").text or '').encode(charset)
     msg.body = body[:nltail].encode(charset).split(b"\n")
   except UnicodeEncodeError:
     charset = "utf-8"
+    fname=(header.find("sendername").text or '').encode(charset)
+    tname=(header.find("recipientname").text or '').encode(charset)
+    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
+    msg.date=(header.find("date").text or '').encode(charset)
     msg.body = body[:nltail].encode(charset).split(b"\n")
+
+  #print(fname, tname, subj, date)
 
   #print(xml.etree.ElementTree.tostring(header, encoding="utf-8").decode("utf-8"))
   ftnheader=header.find("FTN")
