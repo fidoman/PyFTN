@@ -1,7 +1,9 @@
 import re
+import ast
 
 def clean_str(s):
-  return re.sub("[\0-\31]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
+  c=re.sub("[\x00-\x1F]", lambda x: "\\x%02X"%ord(x.group(0)), s.replace("\0", "").replace("\\","\\\\"))
+  return c
 
 RE_special = re.compile("(\\\\\\\\|\\\\x..)")
 
@@ -17,7 +19,15 @@ def unclean_str(s):
 
 
 if __name__ == "__main__":
-    test="test\\test \n\1\2\3 demo\tdemo"
+    test="test\\test \n\1\2\3\26\32 demo\tdemo"
+    print (test)
+    test2=clean_str(test)
+    print (test2)
+    test3=unclean_str(test2)
+    print (test3)
+    print (test==test3)
+
+    test='Re: \x1a\x1a\x1a\x1a'
     print (test)
     test2=clean_str(test)
     print (test2)
