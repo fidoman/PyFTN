@@ -63,8 +63,8 @@ with ftnimport.session(db) as sess:
   if level=='Zone':
     leveln = 1
     zone = addr
-    region = '0'
-    network = '0'
+    region = addr # instead of '0'
+    network = addr # instead of '0'
     node = '0'
   elif level=='Region':
     leveln = 2

@@ -37,7 +37,13 @@ for f1 in format1files:
   for l in open(f1, encoding="cp866"):
     l=l.split(";")[0].strip()
     if not l: continue
-    x=re_S.split(l.replace("*", "0")) # routing to 5020/* is hubscribing to 5020/0
+    #print (l)
+    l=l.replace("/*", "/0") # routing to 5020/* is hubscribing to 5020/0
+    l=re.sub("(\d+):\*/0", "\g<1>:\g<1>/0", l)
+    #print (l)
+    #print ("\n")
+
+    x=re_S.split(l)
     if x[0][0]==">":
         withhop=True
         x[0]=x[0][1:]
