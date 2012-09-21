@@ -14,6 +14,10 @@ class FTNNoMSGID(FTNFail):
   def __init__(self):
     FTNFail.__init__(self, "Message without MSGID")
 
+class FTNExcessiveMessageSize(FTNFail):
+  def __init__(self, size, limit):
+    FTNFail.__init__(self, "Message too big: %d bytes (limit %d)")
+
 class FTNNoOrigin(FTNFail):
   def __init__(self):
     FTNFail.__init__(self, "Message without Origin")

@@ -8,6 +8,7 @@ import xml.etree.ElementTree
 import ftn.pkt
 import ftn.attr
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, FTNAlreadySubscribed, FTNWrongPassword, FTNNoAddressInBase
+from ftn.ftn import FTNExcessiveMessageSize
 import re
 import os
 import time
@@ -564,7 +565,7 @@ class session:
        if msg fails validation then it will be saved in bad messages' directory """
 
     if (len(body)+len(repr(header))) > MSGSIZELIMIT:
-      raise Exception("message too big (%d)"%(len(body)+len(repr(header))))
+      raise FTNExcessiveMessageSize(len(body)+len(repr(header)), MSGSIZELIMIT)
 
     origdomname, origaddr = sender
     destdomname, destaddr = recipient
@@ -651,3 +652,6 @@ class session:
       conn.rollback()
       c.execute("update links set (authentication) = (%s) where address=%s", (authel.toxml(), addr_id))
       conn.commit()
+
+if __name__=="__main__":
+  pass

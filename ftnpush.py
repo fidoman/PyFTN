@@ -14,7 +14,7 @@ import ftnimport
 import ftn.msg
 import ftn.pkt
 import ftn.addr
-from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, ispkt, ismsg, istic, isbundle
+from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, ispkt, ismsg, istic, isbundle, FTNExcessiveMessageSize
 from ftnconfig import *
 
 from badwriter import badmsgs, dupmsgs, secmsgs
@@ -80,6 +80,11 @@ b""" === < MESSAGE END > ===
     badmsgs.write(m.pack(), "No Origin in message received from %s"%recv_from+"\n"+traceback.format_exc())
   except FTNNotSubscribed as e:
     secmsgs.write(m.pack(), "Cannot post message received from %s"%recv_from+"\n"+traceback.format_exc())
+  except postgresql.exceptions.XMLContentError as e:
+    badmsgs.write(m.pack(), "inadequate XML escaping in message received from %s"%recv_from+"\n"+traceback.format_exc())
+  except FTNExcessiveMessageSize as e:
+    badmsgs.write(m.pack(), "Big message received from %s"%recv_from+"\n"+traceback.format_exc())
+
 
 
 def import_pkt(sess, fo, recv_from, bulk):
