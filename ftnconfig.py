@@ -19,7 +19,7 @@ def connectdb():
 FIDODIR="/tank/home/fido"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
-NODELIST=os.path.join(FIDODIR, "fareas/dailylst/NODELIST.064")
+NODELIST=os.path.join(FIDODIR, "nodelist/fido.ndl")
 
 DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
 BADDIR=os.path.join(FIDODIR, "refuse/badmsg")
@@ -39,8 +39,8 @@ robotnames = {
 }
 
 # routing files
-format1files = ["/tank/home/fido/fareas/r50route/R50.ROU", "/tank/home/fido/fareas/net5020/N5020.ROU"]
-format2files = ["/tank/home/fido/fareas/r50route/R50.TRU", "/tank/home/fido/fareas/net5020/N5020.TRU"]
+format1files = ["/tank/home/fido/fareas/r50route/R50.ROU", "/tank/home/fido/fareas/net5020/n5020.rou"]
+format2files = ["/tank/home/fido/fareas/r50route/R50.TRU", "/tank/home/fido/fareas/net5020/n5020.tru"]
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = [] #"2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -56,6 +56,7 @@ NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5051/0", "2:5020/845"),
                      ("2:5097/0", "2:5097/31"),
                      ("2:5012/0", "2:5012/200"),
+                     ("2:5040/0", "2:5040/2"),
 ]
 
 DAEMONPORT=24555
@@ -113,7 +114,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "CTPAHHOE\.MECTO|PVT\.|1072\.|ADINF\.|ZX\.SPECTRUM|\$CRACK\$|BOCHAROFF\.|ZONE7|MISTRESS\.|FAR\.SUPPORT|FIDONET\.HISTORY|MINDO\.|"
             "TYT\.BCE\.HACPEM|PUSHKIN\.|715\.|XPEHOBO\.MHE|CKA3KA\.CTPAHHOE\.MECTO|UZ\.|FREUD|GUITAR\.SONGS|RUSSIAN\.|LOTSMAN\.|AVP\.|1200\.|"
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
-            "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|UKR\.|UA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
+            "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
             "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING")
 
@@ -123,7 +124,7 @@ RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_
 
 RE_utf8 = re.compile("POLITICS")
 
-RE_ukrainian=re.compile("ZZUKR\.|ZZUA\.")
+RE_ukrainian=re.compile("UKR\.|UA\.|R46\.")
 
 
 def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
