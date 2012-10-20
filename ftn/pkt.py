@@ -76,7 +76,7 @@ class PKT:
         try:
           (sig,)=struct.unpack("<H",sigdata)
         except:
-          if ignore_err:
+          if self.ignore_err:
             break
           else:
             raise Exception("Unexpected end of packet")
@@ -85,10 +85,10 @@ class PKT:
 
         if sig!=2:
           if sig!=0:
-            if ignore_err:
+            if self.ignore_err:
               break
             else:
-                raise Exception("bad signature (message %d pos 0x%08X)"%(msg_n, fo.tell()))
+                raise Exception("bad signature %04X (message %d pos 0x%08X)"%(sig, msg_n, fo.tell()))
           else:
             break
 
@@ -153,6 +153,7 @@ class PKT:
 
   def __init__(self, fo=None, ignore_err=False, format='pkt2'):
     self.msg = []
+    self.ignore_err = ignore_err
     if fo:
       self.fn=None
       if type(fo) in [str, str]:
