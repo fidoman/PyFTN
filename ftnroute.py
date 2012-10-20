@@ -1,4 +1,4 @@
-#!/bin/env python3 -bb
+#!/usr/local/bin/python3 -bb
 
 import re
 
@@ -180,7 +180,7 @@ for x in list(hubs.keys()):
   for drk, drv in dr.items(): # sanity check
     if x in drv:
       print ("route",x,"via", drk,"would be done!")
-      1/0
+#---      1/0
 
   s = x
   group = 0
@@ -213,7 +213,7 @@ for x in list(hubs.keys()):
 alls = set()
 for peer, targets in dr.items():
   for t in targets:
-#      print(peer, "receives for", t)
+      #print(peer, "receives for", t)
       alls.add(("node", t, peer))
 
 

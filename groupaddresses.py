@@ -1,4 +1,4 @@
-#!/bin/env python3 -bb
+#!/usr/local/bin/python3 -bb
 
 from ftnconfig import *
 import ftnimport

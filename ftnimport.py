@@ -249,6 +249,8 @@ def normalize_message(msg, charset="ascii"):
       msgid = origaddr + " " + sha1(hashdata.encode(charset)).hexdigest()
       print("generated MSGID", repr(msgid))
 
+    #xml.etree.ElementTree.dump(header)
+
     return (origdom, origaddr), (destdom, destaddr), msgid, header, body, charset
 
 import re

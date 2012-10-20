@@ -3,6 +3,8 @@
 import sys
 import ftn.pkt
 
+ftn.pkt.debug = True
+
 format = "pkt2"
 chrs = "CP866"
 
