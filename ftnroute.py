@@ -21,6 +21,7 @@ re_S=re.compile("\s+")
 
 hubs = {}
 links = set(NETMAIL_peers)
+#print ("links=",links)
 manualrouted = {}
 
 for host, peer in NETMAIL_peerhosts:
@@ -96,7 +97,7 @@ for f2 in format2files:
         for y in x[1:]:
           hubs.setdefault(y, set()).add(x[0])
 
-#print (links)
+#print ("direct by route files =", ", ".join(links))
 #for k, v in hubs.items():
 #  print ("%-17s: "%k, ", ".join(v))
 #print ()
@@ -117,38 +118,36 @@ for x in list(links) + downlinks:
   else:
     selfsubscribers.add(x)
 
-#print ("direct:",selfsubscribers)
-#exit()
+#print ("direct links =", ", ".join(selfsubscribers))
 
+# add subscription for self
 for l in selfsubscribers:
   hubs.setdefault(l, set()).add(l)
 
-#for hub, links in hubs.items():
-#    print (hub, links)
+#print ("subscriptions")
+#for k, v in hubs.items():
+#  print ("subscribe %s to"%k, ", ".join(v))
+#print ()
 #exit()
 
 # first, we assign to direct links all configured routes
 
-dr = {}
-
-def add_chain(peer, hub):
+def get_chain(hub):
   targets = set()
-  routed = hubs.get(hub)
-  if routed: 
-    filerouted.add(hub)
+  routed = hubs.get(hub).copy()
 
   while routed:
     downlink = routed.pop()
-    if downlink in targets:    
+    if downlink in targets:
       continue
 
     if downlink in selfsubscribers:
-      if downlink == peer:
-        #print ("add route for self")
-        targets.add(downlink)
-      else:
-        #print ("skip direct link", downlink)
-        pass
+#      if downlink == peer:
+#        #print ("add route for self")
+#        targets.add(downlink)
+#      else:
+#        #print ("skip direct link", downlink)
+#        pass
       continue
     #print("target", downlink)
 
@@ -156,34 +155,40 @@ def add_chain(peer, hub):
     if downlink in hubs:
         #print ("target has downlinks", hubs[downlink])
         routed.update(hubs[downlink])
-        filerouted.add(downlink)
+#        filerouted.add(downlink)
+  return targets
 
-  dr.setdefault(peer, set()).update(targets)
+dr = {}
+haveroute = set()
 
-# 1st pass
-
-filerouted = set()
+#print("zero pass. add direct links")
 
 for ss in selfsubscribers:
-  add_chain(ss, ss)
+  dr.setdefault(ss, set()).add(ss)
+  haveroute.add(ss)
 
-for r in filerouted:
-  del hubs[r]
+#print("1st pass. add direct links' downlinks")
+
+for ss in selfsubscribers:
+  dr.setdefault(ss, set()).update(get_chain(ss))
+  haveroute.update(dr[ss])
+
+#print("2nd pass - nodelist routing for other hubs")
 
 # get superaddresses for remaining hubs and check via which link it can be routed
 #print ("unrouted:", hubs.keys())
 
-# 2nd pass - nodelist routing
+dr2 = {}
 
+#if False:
 for x in list(hubs.keys()):
-  #print (x)
-  for drk, drv in dr.items(): # sanity check
-    if x in drv:
-      print ("route",x,"via", drk,"would be done!")
-#---      1/0
+  if x in haveroute:
+    continue
+  #print ("nodelist routing for", x)
+  # find direct link under which some parent of this address exists
 
   s = x
-  group = 0
+  group = False
   while not group:
 
     s = ftnexport.get_supernode(db, s) # retry with super super if group = 0
@@ -191,31 +196,29 @@ for x in list(hubs.keys()):
       print (x, "not grouped")
       break
 
-#    print (x, s)
+    #print (x, "is under", s)
+
     for drk, drv in dr.items():
       if s in drv:
-        print(x, ">>>", drk)
-        # !!! add to dr with all underlying links!
-        add_chain(drk, x)
-        group = 1
-    if group==1:
-      del hubs[x] # the tree can be found in dr and must not be found in hubs
+        #print(x, "can be routed via", drk)
+        # add to dr with all underlying links!
+        dr2.setdefault(drk, set()).update(get_chain(x))
+        #print("via",drk,":(",x,")",get_chain(x))
+        group = True
 
-    if group == 0:
-      #  if not linked to dr try to find hub with this downlink
-      for hk, hv in hubs.items():
-        if s in hv:
-          print(x, "}}}", hk)
-          hubs[hk].update(hubs[x])
-          group = 2
-
+for k, v in dr2.items():
+  dr.setdefault(k, set()).update(v)
 
 alls = set()
 for peer, targets in dr.items():
   for t in targets:
-      #print(peer, "receives for", t)
+      print(peer, "receives for", t)
       alls.add(("node", t, peer))
 
+
+#for x, y, z in alls:
+#  print ("%s %-24s via %-24s"%(x,y,z))
+#exit()
 
 with session(db) as sess:
   # fetch old subscriptions
