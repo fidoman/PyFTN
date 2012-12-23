@@ -20,6 +20,7 @@ FIDODIR="/tank/home/fido"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
 NODELIST=os.path.join(FIDODIR, "nodelist/fido.ndl")
+NODELISTENCODING="iso8859-1"
 
 DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
 BADDIR=os.path.join(FIDODIR, "refuse/badmsg")

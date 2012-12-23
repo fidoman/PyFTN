@@ -49,7 +49,7 @@ hub = None
 with ftnimport.session(db) as sess:
  
  # load nodelist
- for l in open(NODELIST):
+ for l in open(NODELIST, encoding=NODELISTENCODING):
   l=l.split(";")[0].rstrip()
   if not l or len(l)==1: continue
 
