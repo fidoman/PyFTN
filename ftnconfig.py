@@ -28,6 +28,7 @@ SECDIR=os.path.join(FIDODIR, "refuse/secmsg")
 INBOUND = os.path.join(FIDODIR, "recv")
 DINBOUND = os.path.join(FIDODIR, "drecv")
 OUTBOUND = os.path.join(FIDODIR, "send")
+BINKLEYSTYLE = os.path.join(FIDODIR, "outb")
 DOUTBOUND = os.path.join(FIDODIR, "dsend")
 MSGMARKESTAT = os.path.join(FIDODIR, "msgestat")
 MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
@@ -215,6 +216,22 @@ def get_link_password(db, linkaddr, forrobots=False):
   else:
     return authinfo.find("ConnectPassword").text
 
+
+
+def get_link_polling(db, linkaddr):
+  x=db.prepare("select l.connection from links l, addresses a "
+                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar"
+                )(db.FTN_domains["node"], linkaddr)
+
+#SELECT address, xpath('/FTNAUTH/ConnectPassword/text()',authentication)
+#  FROM links;
+
+
+  if len(x)==0 or x[0][0] is None:
+      return None
+  conninfo=x[0][0]
+
+  return conninfo.find("DoPoll") is not None
 
 
 def get_link_pkt_format(db, linkaddr):

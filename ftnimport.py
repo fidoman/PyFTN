@@ -15,6 +15,7 @@ import time
 from hashlib import sha1
 from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT
 from stringutil import *
+import ftnpoll
 
 def modname(n, m):
   return n if m==0 else "%s.%d"%(n, m)
@@ -368,6 +369,7 @@ class session:
     self.x=self.db.xact()
     self.x.start()
     print ("START")
+    self.poller = ftnpoll.poller(self.db)
     return self
 
   def __exit__(self, et, ev, tb):
@@ -378,6 +380,7 @@ class session:
     else:
       print ("COMMIT")
       self.x.commit()
+      self.poller.do()
       return True
 
 
@@ -627,7 +630,7 @@ class session:
     print ("insert msg #", new_msg, "to address", destid)
     self.Q_update_addr_msg(destid, new_msg)
     self.last_message_for_address[destid] = new_msg
-
+    self.poller.add_one(destid)
 
   def touched_addresses(self):
     return self.last_message_for_address.keys()
