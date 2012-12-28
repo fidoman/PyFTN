@@ -312,6 +312,8 @@ class session:
     self.Q_getlinkid = None
     self.address_cache = {}
     self.domains = {}
+    self.last_message_for_address = {}
+    self.Q_update_addr_msg = None
     for domain_id, domain_name in db.prepare("SELECT id, name FROM domains;"):
       #print(domain_id, domain_name)
       if domain_name=="fidonet node": 
@@ -615,13 +617,20 @@ class session:
 
     if not self.Q_msginsert:
       self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom)"
-          " values ($1, $2, $3, $4, $5, $6, $7, $8)")
+          " values ($1, $2, $3, $4, $5, $6, $7, $8) returning id")
+
+    if not self.Q_update_addr_msg:
+      self.Q_update_addr_msg = self.db.prepare("update addresses set last=$2 where id=$1")
 
     print ("Transaction state", self.x.state)
-    self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id)
+    new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id)[0][0]
+    print ("insert msg #", new_msg, "to address", destid)
+    self.Q_update_addr_msg(destid, new_msg)
+    self.last_message_for_address[destid] = new_msg
 
 
-
+  def touched_addresses(self):
+    return self.last_message_for_address.keys()
 
   def import_link_auth(self, node, connectpassword, robotpassword, echolevel, fecholevel, echogroups, fechogroups):
     addr_id=check_addr("node", node)
