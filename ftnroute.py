@@ -212,7 +212,7 @@ for k, v in dr2.items():
 alls = set()
 for peer, targets in dr.items():
   for t in targets:
-      print(peer, "receives for", t)
+      #print(peer, "receives for", t)
       alls.add(("node", t, peer))
 
 

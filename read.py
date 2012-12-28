@@ -367,8 +367,12 @@ committer.commit()
 
 
 committer = ftnexport.echomailcommitter()
+from ftnexport import get_subscriber_messages_e
 
-for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid in ftnexport.get_subscriber_messages_e(db, my_id, db.FTN_domains["echo"]):
+for mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom, subsid, processed in get_subscriber_messages_e(db, my_id, db.FTN_domains["echo"]):
+    if processed == 5: 
+      print("skip archived msg #%d"%mid)
+      continue # archived
     view(mid, srcid, dstid, header, body)
     committer.add ((subsid, mid))
     cmd = None

@@ -82,7 +82,7 @@ def get_subscriber_messages_n(db, subscriber, domain):
 # SET cpu_tuple_cost = 0.2; set enable_hashjoin=false; set enable_mergejoin=false;
 
 
-def get_subscriber_messages_e(db, subscriber, domain):
+def get_subscriber_messages_e_heavy(db, subscriber, domain):
   """ get all subscribed addresses in specified domain and 
       fetch all messages with id>lastsent or if lastsent is None - with processed==0 """
 
@@ -114,6 +114,16 @@ def get_subscriber_messages_e(db, subscriber, domain):
   for m in query(subscriber, domain):
     yield m
         #id_msg, src, dest, msgid, header, body, recvfrom, withsubscr
+
+def get_subscriber_messages_e(db, subscriber, domain):
+  for target_id, target_name, target_last, subs_id, subs_last in get_subscriptions_x(db, subscriber, domain):
+    if target_last>subs_last:
+      print ("something new", target_id, target_name, target_last, subs_id, subs_last)
+      for mid,msrc,mdst,mmsgid,mhdr,mbody,mchr,mrecvfrom,mproc in db.prepare(
+            "select m.id, m.source, m.destination, m.msgid, m.header, "
+            "m.body, m.origcharset, m.receivedfrom, m.processed from messages m where destination=$1 and id>$2 order by id")(target_id, subs_last):
+        yield mid, msrc, mdst, mmsgid, mhdr, mbody, mchr, mrecvfrom, subs_id, mproc
+
 
 def _get_messages(db, dest_id, lastsent):
   """ use lastsent >= -1 for fetching echomail
@@ -495,14 +505,25 @@ def file_export(db, address, password, what):
       p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter())
 
     subscache = {}
-    for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
+    for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr, processed in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
-      print("echomail %d dest %d recvfrom %d subscr %d pack to %s"%(id_msg, dest, recvfrom, withsubscr, repr(address)))
+      will_export = True # do we really must send message or just update last_sent pointer
+
+      #print("echomail %d"%id_msg, repr(dest))
+      #print("dest %d recvfrom %s subscr %s pack to %s"%(dest, repr(recvfrom), repr(withsubscr), address))
       # ignore src - for echomail it is just recv_from
 
       # if exporting to utf8z always use UTF-8
       if link_pkt_format == "utf8z":
         origcharset = "utf-8"
+
+      if recvfrom == addr_id:
+        #print ("Message from this link, will not export")
+        will_export = False
+
+      if processed == 5:
+        #print ("Archived message, will not export")
+        will_export = False
 
       # check commuter
       subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -511,8 +532,9 @@ def file_export(db, address, password, what):
         recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
         recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
         if recvfrom_comm == subscriber_comm:
-          print("commuter skip %d - %d"%(withsubscr, recvfrom_subscription))
-          continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
+          print("commuter %d - %d, will not export"%(withsubscr, recvfrom_subscription))
+          will_export = False
+#          continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
 
       if dest in subscache:
         subscribers = subscache[dest]
@@ -526,7 +548,7 @@ def file_export(db, address, password, what):
 
         subscribers = subscache[dest] = [x[1] for x in subscribers]
 
-      print("subscribers:", repr(subscribers))
+      #print("subscribers:", repr(subscribers))
 
 #      if withsubscr not in subscribers:
 #        raise Exception("strange: exporting to non-existent subscription", withsubscr)
@@ -536,17 +558,19 @@ def file_export(db, address, password, what):
       # modify path and seen-by
       # seen-by's - get list of all subscribers of this target; add subscribers list
       #... if go to another zone remove path and seen-by's and only add seen-by's of that zone -> ftnexport
-      try:
+
+      if will_export: # create MSG else do not bother
+       try:
         msg, msgcharset = denormalize_message( 
             ("node", ADDRESS),
             (db.FTN_backdomains[dsta[0]], dsta[1]), 
             msgid, header, body, origcharset, address, addseenby=subscribers, addpath=ADDRESS)
-      except:
+       except:
         raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
 
-      for x in p.add_item(msg, (withsubscr, id_msg)):
+      for x in p.add_item((msg if will_export else None), (withsubscr, id_msg)):
         yield x
-     
+
     for x in p.flush():
       yield x
 
@@ -587,9 +611,11 @@ class pktpacker:
     self.counter = counter
     self.commitgen = commitgen
     self.passw = passw.encode("utf-8")[:8]
+    self.committer = None
 
   def add_item(self, m, commitdata):
-    if not self.packet:
+    if m:
+     if not self.packet:
       self.packet=ftn.pkt.PKT()
       self.packet.password=self.passw
       self.packet.source=ftn.addr.str2addr(self.me)
@@ -597,14 +623,17 @@ class pktpacker:
       self.packet.date=time.localtime()
       self.packet.msg=[m]
       self.packet.approxlen=len(m.pack()) # double packing :(
-      self.committer = self.commitgen()
-    else:
+     else:
       self.packet.msg.append(m)
       self.packet.approxlen+=len(m.pack())
 
+    if not self.committer:
+      self.committer = self.commitgen()
+
+    # if m is not None it will be send else just last_sent will be updated
     self.committer.add(commitdata)
 
-    if self.packet.approxlen>PACKETTHRESHOLD:
+    if self.packet and self.packet.approxlen>PACKETTHRESHOLD:
       for x in self.pack():
         yield x
 
@@ -626,11 +655,17 @@ class pktpacker:
         yield x
     else:
       yield p, self.committer
+    self.committer = None
       
   def flush(self):
     if self.packet:
       for x in self.pack():
         yield x
+    else:
+      if self.committer:
+        # never added data but need to update lasts
+        self.committer.commit()
+
     if self.packto:
       for x in self.packto.flush():
         yield x
@@ -700,6 +735,12 @@ def get_node_subscriptions(db, subscriber, targetdomain, asuplink = False):
     return [x[0] for x in db.prepare("select t.text, s.id, s.lastsent from subscriptions s, addresses sr, addresses t "
         "where s.target=t.id and t.domain=$1 and s.subscriber=sr.id and sr.domain=$2 and sr.text=$3"
         + (" and s.vital = True" if asuplink else "") + " order by t.text")(db.FTN_domains[targetdomain], db.FTN_domains["node"], subscriber)]
+
+def get_subscriptions_x(db, subscriber_id, targetdomain_id, asuplink = False):
+    return [x for x in db.prepare("select t.id, t.text, t.last, s.id, s.lastsent from subscriptions s, addresses t "
+        "where s.target=t.id and t.domain=$1 and s.subscriber=$2 and t.last is not NULL"
+        + (" and s.vital = True" if asuplink else "") + " order by t.text")(targetdomain_id, subscriber_id)]
+
 
 def get_all_targets(db, targetdomain):
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1")(db.FTN_domains[targetdomain])]
