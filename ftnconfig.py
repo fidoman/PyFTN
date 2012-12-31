@@ -131,7 +131,7 @@ RE_ukrainian=re.compile("UKR\.|UA\.|R46\.")
 
 def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
 
-    charset = "ascii"
+    charset = "fido_relics"
 
     if chrs_kludge==b"CP866 2":
       charset="cp866"
