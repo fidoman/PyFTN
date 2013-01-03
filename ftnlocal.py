@@ -29,7 +29,7 @@ def unsubscribe(db, sess, node, targetdomain, pattern):
     r = []
     for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
         try:
-          r.append(sess.remove_subscription(targetdomain, target, node) + ": " + pattern)
+          r.append(sess.remove_subscription(targetdomain, target, node) + ": " + target)
         except FTNNoAddressInBase:
           r.append("no such area: " + target)
     if len(r)==0:
@@ -42,7 +42,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
   if dom != db.FTN_domains["node"]:
     raise FTNFail("not our domain")
   print(text)
-  if password != get_link_password(db, text):
+  if (not password) or (password != get_link_password(db, text, forrobots=True)):
     reply=["wrong password"]
   else:
     reply=[]

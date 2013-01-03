@@ -24,13 +24,13 @@ class poller:
     myzone=ftn.addr.str2addr(ftnconfig.ADDRESS)[0]
     #print (myzone)
     for a in to_poll:
-      print("poll", a)
+      #print("poll", a)
       a=ftnconfig.get_addr(self.db, a)[1]
-      print (a)
+      #print (a)
       if ftnconfig.get_link_polling(self.db, a):
-        print ("poll")
+        print ("poll",a)
       else:
-        print ("not needed")
+        #print ("not needed")
         continue
       addr=ftn.addr.str2addr(a)
       if addr[0]==myzone:
