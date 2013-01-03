@@ -79,6 +79,24 @@ def get_subscriber_messages_n(db, subscriber, domain):
   for m in query(subscriber, domain):
     yield m
 
+def get_direct_messages(db, subscriber):
+  try:
+    query = db.Q_get_direct_messages
+  except AttributeError:
+    query = db.Q_get_direct_messages = db.prepare("""
+
+    select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.origcharset, m.receivedfrom
+    from messages m
+    where m.processed=8 and m.destination=$1
+    order by m.id
+    ;
+
+  """)
+
+  for m in query(subscriber):
+    yield m
+
+
 # SET cpu_tuple_cost = 0.2; set enable_hashjoin=false; set enable_mergejoin=false;
 
 
@@ -173,7 +191,11 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   (destdom, destaddr) = dest
 
   if charset is None:
+    # not imported message
+    overwriteCHRS = True
     charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr) or 'utf-8'
+  else:
+    overwriteCHRS = False
   #print(charset)
 
   if origdom!="node":
@@ -212,13 +234,14 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     msg.kludge[kludge.get("name").encode(charset)] = kludge.get("value").encode(charset)
 
   # overwrite CHRS kludge
-  if charset=="ascii":
-    if b"CHRS:" in msg.kludge:
-      del msg.kludge[b"CHRS:"]
-  elif charset!="utf-8":
-    msg.kludge[b"CHRS:"] = (charset.upper() + " 2").encode("ascii")
-  else:
-    msg.kludge[b"CHRS:"] = (charset.upper() + " 4").encode("ascii")
+  if overwriteCHRS:
+    if charset=="fido_relics":
+      if b"CHRS:" in msg.kludge:
+        del msg.kludge[b"CHRS:"]
+    elif charset!="utf-8":
+      msg.kludge[b"CHRS:"] = (charset.upper() + " 2").encode("ascii")
+    else:
+      msg.kludge[b"CHRS:"] = (charset.upper() + " 4").encode("ascii")
 
 #  print(msg.kludge)
 
@@ -328,7 +351,8 @@ class filecommitter:
 
 
 class netmailcommitter:
-  def __init__(self):
+  def __init__(self, newstatus=2):
+    self.newstatus=newstatus
     self.msglist=set()
     self.msgarqlist=[]
     self.db = connectdb()
@@ -365,7 +389,7 @@ to node %s
       traceback.print_exc()
 
     for msg in self.msglist:
-      self.db.prepare("update messages set processed=2 where id=$1")(msg)
+      self.db.prepare("update messages set processed=$2 where id=$1")(msg,self.newstatus)
       print("commit msg #%d"%msg)
 
     self.msglist=set()
@@ -410,25 +434,11 @@ def file_export(db, address, password, what):
 
   print("export to", repr(address), repr(password), repr(what))
 
-  if password != get_link_password(db, address):
+  if password != (get_link_password(db, address) or ""):
       raise FTNWrongPassword()
 
+  print("password is correct" if password else "password is empty")
 
-  dsend = addrdir(DOUTBOUND, address)
-  if os.path.isdir(dsend):
-    for f in os.listdir(dsend):
-      fname = os.path.join(dsend, f)
-      if os.path.isfile(fname):
-        obj = outfile()
-        obj.data = open(fname, "rb")
-        obj.filename = f
-        obj.length = os.path.getsize(fname)
-        yield obj, filecommitter(fname)
-
-
-  if password == '':
-    log("unprotected, send only dsend")
-    return
 
   # WARNING!
   # unprotected sessions never must do queries as it may result in leaking netmail
@@ -439,10 +449,11 @@ def file_export(db, address, password, what):
   link_bundler = get_link_bundler(db, address)
 
 
-  if "netmail" in what:
+  if password and ("netmail" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
    if explock.acquire(False):
 
+    print ("exporting netmail")
     # only vital subscriptions is processed
     # non-vital (CC) should be processed just like echomail
 
@@ -490,10 +501,66 @@ def file_export(db, address, password, what):
 
     explock.release()
 
-  if "echomail" in what:
+  if "direct" in what: # available for unprotected sessions
+    # export messages with processed==8 and destination==addr_id
+   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
+   if explock.acquire(False):
+
+    print ("exporting direct netmail")
+    # only vital subscriptions is processed
+    # non-vital (CC) should be processed just like echomail
+
+    # set password in netmail packets
+    link_id=get_link_id(db, address, withfailback=True)
+    p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(link_id), lambda: netmailcommitter(newstatus=7))
+
+    #..firstly send pkts in outbound
+    for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_direct_messages(db, addr_id):
+
+      print("direct netmail %d recvfrom %d pack to %s"%(id_msg, recvfrom, repr(address)))
+
+      # if exporting to utf8z always use UTF-8
+      if link_pkt_format == "utf8z":
+        origcharset = "utf-8"
+
+      myvia = "PyFTN " + ADDRESS + " DIRECT " + time.asctime()
+      srca=db.prepare("select domain, text from addresses where id=$1").first(src)
+      dsta=db.prepare("select domain, text from addresses where id=$1").first(dest)
+
+      try:
+        msg, msgcharset = denormalize_message(
+            (db.FTN_backdomains[srca[0]], srca[1]),
+            (db.FTN_backdomains[dsta[0]], dsta[1]), 
+            msgid, header, body, origcharset, address, addvia = myvia)
+      except:
+        raise Exception("denormalization error on message id=%d"%id_msg+"\n"+traceback.format_exc())
+
+      try:
+        print ("export msg attributes", msg.attr)
+      except:
+        traceback.print_exception()
+
+      if 'AuditRequest' in ftn.attr.binary_to_text(msg.attr):
+        audit_reply = (db.FTN_backdomains[srca[0]], srca[1]), header.find("sendername").text, address, msg, msgcharset
+      else:
+        audit_reply = None
+
+      for x in p.add_item(msg, (id_msg, audit_reply)): # add ARQ flag
+        yield x
+        
+    for x in p.flush():
+      yield x
+
+    del p
+
+    explock.release()
+    pass
+
+  if password and ("echomail" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["echomail"], addr_id)))
    if explock.acquire(False):
 
+    print ("exporting echomail")
     #..firstly send bundles in outbound
 
     #
@@ -576,18 +643,31 @@ def file_export(db, address, password, what):
 
     explock.release()
 
-  if "filebox" in what:
+  if password and ("filebox" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["filebox"], addr_id)))
    if explock.acquire(False):
     # ..send freq filebox
-    pass #1/0
+    print ("exporting filebox")
+    dsend = addrdir(DOUTBOUND, address)
+    if os.path.isdir(dsend):
+      print ("exporting daemon outbound")
+      for f in os.listdir(dsend):
+        fname = os.path.join(dsend, f)
+        if os.path.isfile(fname):
+          obj = outfile()
+          obj.data = open(fname, "rb")
+          obj.filename = f
+          obj.length = os.path.getsize(fname)
+          yield obj, filecommitter(fname)
+
     explock.release()
 
 
-  if "fileecho" in what:
+  if password and ("fileecho" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
    if explock.acquire(False):
     # ..send fileechoes
+    print ("exporting fileechoes (nothing here)")
     pass #1/0
     explock.release()
 
@@ -743,7 +823,10 @@ def get_subscriptions_x(db, subscriber_id, targetdomain_id, asuplink = False):
 
 
 def get_all_targets(db, targetdomain):
-    return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1")(db.FTN_domains[targetdomain])]
+    return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 order by text")(db.FTN_domains[targetdomain])]
+
+def count_messages_to(db, address):
+    return int(db.prepare("select count(*) from messages where destination=$1")(address)[0][0])
 
 def get_matching_targets(db, targetdomain, mask):
     mask = mask.replace("+", "++").replace("%", "+%").replace("_", "_%").replace("*", "%").replace("?", "_")

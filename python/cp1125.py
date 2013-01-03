@@ -440,7 +440,7 @@ decoding_table = (
     '\xa0'     #  0x00ff -> NO-BREAK SPACE
 )
 
-print(len(decoding_table))
+#print(len(decoding_table))
 
 ### Encoding Map
 

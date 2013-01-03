@@ -90,7 +90,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext):
         reply+=subscribe(db, sess, text, domain, cmd)
 
   reply.append("")
-  sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply))
+  sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply), sendmode="direct")
   print(reply)
 
 

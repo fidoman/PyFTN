@@ -136,12 +136,11 @@ def session(s, a):
         break
 
       elif arg=="GET":
-        if password is None:
-          raise Exception("may not send data on unprotected incoming sessions")
-
+        # if no password sent and link does not have password, export only direct netmail
+        #  - arranged in ftnexport
         classesstr = val.lower().split(",")
         classes = set()
-        allclasses = set(("netmail", "echomail", "fileecho", "filebox"))
+        allclasses = set(("netmail", "echomail", "fileecho", "filebox", "direct"))
         if ["all"]==classesstr:
           classes = allclasses
         else:

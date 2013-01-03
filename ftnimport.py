@@ -11,7 +11,7 @@ from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscri
 from ftn.ftn import FTNExcessiveMessageSize
 import re
 import os
-import time
+import time, datetime
 from hashlib import sha1
 from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT
 from stringutil import *
@@ -136,15 +136,17 @@ def normalize_message(msg, charset="ascii"):
     mayusezone=None
     if origdom=="node" and origaddr[0]=='0':
       print("MSG with from = '%s': guess zone..."%origaddr)
+      knownfrom=ftn.addr.str2addr(origaddr)
       if msgid:
         guessfrom=ftn.addr.str2addr(msgid.split(" ")[0].split("@")[0])
-        knownfrom=ftn.addr.str2addr(origaddr)
         if guessfrom[1]==knownfrom[1] and guessfrom[2]==knownfrom[2]:
           print (origaddr,"->",ftn.addr.addr2str(guessfrom))
           origaddr=ftn.addr.addr2str(guessfrom)
           guessed=True
           mayusezone=guessfrom[0]
-  
+      else:
+        guessfrom = None
+
       if not guessed:
         print ("AREA:", repr(msg.area))
         raise FTNFail("Zone in sender address is empty and cannot guess from MSGID %s\n"
@@ -552,7 +554,7 @@ class session:
           print ("OK")
 
 
-  def send_message(self, sendername, recipient, recipientname, replyto, subj, body, flags = []):
+  def send_message(self, sendername, recipient, recipientname, replyto, subj, body, flags = [], sendmode=None):
     orig, dest, msgid, header, body = compose_message(self.db, ("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body, flags)
     #print ("msg from:", orig)
     #print ("msg to  :", dest)
@@ -560,7 +562,11 @@ class session:
     #print ("header  :")
     #xml.etree.ElementTree.dump(header)
     #print ("body    :", body)
-    return self.save_message(orig, dest, msgid, header, body, None, ADDRESS)
+    if sendmode is not None and sendmode.count("direct"):
+      processed=8
+    else:
+      processed=0
+    return self.save_message(orig, dest, msgid, header, body, None, ADDRESS, processed=processed)
 
   def import_message(self, msg, recvfrom, bulk):
     orig, dest, msgid, header, body, origcharset = normalize_message(msg)
@@ -619,14 +625,15 @@ class session:
       raise FTNDupMSGID(msgid)
 
     if not self.Q_msginsert:
-      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom)"
-          " values ($1, $2, $3, $4, $5, $6, $7, $8) returning id")
+      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom, receivedtimestamp)"
+          " values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id")
 
     if not self.Q_update_addr_msg:
       self.Q_update_addr_msg = self.db.prepare("update addresses set last=$2 where id=$1")
 
-    print ("Transaction state", self.x.state)
-    new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id)[0][0]
+    timestamp = datetime.datetime.now(datetime.timezone.utc)
+    print ("Transaction state", self.x.state, str(timestamp))
+    new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id, timestamp)[0][0]
     print ("insert msg #", new_msg, "to address", destid)
     self.Q_update_addr_msg(destid, new_msg)
     self.last_message_for_address[destid] = new_msg

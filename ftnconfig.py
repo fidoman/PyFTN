@@ -55,7 +55,7 @@ NETMAIL_peers += ["2:5020/614"] # fileecho uplinks
 
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
-                     ("2:5051/0", "2:5020/845"),
+                     ("2:5051/0", "2:5020/1042"),
                      ("2:5097/0", "2:5097/31"),
                      ("2:5012/0", "2:5012/200"),
                      ("2:5040/0", "2:5040/2"),
@@ -118,7 +118,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
-            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING")
+            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING|CASTLE\.THERRON|FIDO7\.|PC\.CODING|NICE\.SOURCES")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
@@ -250,7 +250,7 @@ def get_link_pkt_format(db, linkaddr):
   if pktformat is None:
     x = pwq(db.FTN_domains["node"], linkaddr)
     if len(x)==0 or x[0][0] is None:
-      return None
+      return db.prepare("select pktformat from links where address IS NULL")()[0][0]
     pktformat=pw[linkaddr]=x[0][0]
 
   return pktformat
@@ -271,14 +271,14 @@ def get_link_bundler(db, linkaddr):
   if bundler is None:
     x = pwq(db.FTN_domains["node"], linkaddr)
     if len(x)==0 or x[0][0] is None:
-      return None
+      return db.prepare("select bundle from links where address IS NULL")()[0][0]
     bundler=pw[linkaddr]=x[0][0]
 
   return bundler
 
 
 
-def get_link_id(db, linkaddr):
+def get_link_id(db, linkaddr, withfailback=False):
   try:
     linkids=db.link_ids
   except:
@@ -290,7 +290,13 @@ def get_link_id(db, linkaddr):
     linkids_q=db.link_ids_q=db.prepare(
         "select l.id from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2")
 
-  return linkids.setdefault(linkaddr, linkids_q.first(db.FTN_domains["node"], linkaddr))
+  link_id = linkids_q.first(db.FTN_domains["node"], linkaddr)
+  if link_id:
+    return linkids.setdefault(linkaddr, link_id)
+  if withfailback:
+    link_id=db.prepare("select id from links where address IS NULL")()[0][0]
+  return link_id
+
 
 def get_addr_id(db, dom, addr):
   try:

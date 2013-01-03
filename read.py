@@ -9,6 +9,7 @@ import ftnconfig
 import ftnexport
 import ftnimport
 import sys
+import getopt
 
 db=ftnconfig.connectdb()
 
@@ -115,7 +116,7 @@ E-Mail: bav (at) sirena-travel.ru ICQ: 24466689 Skype: huba-huba
 
 
 
-def submit(file):
+def submit(file, sendmode=None):
   doheader = True
   for l in file.splitlines():
     l=l.rstrip()
@@ -143,7 +144,7 @@ def submit(file):
       body.append(l)
 
   with ftnimport.session(db) as sess:
-    sess.send_message(fromname, dest, toname, msgid, subj, "\n".join(body), flags)
+    sess.send_message(fromname, dest, toname, msgid, subj, "\n".join(body), flags, sendmode)
 
 
 def reply(srcid, dstid, msgid, header, body):
@@ -237,7 +238,7 @@ def forward(srcid, dstid, msgid, header, body, tosrc=False, newsubj=None):
       tpl.append("Attr: []\n")
       tpl.append("\n")
       if tosrc:
-        tpl.append("Hello "+header.find("sendername").text+",\n")
+        tpl.append("Hello "+(header.find("sendername").text or "Sysop")+",\n")
       else:
         tpl.append("Hello ,\n")
       tpl.append("\n")
@@ -296,7 +297,12 @@ def save(srcid, dstid, msgid, header, body):
     f.close()
     return True
 
-if len(sys.argv)==2 and sys.argv[1]=="-n": # new
+opts=getopt.getopt(sys.argv[1:], "ndb")
+optflags = set(map(lambda x: x[0], opts[0]))
+optdata = opts[1]
+print (optflags, optdata)
+
+if "-n" in optflags: # new
       tpl = ["From: " + repr(ftnconfig.SYSOP) + "\n"]
       tpl.append("To: ''\n")
       tpl.append("Subject: ''\n")
@@ -320,12 +326,12 @@ if len(sys.argv)==2 and sys.argv[1]=="-n": # new
       if newmsg == editedmsg:
         print("no changes")
       else:
-        submit(editedmsg)
+        submit(editedmsg, sendmode="direct" if "-d" in optflags else None)
       os.unlink(fname)
       exit()
 
-elif len(sys.argv)==3 and sys.argv[1]=="-b": # bounce message #
-  mid = int(sys.argv[2])
+elif "-b" in optflags: # bounce message #
+  mid = int(optdata[0])
   srcid, dstid, msgid, header, body, origcharset, receivedfrom = \
     db.prepare("select source, destination, msgid, header, body, origcharset, receivedfrom from messages where id=$1").first(mid)
   if forward(srcid, dstid, msgid, header, body, tosrc=True, newsubj="message bounced at "+ftnconfig.ADDRESS):
