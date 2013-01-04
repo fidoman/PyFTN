@@ -270,7 +270,7 @@ def get_link_bundler(db, linkaddr):
   bundler = pw.get(linkaddr)
   if bundler is None:
     x = pwq(db.FTN_domains["node"], linkaddr)
-    if len(x)==0 or x[0][0] is None:
+    if len(x)==0: # no config for the link
       return db.prepare("select bundle from links where address IS NULL")()[0][0]
     bundler=pw[linkaddr]=x[0][0]
 
