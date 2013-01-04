@@ -84,11 +84,12 @@ for lid, addr, conn in db.prepare("select id, address, connection from links"):
     
           
           for outbfile, committer in file_export(db, address, password, ["netmail", "echomail"]):
-            print("outbound file "+outbfile.filename)
+            if outbfile:
+              print("outbound file "+outbfile.filename)
 
-            existing = ftpc.nlst()
-            while outbfile.filename in existing:
-              outbfile.filename = "_" + outbfile.filename
+              existing = ftpc.nlst()
+              while outbfile.filename in existing:
+                outbfile.filename = "_" + outbfile.filename
 
 #            ff=open("/tmp/test.zip", "wb")
 #            while True:
@@ -98,7 +99,7 @@ for lid, addr, conn in db.prepare("select id, address, connection from links"):
 #              ff.write(x)
 #            ff.close()
 
-            ftpc.storbinary("STOR "+outbfile.filename, outbfile.data)
+              ftpc.storbinary("STOR "+outbfile.filename, outbfile.data)
 
             committer.commit()
 

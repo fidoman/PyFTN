@@ -10,7 +10,9 @@ from ftn.ftn import FTNNoAddressInBase
 # ---------------------------------------------------------------------------------------
 
 def connectdb():
-  db = postgresql.open("pq://fido:bgdis47wb@127.0.0.1/fido")
+  dbstring = open("database.cfg").read().strip()
+  # pq://user:password@hostname/databasename
+  db = postgresql.open(dbstring)
   init_domains(db)
   init_commuter(db)
   db.filen=FileNumbering(db)
