@@ -102,7 +102,7 @@ def import_pkt(sess, fo, recv_from, bulk):
   x=ftn.pkt.PKT(fo, format=link_pkt_format)
   #..pass to messages address from PKT (it can match with session address or verify by password if differ)
 
-  #rc=ftn.addr.str2addr(recv_from)
+  rc=ftn.addr.str2addr(recv_from)
   if x.source[1]==65535 and x.source[0]==rc[0]:
     print("fixup for pointnet network address %s, NOT TESTED"%repr(x.source))
     x.source = (x.source[0], x.auxnet, x.source[2], x.source[3])

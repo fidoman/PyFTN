@@ -46,11 +46,15 @@ import sys
 import time
 import os
 
-logfile = open(sys.argv[1], "ab")
+logname, logext = os.path.splitext(sys.argv[1])
+
+logfile = open(logname+logext, "a")
+
+sys.stdout = logfile
 
 def log(s):
-  logfile.write((time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + ": " + 
-                str(s).replace("\n", " + ") + "\n").encode("utf-8"))
+  logfile.write(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()) + ": " + 
+                str(s).replace("\n", " + ") + "\n")
   logfile.flush()
 
 
@@ -159,32 +163,36 @@ def session(s, a):
           log(str(a)+" export for address "+address)
 
           for outbfile, committer in file_export(db, address, password, classes):
-            log(str(a)+" outbound file "+outbfile.filename)
-            s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
-            s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
+            if outbfile is not None:
+              log(str(a)+" outbound file "+outbfile.filename)
+              s.send(b"FILENAME " + outbfile.filename.encode("utf-8") + b"\n")
+              s.send(b"BINARY " + str(outbfile.length).encode("utf-8") + b"\n")
 
-            while True:
-              d = outbfile.data.read(16384)
-              if len(d)==0:
-                break
-              log(str(a)+" %d"%s.send(d))
+              while True:
+                d = outbfile.data.read(16384)
+                if len(d)==0:
+                  break
+                log(str(a)+" %d"%s.send(d))
 
-            confirmstr = readline(s)
-            log(str(a)+" RECV: "+repr(confirmstr))
-            log(str(a)+ " SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
-            if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
-              raise Exception("did not get good confirmation string")
+              confirmstr = readline(s).rstrip(b"\r")
+              log(str(a)+" RECV: "+repr(confirmstr))
+              log(str(a)+ " SHOULD: "+repr(b"DONE " + outbfile.filename.encode("utf-8")))
+              if confirmstr != b"DONE " + outbfile.filename.encode("utf-8"):
+                raise Exception("did not get good confirmation string")
 
-            log(str(a)+" CONFIRMED")
+              log(str(a)+" CONFIRMED")
+            else:
+              log(str(a)+" None file passed, just committing")
+
             committer.commit()
+
+          log(str(a)+" that's all")
+          s.send(b"QUEUE EMPTY\n")
 
          except FTNWrongPassword:
             log("address %s excluded due to wrong password"%address)
          except:
             log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
-
-        log(str(a)+" that's all")
-        s.send(b"QUEUE EMPTY\n")
 
       else:
         raise Exception("unknown keyword %s"%arg)
