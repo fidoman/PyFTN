@@ -1,0 +1,1 @@
+-- insert into links table a line with NULL address and values for default pkt format, bundler etc

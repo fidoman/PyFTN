@@ -10,7 +10,7 @@ from ftn.ftn import FTNNoAddressInBase
 # ---------------------------------------------------------------------------------------
 
 def connectdb():
-  dbstring = open("database.cfg").read().strip()
+  dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip()
   # pq://user:password@hostname/databasename
   db = postgresql.open(dbstring)
   init_domains(db)

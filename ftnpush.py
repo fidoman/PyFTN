@@ -209,7 +209,7 @@ def find_all(b):
 if __name__ == "__main__":
 
   db=connectdb()
-  destinations = set()
+  #destinations = set()
 
   print(time.asctime(), "start ftnpush")
 
@@ -231,7 +231,7 @@ if __name__ == "__main__":
           #fo.close()
           #os.unlink(f)
           os.rename(f, f+"-"+str(time.time()))
-          destinations.update(sess.touched_addresses())
+          #destinations.update(sess.touched_addresses())
 
       except Exception as e:
         print("error on file %s"%repr(f))
@@ -242,4 +242,4 @@ if __name__ == "__main__":
 
         #exit()
 
-  print("Destinations:", repr(destinations))
+  #print("Destinations:", repr(destinations))
