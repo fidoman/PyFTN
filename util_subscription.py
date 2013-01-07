@@ -33,14 +33,14 @@ with ftnimport.session(db) as sess:
     except FTNAlreadySubscribed:
       print ("local subscription exists")
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area)
+      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
   elif cmd == "remove":
     sess.remove_subscription(domain, area, subscriber)
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "-"+area)
+      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "-"+area, sendmode="direct")
     else:
       print ("local subscription")
 
@@ -49,7 +49,7 @@ with ftnimport.session(db) as sess:
 #    except FTNAlreadySubscribed:
 #      print ("local subscription exists")
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area)
+      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
@@ -57,15 +57,15 @@ with ftnimport.session(db) as sess:
     sess.check_addr(domain, area)
     sess.add_subscription(True, domain, area, subscriber)
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area)
+      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
   elif cmd == "query": # send areafix request
-    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%QUERY")
+    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%QUERY", sendmode="direct")
 
   elif cmd == "list": # send areafix request
-    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%LIST")
+    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%LIST", sendmode="direct")
 
   elif cmd == "show": # show subscribed areas
     if area==".": # show for link

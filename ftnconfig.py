@@ -34,6 +34,7 @@ DOUTBOUND = os.path.join(FIDODIR, "dsend")
 MSGMARKESTAT = os.path.join(FIDODIR, "msgestat")
 MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
 FILEDIR = os.path.join(FIDODIR, "files")
+FAREASDIR = os.path.join(FIDODIR, "fareas")
 GROUPFILESBY=5000
 
 robotnames = {
@@ -42,8 +43,8 @@ robotnames = {
 }
 
 # routing files
-format1files = ["/tank/home/fido/fareas/r50route/R50.ROU", "/tank/home/fido/fareas/net5020/n5020.rou"]
-format2files = ["/tank/home/fido/fareas/r50route/R50.TRU", "/tank/home/fido/fareas/net5020/n5020.tru"]
+format1files = [os.path.join(FAREASDIR, "r50route/R50.ROU"), os.path.join(FAREASDIR, "net5020/n5020.rou")]
+format2files = [os.path.join(FAREASDIR, "r50route/R50.TRU"), os.path.join(FAREASDIR, "net5020/n5020.tru")]
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = [] #"2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone

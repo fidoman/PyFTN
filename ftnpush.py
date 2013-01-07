@@ -24,7 +24,11 @@ def import_msg(sess, m, recv_from, bulk):
   # if m has flag ARQ, create a message with audit info and pack to recv_from then save to dsend to recv_from
 
   if not bulk and ('AuditRequest' in ftn.attr.binary_to_text(m.attr)):
-      print ("Sending audit reply to", m.orig[0].decode("ascii"), ftn.addr.addr2str(m.orig[1]), "via", recv_from)
+     print ("Sending audit reply to", m.orig[0].decode("ascii"), ftn.addr.addr2str(m.orig[1]), "via", recv_from)
+     if m.orig[0].decode("ascii").lower() in ("areafix","filefix","allfix"):
+      print ("ignoring request")
+     else:
+
       # create message to m.source
       # pack into packet to revc_from
 
