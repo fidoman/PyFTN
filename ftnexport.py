@@ -214,12 +214,20 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     msg.date=(header.find("date").text or '').encode(charset)
     msg.body = body[:nltail].encode(charset).split(b"\n")
   except UnicodeEncodeError:
-    charset = "utf-8"
-    fname=(header.find("sendername").text or '').encode(charset)
-    tname=(header.find("recipientname").text or '').encode(charset)
-    msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
-    msg.date=(header.find("date").text or '').encode(charset)
-    msg.body = body[:nltail].encode(charset).split(b"\n")
+    try:
+      charset = "latin-1"
+      fname=(header.find("sendername").text or '').encode(charset)
+      tname=(header.find("recipientname").text or '').encode(charset)
+      msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
+      msg.date=(header.find("date").text or '').encode(charset)
+      msg.body = body[:nltail].encode(charset).split(b"\n")
+    except UnicodeEncodeError:
+      charset = "utf-8"
+      fname=(header.find("sendername").text or '').encode(charset)
+      tname=(header.find("recipientname").text or '').encode(charset)
+      msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)
+      msg.date=(header.find("date").text or '').encode(charset)
+      msg.body = body[:nltail].encode(charset).split(b"\n")
 
   #print(fname, tname, subj, date)
 

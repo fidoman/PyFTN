@@ -120,11 +120,13 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
-            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING|CASTLE\.THERRON|FIDO7\.|PC\.CODING|NICE\.SOURCES")
+            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING|CASTLE\.THERRON|FIDO7\.|PC\.CODING|NICE\.SOURCES|TULA\.|2\.5083\.")
 
 
-RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|FIDONEWS|OTHERNETS|FIDOTEST|"
-            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS")
+RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|OTHERNETS|FIDOTEST|"
+            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS|EASTSTAR|FIDO-REQ|FDN_ANNOUNCE")
+
+RE_latin1 = re.compile("FIDONEWS")
 
 RE_utf8 = re.compile("POLITICS")
 
@@ -174,6 +176,8 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
         charset="cp866"
       elif RE_cp437.match(destaddr):
         charset="cp437"
+      elif RE_latin1.match(destaddr):
+        charset="iso8859-1"
       elif RE_ukrainian.match(destaddr):
         charset="cp1125"
       else:
