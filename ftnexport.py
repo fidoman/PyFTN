@@ -193,7 +193,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
   if charset is None:
     # not imported message
     overwriteCHRS = True
-    charset = suitable_charset(None, "encode", origdom, origaddr, destdom, destaddr) or 'utf-8'
+    charset = suitable_charset(None, None, "encode", origdom, origaddr, destdom, destaddr) or 'utf-8'
   else:
     overwriteCHRS = False
   #print(charset)
@@ -215,7 +215,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     msg.body = body[:nltail].encode(charset).split(b"\n")
   except UnicodeEncodeError:
     try:
-      charset = "latin-1"
+      charset = "cp437"
       fname=(header.find("sendername").text or '').encode(charset)
       tname=(header.find("recipientname").text or '').encode(charset)
       msg.subj=(unclean_str(header.find("subject").text or '')).encode(charset)

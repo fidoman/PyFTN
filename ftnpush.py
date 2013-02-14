@@ -88,7 +88,8 @@ b""" === < MESSAGE END > ===
     badmsgs.write(m.pack(), "inadequate XML escaping in message received from %s"%recv_from+"\n"+traceback.format_exc())
   except FTNExcessiveMessageSize as e:
     badmsgs.write(m.pack(), "Big message received from %s"%recv_from+"\n"+traceback.format_exc())
-
+  except FTNFail as e:
+    badmsgs.write(m.pack(), "Generic FTN fail in message from %s"%recv_from+"\n"+traceback.format_exc())
 
 
 def import_pkt(sess, fo, recv_from, bulk):

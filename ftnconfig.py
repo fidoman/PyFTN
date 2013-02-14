@@ -120,22 +120,31 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "MU\.|REAL\.SIBERIAN\.VALENOK|KAZAN\.|BRAKE\'S\.MAILER\.SUPPORT|\$HACKING\$|GERMAN\.RUS|GSS\.PARTOSS|NODEX\.|380\.|SMR\.|"
             "TESTING$|ESPERANTO\.RUS|RUS\.|BEL\.|MOLDOVA\.|RUS_|RUSSIAN_|KAK\.CAM-TO|DEMO.DESIGN|FTNED\.RUS|REAL\.SPECCY|"
             "TAM\.HAC\.HET|T-MAIL|1641\.|DN\.|TVER\.|ASCII_ART|GER\.RUS|KHARKOV\.|XCLUDE\.|CB\.RADIO|1754\.|400\.|NSK\.|N463\.|"
-            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING|CASTLE\.THERRON|FIDO7\.|PC\.CODING|NICE\.SOURCES|TULA\.|2\.5083\.")
+            "614\.|6140\.|LUCKY\.GATE|DREAD'S\.|KIEV\.|HACKING|CASTLE\.THERRON|FIDO7\.|PC\.CODING|NICE\.SOURCES|TULA\.|2\.5083\.|"
+            "CONCORD|TITANIC\.|ROO\.|DWAVE\.|RSS.BASH.ORG.RU|RSS.SECURITYLAB.RU|RSS.BUGTRAQ.RU|RSS.RU.NEWS|SIMBIRSK\.|HOUSTON\.|"
+            "INTERBONE\.|RSS\.IBASH\.ORG\.RU|CHERKASSY\.|AT\.TALK|SMOLENSK\.|Z\.TAVSAR\.|WIT\.|STV\.|54\.")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|OTHERNETS|FIDOTEST|"
-            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS|EASTSTAR|FIDO-REQ|FDN_ANNOUNCE")
+            "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS|EASTSTAR|FIDO-REQ|FDN_ANNOUNCE|"
+            "ALLFIX_FILE|BBS_PROMOTION|KOFO_|FUNNY|SYNC_|SYNCHRONET|SYNCDATA|LORD|BBS_CARNIVAL|RSS\.DEALEXTREME\.COM|"
+            "ALT-BBS-ADS|IPV6|MEMORIES|JAMNNTPD|AMATEUR_RADIO|FIDONEWS|.*?\.GER$|ESSNASA|MAKENL_NG|CFORSALE")
 
-RE_latin1 = re.compile("FIDONEWS")
+RE_cp850 = re.compile("ESP\.")
 
-RE_utf8 = re.compile("POLITICS")
+RE_latin = re.compile("CBM")
 
-RE_ukrainian=re.compile("UKR\.|UA\.|R46\.")
+RE_utf8 = re.compile("POLITICS|ALL-POLITICS|DEBATE|CONSPRCY")
+
+RE_ukrainian=re.compile("UKR\.|UA\.|R46\.|R46FE\.|LUGANSK\.")
 
 
-def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
+def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
 
     charset = "fido_relics"
+
+    if chrs_kludge is None and charset_kludge==b"LATIN-1":
+      chrs_kludge=b"LATIN-1 2"
 
     if chrs_kludge==b"CP866 2":
       charset="cp866"
@@ -158,7 +167,7 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
     elif chrs_kludge==b"CP1252 2":
       charset="cp1252"
     elif chrs_kludge==b"LATIN-1 2":
-      charset="latin-1"
+      charset="iso8859-1"
     elif chrs_kludge==b"UTF-8 4":
       charset="utf-8"
 
@@ -176,7 +185,9 @@ def suitable_charset(chrs_kludge, mode, srcdom, srcaddr, destdom, destaddr): # m
         charset="cp866"
       elif RE_cp437.match(destaddr):
         charset="cp437"
-      elif RE_latin1.match(destaddr):
+      elif RE_cp850.match(destaddr):
+        charset="cp850"
+      elif RE_latin.match(destaddr):
         charset="iso8859-1"
       elif RE_ukrainian.match(destaddr):
         charset="cp1125"

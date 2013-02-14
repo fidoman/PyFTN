@@ -297,6 +297,13 @@ def save(srcid, dstid, msgid, header, body):
     f.close()
     return True
 
+USERNAME = ftnconfig.SYSOP
+
+def list_echoes():
+  ftnexport.get_targets("echo")
+
+
+
 opts=getopt.getopt(sys.argv[1:], "ndb")
 optflags = set(map(lambda x: x[0], opts[0]))
 optdata = opts[1]
@@ -336,6 +343,7 @@ elif "-b" in optflags: # bounce message #
     db.prepare("select source, destination, msgid, header, body, origcharset, receivedfrom from messages where id=$1").first(mid)
   if forward(srcid, dstid, msgid, header, body, tosrc=True, newsubj="message bounced at "+ftnconfig.ADDRESS):
     db.prepare("update messages set processed=6 where id=$1")(mid)
+  exit()
 
 committer = ftnexport.netmailcommitter()
 

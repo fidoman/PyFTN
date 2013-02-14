@@ -6,8 +6,9 @@ import ftnconfig
 db=ftnconfig.connectdb()
 
 START =  1500000
+ECHO  = 'ALT.SEX.STORIES'
 
-did=db.prepare("select id from addresses where text='FLUID.REPORTS' and domain=2").first()
+did=db.prepare("select id from addresses where text=$1 and domain=2").first(ECHO)
 #did=db.prepare("select id from addresses where text='R50.SYSOP' and domain=2").first()
 
 #for src, dst, header, body, origcharset in db.prepare("select source, destination, header, body from messages where id=$1")(1170744):

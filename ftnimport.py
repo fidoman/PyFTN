@@ -86,10 +86,15 @@ def normalize_message(msg, charset="ascii"):
     # get message originator and recipient addresses
 
     # - MSGID
-    if b"MSGID:" in msg.kludge:
-      msgid=msg.kludge[b"MSGID:"].decode("ascii")
-    else:
-      msgid=None # try to generate
+    msgid = msg.kludge.get(b"MSGID:")
+    if type(msgid) is list:
+      raise FTNFail("Multiple MSGID")
+    if msgid is not None:
+      try:
+        msgid = msgid.decode("ascii")
+      except:
+        raise FTNFail("MSGID is not ASCII string")
+    # if no MSGID kludge, MSGID will be generated
 
     # - plain
     if msg.area:
@@ -188,7 +193,7 @@ def normalize_message(msg, charset="ascii"):
     # end addresses
 
 
-    charset = suitable_charset(msg.kludge.get(b"CHRS:"), "decode", origdom, origaddr, destdom, destaddr) or charset
+    charset = suitable_charset(msg.kludge.get(b"CHRS:"), msg.kludge.get(b"CHARSET:"), "decode", origdom, origaddr, destdom, destaddr) or charset
     #print("charset:", charset)
 
 
@@ -642,37 +647,27 @@ class session:
   def touched_addresses(self):
     return self.last_message_for_address.keys()
 
-  def import_link_auth(self, node, connectpassword, robotpassword, echolevel, fecholevel, echogroups, fechogroups):
-    addr_id=check_addr("node", node)
+  def import_link_auth(self, node, connectpassword, robotpassword, echolevel=None, fecholevel=None, echogroups=None, fechogroups=None):
+    addr_id = self.check_addr("node", node)
   
-    doc = xml.dom.minidom.Document()
-    authel = doc.createElement("FTNAUTH")
-  
-    connectpwel = doc.createElement("ConnectPassword")
-    authel.appendChild(connectpwel)
-    connectpwtext = doc.createTextNode(connectpassword)
-    connectpwel.appendChild(connectpwtext)
-  
+    authel = xml.etree.ElementTree.Element("FTNAuth")
+    connectpwel = xml.etree.ElementTree.SubElement(authel, "ConnectPassword")
+    connectpwel.text = connectpassword
+
     for name, val in [("RobotsPassword", [robotpassword]),("EchoLevel", [echolevel]), 
           	    ("FileEchoLevel", [fecholevel]), 
           	    ("EchoGroup",list(echogroups or "")), ("FileEchoGroup",list(fechogroups or ""))]:
       for v1 in val:
         if v1:
-          itemel=doc.createElement(name)
-          authel.appendChild(itemel)
-          itemtext=doc.createTextNode(v1)
-          itemel.appendChild(itemtext)
-  
-    c=conn.cursor()
-    try:
-      c.execute("insert into links (address, authentication) values (%s, %s)", (addr_id, authel.toxml()))
-      conn.commit()
-    except psycopg2.IntegrityError as exc:
-      if psycopg2.errorcodes.lookup(exc.pgcode)!='UNIQUE_VIOLATION':
-        raise exc
-      conn.rollback()
-      c.execute("update links set (authentication) = (%s) where address=%s", (authel.toxml(), addr_id))
-      conn.commit()
+          itemel = xml.etree.ElementTree.SubElement(authel, name)
+          itemel.text = v1
+
+    exists = int(self.db.prepare("select count(*) from links where address=$1").first(addr_id))>0
+
+    if not exists:
+      self.db.prepare("insert into links (address, authentication) values ($1, $2)")(addr_id, authel)
+    else:
+      self.db.prepare("update links set (authentication) = ($2) where address=$1")(addr_id, authel)
 
 if __name__=="__main__":
   pass

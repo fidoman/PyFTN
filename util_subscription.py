@@ -4,7 +4,7 @@ import sys
 import ftnconfig
 import ftnimport
 import ftnexport
-from ftn.ftn import FTNAlreadySubscribed
+from ftn.ftn import FTNAlreadySubscribed, FTNNoAddressInBase
 
 # add|remove domain area subscriber
 
@@ -128,6 +128,32 @@ with ftnimport.session(db) as sess:
     local = set(ftnexport.get_node_subscriptions(db, subscriber, domain))
     print ("Local but not remote:", local-remote)
     print ("Remote but not local:", remote-local)
+
+  elif cmd == "completevital":
+    """ read file and vital-subscribe the link to non-existent here or orphan addresses """
+    for aname in open(area):
+      aname = aname.strip()
+      #print (aname)
+      try:
+        tid = ftnconfig.get_addr_id(db, db.FTN_domains[domain], aname)
+      except FTNNoAddressInBase:
+        tid = None
+      #print (tid)
+      if tid is not None:
+        uplinks = [x for x in ftnexport.get_subscribers(db, tid, True)]
+      else:
+        uplinks = []
+      if len(uplinks) == 0:
+        print (aname, "create from", subscriber)
+        sess.check_addr(domain, aname)
+        try:
+          sess.add_subscription(True, domain, aname, subscriber)
+        except:
+          print ("already subscribed")
+        if subscriber != ftnconfig.ADDRESS:
+          sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+aname, sendmode="direct")
+        else:
+          print ("local subscription")
 
 
   else:
