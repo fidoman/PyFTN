@@ -3,17 +3,29 @@
 # connect to daemon and push incoming file
 # connect to daemon and get outbound
 
+address = "1:123/500"
+encoding = "utf-8"
+
+
 import socket
+import os
 
 from socketutil import *
+
+try:
+  os.mkdir("test")
+except:
+  pass
+
+if not os.path.isdir("test"):
+  print ("please make dir test")
+  exit()
 
 s = socket.socket(socket.AF_INET)
 
 import ftnconfig
-address = "2:5020/1754"
 db=ftnconfig.connectdb()
 password = ftnconfig.get_link_password(db, address)
-encoding = "utf-8"
 print (address, password)
 
 do_send = False

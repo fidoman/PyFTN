@@ -4,7 +4,7 @@ import ftnconfig
 
 db=ftnconfig.connectdb()
 
-MID=1607849
+MID=1700976
 newc="cp437"
 
 h,b,c=db.prepare("select header, body, origcharset from messages where id=$1").first(MID)
