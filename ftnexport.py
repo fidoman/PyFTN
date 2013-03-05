@@ -9,14 +9,17 @@ import time
 import zipfile
 import os
 
-from ftnconfig import suitable_charset, get_link_password, get_link_id, ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, \
-                        get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, EXPORTLOCK, get_link_pkt_format, get_link_bundler
+from ftnconfig import suitable_charset, get_link_password, get_link_id, \
+	ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, \
+	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler
 import ftnimport
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword
 from stringutil import *
 import postgresql.alock
+
+# AUTOCOMMIT assumed
 
 def get_subscribers(db, target, onlyvital=False):
     """ query all subscribers including that who are subscribed to group of the target """
@@ -437,6 +440,27 @@ class echomailcommitter:
   def show(self):
     print("echomail committer:", self.lasts)
 
+# --- file export ---
+
+def get_pkt_n(db, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((PKTLOCK, link_id))):
+      r = db.prepare("select pktn from links where id=$1").first(link_id)
+      db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
+    return r
+
+def get_bundle_n(db, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((BUNDLELOCK, link_id))):
+      r = db.prepare("select bundlen from links where id=$1").first(link_id)
+      db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
+    return r
+
+def get_tic_n(db, link_id):
+    with postgresql.alock.ExclusiveLock(db, ((TICLOCK, link_id))):
+      r = db.prepare("select ticn from links where id=$1").first(link_id)
+      db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
+    return r
+
+
 def file_export(db, address, password, what):
   """ This generator fetches messages from database and
       yields objects, that contain the file information
@@ -476,7 +500,7 @@ def file_export(db, address, password, what):
     # non-vital (CC) should be processed just like echomail
 
     # set password in netmail packets
-        p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: netmailcommitter())
+        p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: netmailcommitter())
 
     #..firstly send pkts in outbound
         for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -533,7 +557,7 @@ def file_export(db, address, password, what):
 
     # set password in netmail packets
     link_id=get_link_id(db, address, withfailback=True)
-    p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(link_id), lambda: netmailcommitter(newstatus=7))
+    p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, link_id), lambda: netmailcommitter(newstatus=7))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_direct_messages(db, addr_id):
@@ -587,10 +611,10 @@ def file_export(db, address, password, what):
         #
 
         if link_bundler:
-          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter(),
-            bundlepacker(link_bundler, address, lambda: db.filen.get_bundle_n(get_link_id(db, address)), lambda: echomailcommitter()))
+          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: echomailcommitter(),
+            bundlepacker(link_bundler, address, lambda: get_bundle_n(db, get_link_id(db, address)), lambda: echomailcommitter()))
         else:
-          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: db.filen.get_pkt_n(get_link_id(db, address)), lambda: echomailcommitter())
+          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: echomailcommitter())
 
         subscache = {}
         for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr, processed in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
@@ -867,6 +891,31 @@ def get_subscriptions_x(db, subscriber_id, targetdomain_id, asuplink = False):
 
 def get_all_targets(db, targetdomain):
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 order by text")(db.FTN_domains[targetdomain])]
+
+def nntp_list_active(db):
+  group_q = db.prepare("select min(id), max(id) from messages where destination=$1")
+  for aid, atext in db.prepare("select t.id, t.text from addresses t where t.domain=$1 order by text")(db.FTN_domains["echo"]):
+    low, high = group_q.first(aid) # new message always added at end; messages cannot be hidden
+    yield atext, low, high
+
+def nntp_group(db, group):
+  aid=db.prepare("select id from addresses where text=$1").first(group)
+  if aid is None:
+    return None
+  return db.prepare("select count(id), min(id), max(id) from messages where destination=$1").first(aid)
+
+def nntp_group_list(db, group, gte=None, lte=None):
+  aid=db.prepare("select id from addresses where text=$1").first(group)
+  if aid is None:
+    return None
+  criteria=""
+  if gte:
+    criteria+=" and id>=%d"%gte
+  if lte:
+    criteria+=" and id<=%d"%lte
+  for x in db.prepare("select id from messages where destination=$1"+criteria+" order by id")(aid):
+    yield x[0]
+
 
 def count_messages_to(db, address):
     return int(db.prepare("select count(*) from messages where destination=$1")(address)[0][0])

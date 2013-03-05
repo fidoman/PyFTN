@@ -14,7 +14,6 @@ def connectdb(dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip())
   db = postgresql.open(dbstring)
   init_domains(db)
   init_commuter(db)
-  db.filen=FileNumbering(db)
   return db
 
 FIDODIR="/tank/home/fido"
@@ -26,6 +25,7 @@ NODELISTENCODING="iso8859-1"
 DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
 BADDIR=os.path.join(FIDODIR, "refuse/badmsg")
 SECDIR=os.path.join(FIDODIR, "refuse/secmsg")
+LOGDIR=os.path.join(FIDODIR, "log")
 INBOUND = os.path.join(FIDODIR, "recv")
 DINBOUND = os.path.join(FIDODIR, "drecv")
 OUTBOUND = os.path.join(FIDODIR, "send")
@@ -36,6 +36,13 @@ MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
 FILEDIR = os.path.join(FIDODIR, "files")
 FAREASDIR = os.path.join(FIDODIR, "fareas")
 GROUPFILESBY=5000
+
+DAEMONLOG="daemon.log"
+
+UNPACK1=[os.path.join(FIDODIR, "unpack"), "quick"]
+UNPACK1LOG="quick.log"
+UNPACK2=[os.path.join(FIDODIR, "unpack")]
+UNPACK2LOG="unpack.log"
 
 robotnames = {
     "echo": "AreaFix",
@@ -63,11 +70,15 @@ NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5040/0", "2:5040/2"),
 ]
 
-DAEMONPORT=24555
+FTNPORT=24559
+NNTPPORT=11119
 DAEMONBIND=[
-    (socket.AF_INET, ('0.0.0.0', DAEMONPORT)),
-    (socket.AF_INET6, ('::', DAEMONPORT)),
+    (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
+    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
+    (socket.AF_INET, ('0.0.0.0', NNTPPORT), "nntp"),
+    (socket.AF_INET6, ('::', NNTPPORT), "nntp"),
 ]
+# add binding with specifying session function
 
 PACKETTHRESHOLD = 100*1024
 BUNDLETHRESHOLD = 500*1024
@@ -78,6 +89,7 @@ PKTLOCK=1
 BUNDLELOCK=2
 TICLOCK=3
 EXPORTLOCK={"netmail": 4, "echomail": 5, "fileecho": 6, "filebox": 7}
+IMPORTLOCK=8
 
 # ---------------------------------------------------------------------------------------
 
@@ -360,37 +372,6 @@ def get_addr(db, addr_id):
 def addrdir(base, addr):
   return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(addr))))
 
-#def inbound_dir(address, isprotected, isdaemon):
-#  base = DINBOUND if isdaemon else INBOUND
-#  if isprotected:
-#    return os.path.join(base, ".".join(map(str, ftn.addr.str2addr(address))))
-#  else:
-#    return os.path.join(base, "unknown")
-
-# -
-
-class FileNumbering:
-  def __init__(self, db):
-    self.db = db
-
-  def get_pkt_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(self.db, ((PKTLOCK, link_id))):
-      r = self.db.prepare("select pktn from links where id=$1").first(link_id)
-      self.db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
-    return r
-
-  def get_bundle_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(self.db, ((BUNDLELOCK, link_id))):
-      r = self.db.prepare("select bundlen from links where id=$1").first(link_id)
-      self.db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
-    return r
-
-  def get_tic_n(self, link_id):
-    with postgresql.alock.ExclusiveLock(self.db, ((TICLOCK, link_id))):
-      r = self.db.prepare("select ticn from links where id=$1").first(link_id)
-      self.db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
-    return r
-
 # -
 
 if __name__ == "__main__": 
@@ -400,8 +381,3 @@ if __name__ == "__main__":
 #    print(get_link_password(db, "2:5020/715"))
     print(get_link_password(db, "2:5020/1955"))
     print(get_link_password(db, "2:5020/1955", True))
-
-#  print(filen.get_pkt_n(113))
-#  print(filen.get_tic_n(113))
-#  print(filen.get_pkt_n(114))
-#  print(filen.get_bundle_n(114))

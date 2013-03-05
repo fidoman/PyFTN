@@ -13,9 +13,10 @@ import re
 import os
 import time, datetime
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT
+from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT, IMPORTLOCK
 from stringutil import *
 import ftnpoll
+import postgresql.alock
 
 def modname(n, m):
   return n if m==0 else "%s.%d"%(n, m)
@@ -348,7 +349,8 @@ class session:
 #      raise FTNNoAddressInBase(dom, addr)
 
   def add_addr(self, dom, addr):
-      self.db.prepare("insert into addresses (domain, text) values($1, $2)")(dom, addr)
+      timestamp = datetime.datetime.now(datetime.timezone.utc)
+      self.db.prepare("insert into addresses (domain, text, created) values($1, $2)")(dom, addr, timestamp)
 
   def forget_address(self, dom, addr):
       self.db.prepare("delete from addresses where domain=$1 and text=$2")(self.db.FTN_domains[dom], addr)
@@ -636,11 +638,16 @@ class session:
     if not self.Q_update_addr_msg:
       self.Q_update_addr_msg = self.db.prepare("update addresses set last=$2 where id=$1")
 
-    timestamp = datetime.datetime.now(datetime.timezone.utc)
-    print ("Transaction state", self.x.state, str(timestamp))
-    new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id, timestamp)[0][0]
-    print ("insert msg #", new_msg, "to address", destid)
-    self.Q_update_addr_msg(destid, new_msg)
+    with postgresql.alock.ExclusiveLock(self.db, IMPORTLOCK): # lock per all table messages
+      # begin insert-lock
+      # guarantees that for greater id greater timestamp
+      timestamp = datetime.datetime.now(datetime.timezone.utc)
+      print ("Transaction state", self.x.state, str(timestamp))
+      new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id, timestamp)[0][0]
+      print ("insert msg #", new_msg, "to address", destid)
+      self.Q_update_addr_msg(destid, new_msg)
+      # end insert-lock
+
     self.last_message_for_address[destid] = new_msg
     self.poller.add_one(destid)
 
