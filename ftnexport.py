@@ -892,9 +892,19 @@ def get_subscriptions_x(db, subscriber_id, targetdomain_id, asuplink = False):
 def get_all_targets(db, targetdomain):
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 order by text")(db.FTN_domains[targetdomain])]
 
-def nntp_list_active(db):
+# --- NNTP ---
+
+def nntp_list_active(db, newerthan=None):
   group_q = db.prepare("select min(id), max(id) from messages where destination=$1")
-  for aid, atext in db.prepare("select t.id, t.text from addresses t where t.domain=$1 order by text")(db.FTN_domains["echo"]):
+
+  if newerthan is None:
+    query = db.prepare("select t.id, t.text from addresses t "
+        "where t.domain=$1 order by text")(db.FTN_domains["echo"])
+  else:
+    query = db.prepare("select t.id, t.text from addresses t "
+        "where t.domain=$1 and created>=$2 order by text")(db.FTN_domains["echo"], newerthan)
+
+  for aid, atext in query:
     low, high = group_q.first(aid) # new message always added at end; messages cannot be hidden
     yield atext, low, high
 
@@ -916,6 +926,33 @@ def nntp_group_list(db, group, gte=None, lte=None):
   for x in db.prepare("select id from messages where destination=$1"+criteria+" order by id")(aid):
     yield x[0]
 
+def nntp_next(db, group, msgn):
+  aid=db.prepare("select id from addresses where text=$1").first(group)
+  if aid is None:
+    return None
+  r = db.prepare("select id from messages where destination=$1 and id>$2"
+        "order by id asc limit 1 offset 0").first(aid, msgn)
+  if r is None:
+    return None
+  return r[0]
+
+def nntp_prev(db, group, msgn):
+  aid=db.prepare("select id from addresses where text=$1").first(group)
+  if aid is None:
+    return None
+  r = db.prepare("select id from messages where destination=$1 and id<$2"
+        "order by id desc limit 1 offset 0").first(aid, msgn)
+  if r is None:
+    return None
+  return r[0]
+
+def nntp_fetch(db, head, body, msgid=None, group=None, article=None):
+  return None
+
+def nntp_msgid(db, group, msgn):
+  pass
+
+# --- **** ---
 
 def count_messages_to(db, address):
     return int(db.prepare("select count(*) from messages where destination=$1")(address)[0][0])

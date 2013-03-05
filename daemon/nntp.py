@@ -1,10 +1,10 @@
 #!/usr/local/bin/python3 -bb
 
 import socket
-import select
-import threading
 import traceback
 import re
+import time
+import datetime
 
 from socketutil import *
 import ftnconfig
@@ -18,6 +18,7 @@ sessions=[]
 
 spaces=re.compile(b"\s+")
 msgrange=re.compile(b"(\d+)(-(\d*))?$")
+digits=re.compile(b"\d+$")
 
 def session(log, s, a):
 
@@ -145,20 +146,102 @@ def session(log, s, a):
 
 
   def cmdLast():
-#!
-    s.send(b"509 Under development\r\n")
+    nonlocal currentgroup, currentarticle
+    if currentgroup is None:
+      s.send(b"412 No newsgroup selected\r\n")
+      return
+    if currentarticle is None:
+      s.send(b"420 Current article number is invalid\r\n")
+      return
+    newarticle = ftnexport.nntp_prev(db, currentgroup, currentarticle)
+    if newarticle is None:
+      s.send(b"422 No previous article in this group\r\n")
+    currentarticle = newarticle
+    msgid = ftnexport.nntp_msgid(db, currentgroup, newarticle)
+    s.send(("223 %d %s\r\n"%(newarticle, msgid)).encode("ascii"))
 
   def cmdNext():
-#!
-    s.send(b"509 Under development\r\n")
+    nonlocal currentgroup, currentarticle
+    if currentgroup is None:
+      s.send(b"412 No newsgroup selected\r\n")
+      return
+    if currentarticle is None:
+      s.send(b"420 Current article number is invalid\r\n")
+      return
+    newarticle = ftnexport.nntp_next(db, currentgroup, currentarticle)
+    if newarticle is None:
+      s.send(b"421 No next article in this group\r\n")
+    currentarticle = newarticle
+    msgid = ftnexport.nntp_msgid(db, currentgroup, newarticle)
+    s.send(("223 %d %s\r\n"%(newarticle, msgid)).encode("ascii"))
+
 
   def cmdArticle():
-#!
-    s.send(b"509 Under development\r\n")
+    nonlocal currentgroup, currentarticle
+    response,head,body={
+        "ARTICLE": ("220", True, True),
+        "HEAD": ("221", True, False),
+        "BODY": ("222", False, True),
+        "STAT": ("223", False, False)
+    }
+
+    # 1) demultiplex parameters
+    msgid = None
+    article = None
+
+    if len(cmd)==1:
+      if currentarticle is None:
+        s.send(b"420 Current article number is invalid\r\n")
+        return
+      article=currentarticle
+
+    if len(cmd)>1:
+      arg=cmd[1]
+      if digits.match(arg):
+        try:
+          article=int(arg)
+        except:
+          s.send(b"501 Invalig argument\r\n")
+          return
+      else:
+        try:
+          msgid=arg.decode("ascii")
+        except:
+          s.send("501 Non-ASCII MSGID\r\n")
+          return
+        log(str(a)+" fetch by msgid "+repr(msgid))
+
+    # 2) fetching
+    if msgid is not None:
+      out = nntp_fetch(db, msgid=arg, head=head, body=body)
+      if out is None:
+        s.send(b"430 No article with that message-id\r\n")
+        return
+    elif article is not None:
+      if currentgroup is None:
+        s.send(b"412 No newsgroup selected\r\n")
+        return
+      group=currentgroup
+      out = nntp_fetch(db, group=group, article=article, head=head, body=body)
+      if out is None:
+        s.send(b"423 No article with that number\r\n")
+        return
+    else:
+      s.send("501 Could not interpret arguments\r\n")
+      return
+
+    s.send((response+" "+"0" if article is None else str(article)+" "+msgid+"\r\n").encode("ascii"))
+    for l in out:
+      s.send(l.encode("utf-8")+b"\r\n")
+    s.send(b".\r\n")
+
+    # 3) update
+    if article is not None:
+      currentarticle = article
 
   def cmdDate():
-#!
-    s.send(b"509 Under development\r\n")
+    nntpdate = time.strftime("%Y%m%d%H%M%S", time.gmtime()).encode("ascii")
+    s.send(b"111 "+nntpdate+b"\r\n")
 
   def cmdHelp():
     s.send(b"100 Help text follows\r\n")
@@ -168,22 +251,26 @@ def session(log, s, a):
     s.send(b"Please mail sergey@fidoman.ru if you believe this software has a bug\r\n")
     s.send(b".\r\n")
 
-  def cmdNewGroups():
-#!
-    s.send(b"509 Under development\r\n")
 
-  def ListActive():
+  def ListActive(newerthan=None):
     try:
-      echolist = list(ftnexport.nntp_list_active(db))
-      s.send(b"215 list of newsgroups follows\r\n")
-      for e, mn, mx in echolist:
-        if mn is None or mx is None:
-          mn = mx = 0
-        s.send(("%s %d %d n\r\n"%(e,mn,mx)).encode("ascii"))
-      s.send(b".\r\n")
+      echolist = list(ftnexport.nntp_list_active(db, newerthan))
     except:
       s.send(b"403 error querying list of echoes\r\n")
       log(str(a)+" exception on ListActive %s"%(traceback.format_exc()))
+      return
+
+    if newerthan is None:
+      s.send(b"215 list of newsgroups follows\r\n")
+    else:
+      s.send(b"231 list of new newsgroups follows\r\n")
+
+    for e, mn, mx in echolist:
+      if mn is None or mx is None:
+        mn = mx = 0
+      s.send(("%s %d %d n\r\n"%(e,mn,mx)).encode("ascii"))
+    s.send(b".\r\n")
+
 
   def cmdList():
     if len(cmd)==1:
@@ -202,6 +289,35 @@ def session(log, s, a):
       return
 
     s.send(b"501 Unsupported argument\r\n")
+
+
+  def cmdNewGroups():
+    if len(cmd)<3 or len(cmd[1])!=6 and len(cmd[1])!=8 or len(cmd[2])!=6:
+      s.send(b"501 Bad argument\r\n")
+      return
+    try:
+      year  = int(cmd[1][:-4])
+      month = int(cmd[1][-4:-2])
+      day   = int(cmd[1][-2:])
+      hour   = int(cmd[2][:2])
+      minute = int(cmd[2][2:4])
+      second = int(cmd[2][4:])
+      if len(cmd[1][:-4])==2:
+        cyear=time.gmtime()[0]
+        cyear_yy=cyear%100
+        ccentury=cyear//100
+        if year>cyear_yy:
+          year+=(ccentury-1)*100
+        else:
+          year+=ccentury*100
+
+      dt = datetime.datetime(year, month, day, hour, minute, second, tzinfo=datetime.timezone.utc)
+    except:
+      s.send(b"501 Bad argument\r\n")
+      return
+
+    ListActive(dt)
+
 
   commands={ # allow pipeline, function
 None:	(False, cmdConnection),
