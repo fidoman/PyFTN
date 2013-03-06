@@ -958,7 +958,7 @@ def count_messages_to(db, address):
     return int(db.prepare("select count(*) from messages where destination=$1")(address)[0][0])
 
 def get_matching_targets(db, targetdomain, mask):
-    mask = mask.replace("+", "++").replace("%", "+%").replace("_", "_%").replace("*", "%").replace("?", "_")
+    mask = mask.replace("+", "++").replace("%", "+%").replace("_", "+_").replace("*", "%").replace("?", "_")
     return [x[0] for x in db.prepare("select t.text from addresses t where t.domain=$1 and t.text like $2 escape '+'")\
         (db.FTN_domains[targetdomain], mask)]
 
