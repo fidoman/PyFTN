@@ -51,6 +51,8 @@ for f in os.listdir(DUPDIR):
     if len(dbmessages)>1:
       raise Exception("multiple messages in database with this MSGID")
     dbid, dbmsgid, dbheader, dbbody, dbcharset, dbsd, dbst, dbdd, dbdt = dbmessages[0]
+    dbsd = db.FTN_backdomains[dbsd]
+    dbdd = db.FTN_backdomains[dbdd]
 
     print("From:",dbheader.find("sendername").text, dbsd, dbst)
     print("To:  ",dbheader.find("recipientname").text, dbdd, dbdt)
@@ -81,7 +83,7 @@ for f in os.listdir(DUPDIR):
     match = subjmatch and (body.strip()==dbbody.strip() or dbbody.strip().startswith(body.strip()))
 
     print("and same body:", match)
-    if destdomname=="echo" and match:
+    if destdomname=="echo" and match and (destdomname,destaddr)==(dbdd,dbdt):
       os.unlink(os.path.join(DUPDIR,f))
       os.unlink(os.path.join(DUPDIR,f[:-4]+".status"))
       try:
@@ -92,7 +94,7 @@ for f in os.listdir(DUPDIR):
     else:
       dupf=open(os.path.join(DUPDIR, fn+".db%d.msg"%dbid), "wb")
       dbmsg,_=ftnexport.denormalize_message(
-        (db.FTN_backdomains[dbsd], dbst), (db.FTN_backdomains[dbdd], dbdt),
+        (dbsd, dbst), (dbdd, dbdt),
         dbmsgid, dbheader, dbbody, dbcharset, echodest=ADDRESS, addpath=ADDRESS)
       dupf.write(dbmsg.pack())
       dupf.close()

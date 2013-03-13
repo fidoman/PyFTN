@@ -4,6 +4,7 @@ import io
 import re
 import time
 from .msg import MSG
+from .ftn import date_to_RFC3339
 from .addr import *
 #import os
 
@@ -242,34 +243,7 @@ class PKT:
         #     convert to rfc3339
 
         m.date = m.date.decode("ascii")
-        tzoffs = None
-
-        if RE_rfc3339.match(m.date):
-          pass
-        else:
-          try:
-            fdate = time.strptime(m.date, '%d %b %y  %H:%M:%S')
-          except ValueError:
-            try:
-              fdate = time.strptime(m.date, '%a %b %d %H:%M:%S ')
-            except ValueError:
-              try:
-                fdate = time.strptime(m.date, '%a, %d %b %Y %H:%M:%S %z')
-                tzoffs = m.date[-5:]
-              except ValueError:
-                fdate = time.strptime(m.date, '%Y-%m-%d %H:%M:%S')
-
-
-#          print (fdate)
-
-          if tzoffs is None:
-            tzoffs = m.kludge.get(b"TZUTC:", b"1155") # TODO: if no kludge evaluate sender TZ by its fidoaddress
-          hroffs = int(tzoffs[0:-2])
-          moffs = int(tzoffs[-2:])
-          m.date = time.strftime("%Y-%m-%d %H:%M:%S", fdate)+"+%02d:%02d"%(hroffs,moffs)
-
-#        print (m.date)
-#        print ()
+        m.date = date_to_RFC3339(m.date, m.kludge.get(b"TZUTC:"))
         m.date = m.date.encode("ascii")
         if b"TZUTC:" in m.kludge:
           del m.kludge[b"TZUTC:"]
@@ -277,7 +251,7 @@ class PKT:
         body=m.make_body().replace(b"\n\r", b"\r").replace(b"\r\n", b"\r").replace(b"\n", b"\r")
         f.write(b"\0".join((m.date, m.dest[0], m.orig[0], m.subj, body, b'')))
         f.write(b"\n")
-        
+
     else:
       raise FTNFail("Cannot save in such format")
 

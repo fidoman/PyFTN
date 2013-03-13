@@ -1,0 +1,287 @@
+header
+empty line
+body
+
+message-id: <....>
+3..250 octets
+US-ASCII printable only
+MSGID transform: unicalization
+replace all * with **
+add .year at end
+add areaname*# at beginning if msgid does not already contain it
+
+sending to NNTP:
+  message-id: 
+    if valid NNTP value: enclose in <>
+    else: escape non alphadigital characters and add @hostname
+  reply-to: find all possible variants of encoding of fidonet msgid descending from current year
+
+receiving from NNTP:
+  generate FTN MSGID
+  save msgid unquoted
+  in-reply-to: if referenced message exists get MSGID from it else if it is like to ftn MSGID use it directly
+
+add prefix FTN:YYYY: for fido messages
+this will make conversion of reply-to: to REPLY: trivial
+
+
+FTN software does not guarantee uniqueness of MSGID so it cannot be really used for NNTPend of line is CRLF
+1 command per line
+default - UTF-8
+
+Commands
+  keyword argument argument ...
+    argument encoded in ASCII with no spaces
+    separated by spaces or tabs
+
+  max line length=512 including CRLF
+  max argument lgth 497 bytes
+
+  LIST variant keyword ...
+  MODE variant keyword ...
+
+
+Responce
+  starts with 3-digit code
+  initial line is limited to 512 bytes
+
+
+continuation lines
+  no NUL, CR, LF
+  follows immediately initial line
+  leading dot must be dot-stuffed (add another dot ahead)
+  end with line containing an alone dot
+
+1xx info
+2xx completed successfully
+3xx all rigth, go further
+4xx command failed
+5xx unknown or erroneous command syntax
+
+
+      x0x - Connection, setup, and miscellaneous messages
+      x1x - Newsgroup selection
+      x2x - Article selection
+      x3x - Distribution functions
+      x4x - Posting
+      x8x - Reserved for authentication and privacy extensions
+      x9x - Reserved for private use (non-standard extensions)
+
+500 - unrecognozed/unsupported command
+501 - syntax error in arguments/too long command/bad second keyword
+502 - must reconnect with authentication
+503 - unsupported feature
+504 - required base64 for argument
+
+400 - server needs timeout (connection immediately closed)
+401 - need change capability (label value returned)
+403 - internal error processing
+480 - need to authenticate
+483 - must negotiate protection
+
+
+Capabilities
+  one capability per line in answer
+    label token token ...
+  must be ignored if not started with letter
+
+    (mandatory) VERSION 2 (always first in list)
+    READER or IHAVE
+    POST
+    NEWNEWS
+    HDR
+    OVER ... or OVER MSGID
+    LIST
+
+    (optional) IMPLEMENTATION name version
+    (?) MODE-READER
+
+initial connection responces
+     200    Service available, posting allowed
+     201    Service available, posting prohibited (POST command not allowed)
+     400    Service temporarily unavailable - and close connection
+     502    Service permanently unavailable - and close connection
+
+
+QUIT
+    205 NNTP Service exits normally
+
+CAPABILITIES [keyword]
+    101    Capability list follows (multi-line)
+
+  keyword is ignored if server do not understand it
+
+
+MODE-READER
+     200    Posting allowed
+     201    Posting prohibited
+     502    Reading service permanently unavailable -> close connection
+
+  switch from transit to reader mode (no effect if last already intact)
+  no need to use it if READER was advertised
+
+article IDs
+  message-id
+  group + message number 1..2,147,483,647
+  arrival time
+
+Commands for READER capability
+
+    GROUP groupname
+     211 number low high group     Group successfully selected
+     411                           No such newsgroup
+
+	number - number of articles in group
+	low - low watermark
+	high - high watermark
+
+        all three numbers zero for empty group
+
+	- sets current group
+	- resets current message to first in group (even if same group selected)
+	- do not change things if invalid group specified
+
+    LISTGROUP group range
+     211 number low high group     Article numbers follow (multi-line)
+     411                           No such newsgroup
+     412                           No newsgroup selected
+
+	same as GROUP but provides multiline message list
+	range is number or start-end or start- or omitted (equal to 1-)
+	range affects list of returned messages only (list is one message number per line ended with .)
+
+    LAST
+     223 n message-id    Article found
+     412                 No newsgroup selected
+     420                 Current article number is invalid
+     422                 No previous article in this group
+
+	- select previous message in group (or do nothing if something is not right)
+	- must not return value lesser than low watermark
+
+    NEXT
+     223 n message-id    Article found
+     412                 No newsgroup selected
+     420                 Current article number is invalid
+     421                 No next article in this group
+
+	- select next message in group
+
+    ARTICLE [number|message-id]
+	- returns full article
+    HEAD [number|message-id]
+	- code 221 instead 220
+	- returns only headers (empty line is not sent)
+    BODY [number|message-id]
+	- code 222 instead 220
+	- returns only body (empty line is not sent)
+    STAT [number|message-id]
+	- code 223 instead of 220
+	- no multiline, just stats the existence of article
+
+   First form (message-id specified)
+     220 0|n message-id    Article follows (multi-line)
+     430                   No article with that message-id
+
+	- does not affect article selection
+	- returns message number if article in currently selected group else 0
+
+   Second form (article number specified)
+     220 n message-id      Article follows (multi-line)
+     412                   No newsgroup selected
+     423                   No article with that number
+
+	- sets selected article as current if it exists
+
+   Third form (current article number used)
+     220 n message-id      Article follows (multi-line)
+     412                   No newsgroup selected
+     420                   Current article number is invalid
+
+   Parameters
+     number        Requested article number
+     n             Returned article number
+     message-id    Article message-id
+
+	- multiline ends with one dot line
+
+
+    POST (must not be pipelined)
+
+   Initial responses
+     340    Send article to be posted
+     440    Posting not permitted
+
+   Subsequent responses
+     240    Article received OK
+     441    Posting failed
+
+    IHAVE message-id (must not be pipelined)
+[IHAVE capability]
+   Initial responses
+     335    Send article to be transferred
+     435    Article not wanted
+     436    Transfer not possible; try again later
+
+   Subsequent responses
+     235    Article transferred OK
+     436    Transfer failed; try again later
+     437    Transfer rejected; do not retry
+
+    DATE
+         111 yyyymmddhhmmss    Server date and time (UTC)
+
+    HELP
+        100    Help text follows (multi-line)
+
+    NEWGROUPS date time [GMT]
+     231    List of new newsgroups follows (multi-line)
+
+   Parameters
+     date    Date in yymmdd or yyyymmdd format
+	If the first two digits of the year are not specified
+   (this is supported only for backward compatibility), the year is to
+   be taken from the current century if yy is smaller than or equal to
+   the current year, and the previous century otherwise.
+     time    Time in hhmmss format
+
+
+
+NEWNEWS capability
+    NEWNEWS
+
+LIST capability
+    LIST
+
+	capabilities LIST ACTIVE and LIST NEWSGROUPS are mandatory addendum for READER capability
+
+OVER
+    OVER
+    LIST OVERVIEW.FMT
+
+HDR
+    HDR
+    LIST HEADERS
+Порядок обмена.
+
+Читатель из сокета работает асинхронно.
+Управляется статусной переменной "datadest"
+При отправке команды клиенту задаётся datadest
+ответ уходит в заданную этой переменной функцию
+функция возвращает либо себя, если надо продолжить чтение, или None, если больше данных не ожидается
+приход данных при datadest is None означает ошибку протокола
+
+Такой режим не используется в NNTP, поскольку нарушает конвейер (pipelining)
+Требование дождаться окончания ответа оговаривается специально для отдельных команд.
+В частности, приветствие не является pipelined - команды должны отправляться только после полного его получения.
+
+Команды, запрещающие pipelining
+При отправке ответа на такую команду сервер может отбросить все данные, пришедшие раньше, чем отправлен этот ответ
+[!]pattern,[!]pattern,[!]pattern
+
+wildmatch => * ?
+not allowed => ! * , ? [ \ ]
+
+if rightmost match does not contain ! then match
+if rightmost match contains ! or no match at all then do not match
+

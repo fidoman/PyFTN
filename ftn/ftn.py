@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-#import pgdb, sys
+import re
+import time
 
 class FTNFail (Exception):
   def __init__(self, text):
@@ -124,3 +125,30 @@ def isbundle(f):
 
 def ismail(f):
   return ispkt(f) or isbundle(f) or ismsg(f)
+
+RE_rfc3339 = re.compile("(\d\d\d\d)-(\d\d)-(\d\d)[Tt ](\d\d):(\d\d):(\d\d)(\.\d+)?([Zz]|([+-])(\d\d):(\d\d))")
+# 1 year 2 month 3 day 4 hour 5 minute 6 second 7 fractions 8 tzoffset 9 offset sign 10 offset hours 11 offset m
+
+def date_to_RFC3339(date, tzutc):
+  if RE_rfc3339.match(date):
+    return date
+
+  tzoffs = None
+  try:
+    fdate = time.strptime(date, '%d %b %y  %H:%M:%S')
+  except ValueError:
+    try:
+      fdate = time.strptime(date, '%a %b %d %H:%M:%S ')
+    except ValueError:
+      try:
+        fdate = time.strptime(date, '%a, %d %b %Y %H:%M:%S %z')
+        tzoffs = m.date[-5:]
+      except ValueError:
+        fdate = time.strptime(date, '%Y-%m-%d %H:%M:%S')
+
+  if tzoffs is None:
+    tzoffs = tzutc or "0000" # TODO: if no kludge evaluate sender TZ by its fidoaddress
+  hroffs = int(tzoffs[0:-2])
+  moffs = int(tzoffs[-2:])
+
+  return time.strftime("%Y-%m-%d %H:%M:%S", fdate)+"+%02d:%02d"%(hroffs,moffs)

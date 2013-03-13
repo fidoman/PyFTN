@@ -8,14 +8,15 @@ import traceback
 import time
 import zipfile
 import os
+import functools
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, \
 	ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, \
-	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler
+	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler, HOSTNAME
 import ftnimport
 import ftn.msg
 import ftn.attr
-from ftn.ftn import FTNFail, FTNWrongPassword
+from ftn.ftn import FTNFail, FTNWrongPassword, date_to_RFC3339
 from stringutil import *
 import postgresql.alock
 
@@ -895,7 +896,7 @@ def get_all_targets(db, targetdomain):
 # --- NNTP ---
 
 def nntp_list_active(db, newerthan=None):
-  group_q = db.prepare("select min(id), max(id) from messages where destination=$1")
+  group_q = db.prepare("select min(numberfordestination), max(numberfordestination) from messages where destination=$1")
 
   if newerthan is None:
     query = db.prepare("select t.id, t.text from addresses t "
@@ -912,7 +913,7 @@ def nntp_group(db, group):
   aid=db.prepare("select id from addresses where text=$1").first(group)
   if aid is None:
     return None
-  return db.prepare("select count(id), min(id), max(id) from messages where destination=$1").first(aid)
+  return db.prepare("select count(numberfordestination), min(numberfordestination), max(numberfordestination) from messages where destination=$1").first(aid)
 
 def nntp_group_list(db, group, gte=None, lte=None):
   aid=db.prepare("select id from addresses where text=$1").first(group)
@@ -920,37 +921,198 @@ def nntp_group_list(db, group, gte=None, lte=None):
     return None
   criteria=""
   if gte:
-    criteria+=" and id>=%d"%gte
+    criteria+=" and numberfordestination>=%d"%gte
   if lte:
-    criteria+=" and id<=%d"%lte
-  for x in db.prepare("select id from messages where destination=$1"+criteria+" order by id")(aid):
+    criteria+=" and numberfordestination<=%d"%lte
+  for x in db.prepare("select numberfordestination from messages where destination=$1"+criteria+" order by numberfordestination")(aid):
     yield x[0]
 
 def nntp_next(db, group, msgn):
   aid=db.prepare("select id from addresses where text=$1").first(group)
   if aid is None:
     return None
-  r = db.prepare("select id from messages where destination=$1 and id>$2"
-        "order by id asc limit 1 offset 0").first(aid, msgn)
-  if r is None:
-    return None
-  return r[0]
+  r = db.prepare("select numberfordestination from messages where destination=$1 and numberfordestination>$2"
+        "order by numberfordestination asc limit 1 offset 0").first(aid, msgn)
+#  if r is None:
+#    return None
+  return r
 
 def nntp_prev(db, group, msgn):
   aid=db.prepare("select id from addresses where text=$1").first(group)
   if aid is None:
     return None
-  r = db.prepare("select id from messages where destination=$1 and id<$2"
-        "order by id desc limit 1 offset 0").first(aid, msgn)
-  if r is None:
-    return None
-  return r[0]
+  r = db.prepare("select numberfordestination from messages where destination=$1 and numberfordestination<$2"
+        "order by numberfordestination desc limit 1 offset 0").first(aid, msgn)
+#  if r is None:
+#    return None
+  return r
 
-def nntp_fetch(db, head, body, msgid=None, group=None, article=None):
-  return None
+def nntp_fetch(db, withheader, withbody, msgid=None, group=None, article=None):
+  fields=["msgid"]
+  if withheader:
+    fields.append("header")
+    fields.append("source")
+    fields.append("destination")
+    fields.append("receivedtimestamp")
+  if withbody:
+    fields.append("body")
+
+  criteria = []
+  param = []
+  parampos = 1
+
+  if msgid is not None:
+    criteria.append("msgid=$%d"%parampos)
+    param.append(nntp_parse_messageid(msgid))
+    parampos+=1
+
+  if group is not None:
+    criteria.append("destination=(select id from addresses where text=$%d and domain=%d)"%(parampos, db.FTN_domains["echo"]))
+    param.append(group)
+    parampos+=1
+
+  if article is not None:
+    criteria.append("numberfordestination=$%d"%parampos)
+    param.append(article)
+
+  q="select "+",".join(fields)+" from messages where " + " and ".join(criteria)
+
+  r = db.prepare(q).first(*param)
+
+  if r is None:
+    return None, None
+
+  if len(fields)==1:
+    r = [r]
+
+  msgdata = {}
+  for n, v in zip(range(10),r):
+    print (fields[n], "<=", repr(v))
+    msgdata[fields[n]] = v
+
+  if not withheader and not withbody:
+    return nntp_make_messageid(msgdata["msgid"]), None
+
+  def output():
+
+   if withheader:
+    header = msgdata["header"]
+
+    msgdate=header.find("date").text
+    if msgdate is not None:
+      for kludge in header.findall("KLUDGE"):
+        if kludge.get("name")=="TZUTC:":
+          tzutc = kludge.get("value")
+          break
+      else:
+        tzutc=None
+
+      msgdate=date_to_RFC3339(msgdate, tzutc)
+    else:
+      msgdate=str(msgdata["receivedtimestamp"])
+    yield "Date: "+msgdate
+    srcdom, srcname = get_addr(db, msgdata["source"])
+    if srcdom != db.FTN_domains["node"]:
+      srcname = "Not-a-valid-source-{%d}"%msgdata["source"]
+    yield "From: "+(header.find("sendername").text or '')+" <"+srcname+">"
+    yield "Message-ID: "+nntp_make_messageid(msgdata["msgid"])
+    destdom, destname = get_addr(db, msgdata["destination"])
+    if destdom != db.FTN_domains["echo"]:
+      destname = "Not-a-valid-newsgroup-{%d}"%msgdata["destination"]
+    yield "Newsgroups: "+destname
+    yield "Path: "+HOSTNAME
+    yield "Subject: "+(header.find("subject").text or '')
+
+   if withheader and withbody:
+    yield ""
+
+   if withbody:
+    for l in msgdata["body"].split("\n")[:-1]:
+      yield l
+
+  return nntp_make_messageid(msgdata["msgid"]), output()
+
+# Mandatory news message headers
+#Date
+#From
+#Message-ID: (maximum 250 chrs) <@>
+#  1) replace >[\]_ with escapes
+#  2) replace spaces with underscores
+# allowed in left part:
+# "!" / "#" /        ;  characters not including
+#                       "$" / "%" /        ;  specials.  Used for atoms.
+#                       "&" / "'" /
+#                       "*" / "+" /
+#                       "-" / "/" /
+#                       "=" / "?" /
+#                       "^" / "_" /
+#                       "`" / "{" /
+#                       "|" / "}" /
+#                       "~"
+# allowed in right part: anything except >[\]
+
+#specials: ()<>[]:;@\,."
+re_MessageID=re.compile(r"<([!#$%&'*+-/=?^_`{|}~0-9a-zA-Z]+)@([!#$%&'*+-/=?^_`{|}~()<:;@,.0-9a-zA-Z]+)>$")
+
+#Newsgroups
+#Path
+#Subject
+
+nntp_chresc={
+    '"': '?\'',
+    '(': '?{',
+    ')': '?}',
+    ',': '?`',
+    '.': '?*',
+    ':': '?c',
+    ';': '?s',
+    '<': '?l',
+    '>': '?g',
+    '@': '?a',
+    '[': '?b',
+    '\\': '?/',
+    ']': '?e',
+    ' ': '?_',
+    '?': '??'
+}
+
+nntp_chrunesc={}
+for raw, escaped in nntp_chresc.items():
+  nntp_chrunesc[escaped[1]]=raw
+
+def nntp_messageid_left_escape(s):
+  # valid [^!#$%&'*+-/=?^_`{|}~0-9a-zA-Z]
+  # invalid "\(),.:;<>@[\\] and space
+  return ''.join(map(lambda x: nntp_chresc.get(x, x), s))
+
+def nntp_make_messageid(s):
+  # if s conforms to message-ID rules leave as is
+  # else escape and and @myhost
+
+  if re_MessageID.match(s):
+    return s
+
+  return "<"+nntp_messageid_left_escape(s)+"@"+HOSTNAME+">"
+
+re_localMessageID = re.compile("<(.*?)@("+HOSTNAME+")>$")
+
+def nntp_parse_messageid(s):
+  m=re_localMessageID.match(s)
+  if m:
+    r, lingeringesc = functools.reduce(
+        lambda x, y: ((x[0]+[nntp_chrunesc[y] if x[1] else y]) if y!="?" else x[0], y=="?"),
+        m.group(1),
+        ([], False))
+    if lingeringesc:
+      raise Exception("bad MSGID")
+    return "<"+r+"@"+m.group(2)+">"
+  else:
+    return s
 
 def nntp_msgid(db, group, msgn):
-  pass
+  x = db.prepare("select msgid from messages where "
+        "numberfordestination=$1 and destination=(select id from addresses where domain=$2 and text=$3)").first(msgn, db.FTN_domains["echo"], group)
+  return nntp_make_messageid(x)
 
 # --- **** ---
 
@@ -978,5 +1140,5 @@ if __name__ == "__main__":
 #        if s.find("TEST")!=-1:
 #            print (s)
 
-    print (get_subnodes(connectdb(), '2:5020/733315'))
+    print (get_subnodes(connectdb(), '2:5020/12000'))
 

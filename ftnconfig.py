@@ -16,42 +16,12 @@ def connectdb(dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip())
   init_commuter(db)
   return db
 
+# system-specific settings
+
 FIDODIR="/tank/home/fido"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
-NODELIST=os.path.join(FIDODIR, "nodelist/fido.ndl")
-NODELISTENCODING="iso8859-1"
-
-DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
-BADDIR=os.path.join(FIDODIR, "refuse/badmsg")
-SECDIR=os.path.join(FIDODIR, "refuse/secmsg")
-LOGDIR=os.path.join(FIDODIR, "log")
-INBOUND = os.path.join(FIDODIR, "recv")
-DINBOUND = os.path.join(FIDODIR, "drecv")
-OUTBOUND = os.path.join(FIDODIR, "send")
-BINKLEYSTYLE = os.path.join(FIDODIR, "outb")
-DOUTBOUND = os.path.join(FIDODIR, "dsend")
-MSGMARKESTAT = os.path.join(FIDODIR, "msgestat")
-MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
-FILEDIR = os.path.join(FIDODIR, "files")
-FAREASDIR = os.path.join(FIDODIR, "fareas")
-GROUPFILESBY=5000
-
-DAEMONLOG="daemon.log"
-
-UNPACK1=[os.path.join(FIDODIR, "unpack"), "quick"]
-UNPACK1LOG="quick.log"
-UNPACK2=[os.path.join(FIDODIR, "unpack")]
-UNPACK2LOG="unpack.log"
-
-robotnames = {
-    "echo": "AreaFix",
-    "fileecho": "FileFix"
-}
-
-# routing files
-format1files = [os.path.join(FAREASDIR, "r50route/R50.ROU"), os.path.join(FAREASDIR, "net5020/n5020.rou")]
-format2files = [os.path.join(FAREASDIR, "r50route/R50.TRU"), os.path.join(FAREASDIR, "net5020/n5020.tru")]
+HOSTNAME="fluid.fidoman.ru"
 
 NETMAIL_uplinks = ["2:5020/758", "2:5020/715"] # default route
 NETMAIL_peers = [] #"2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # bone
@@ -70,11 +40,51 @@ NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5040/0", "2:5040/2"),
 ]
 
-FTNPORT=24559
+
+
+# generally-acceptable defaults
+
+NODELIST=os.path.join(FIDODIR, "nodelist/fido.ndl")
+NODELISTENCODING="iso8859-1"
+
+DUPDIR=os.path.join(FIDODIR, "refuse/dupmsg")
+BADDIR=os.path.join(FIDODIR, "refuse/badmsg")
+SECDIR=os.path.join(FIDODIR, "refuse/secmsg")
+LOGDIR=os.path.join(FIDODIR, "log")
+INBOUND = os.path.join(FIDODIR, "recv")
+DINBOUND = os.path.join(FIDODIR, "drecv")
+OUTBOUND = os.path.join(FIDODIR, "send")
+BINKLEYSTYLE = os.path.join(FIDODIR, "outb")
+DOUTBOUND = os.path.join(FIDODIR, "dsend")
+MSGMARKESTAT = os.path.join(FIDODIR, "msgestat")
+MSGMARKPOLL = os.path.join(FIDODIR, "msgpoll")
+FILEDIR = os.path.join(FIDODIR, "files")
+FAREASDIR = os.path.join(FIDODIR, "fareas")
+GROUPFILESBY=5000
+
+# routing files
+format1files = [os.path.join(FAREASDIR, "r50route/R50.ROU"), os.path.join(FAREASDIR, "net5020/n5020.rou")]
+format2files = [os.path.join(FAREASDIR, "r50route/R50.TRU"), os.path.join(FAREASDIR, "net5020/n5020.tru")]
+
+# logging
+DAEMONLOG="daemon.log"
+
+UNPACK1=[os.path.join(FIDODIR, "unpack"), "quick"]
+UNPACK1LOG="quick.log"
+UNPACK2=[os.path.join(FIDODIR, "unpack")]
+UNPACK2LOG="unpack.log"
+
+robotnames = {
+    "echo": "AreaFix",
+    "fileecho": "FileFix"
+}
+
+
+FTNPORT=24555
 NNTPPORT=11119
 DAEMONBIND=[
-    (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
-    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
+#    (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
+#    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
     (socket.AF_INET, ('0.0.0.0', NNTPPORT), "nntp"),
     (socket.AF_INET6, ('::', NNTPPORT), "nntp"),
 ]
@@ -84,6 +94,9 @@ PACKETTHRESHOLD = 100*1024
 BUNDLETHRESHOLD = 500*1024
 
 MSGSIZELIMIT = 470000
+
+
+# never change it
 
 PKTLOCK=1
 BUNDLELOCK=2
@@ -144,9 +157,9 @@ RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_
             "ALT-BBS-ADS|IPV6|MEMORIES|JAMNNTPD|AMATEUR_RADIO|FIDONEWS|.*?\.GER$|ESSNASA|MAKENL_NG|CFORSALE|IREX|"
             "MYSTIC|ZCC-PUBLIC")
 
-RE_cp850 = re.compile("ESP\.")
+RE_cp850 = re.compile("no_such_echo")
 
-RE_latin = re.compile("CBM")
+RE_latin = re.compile("CBM|ESP\.")
 
 RE_utf8 = re.compile("POLITICS|ALL-POLITICS|DEBATE|CONSPRCY|COFFEE_KLATSCH")
 

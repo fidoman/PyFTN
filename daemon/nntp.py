@@ -15,6 +15,8 @@ sessions=[]
 
 
 # https://tools.ietf.org/html/rfc1036
+# https://tools.ietf.org/html/rfc5536
+# https://tools.ietf.org/html/rfc5537
 
 spaces=re.compile(b"\s+")
 msgrange=re.compile(b"(\d+)(-(\d*))?$")
@@ -71,7 +73,7 @@ def session(log, s, a):
     s.send(b".\r\n")
 
   def cmdGroup():
-    nonlocal currentgroup
+    nonlocal currentgroup, currentarticle
     if len(cmd)<2:
       s.send(b"501 No argument\r\n")
       return
@@ -86,11 +88,12 @@ def session(log, s, a):
     else:
       s.send(("211 %d %d %d %s\r\n"%(x[0] or 0, x[1] or 0, x[2] or 0, arg)).encode("ascii"))
       currentgroup = arg
-      log(str(a)+" group "+arg+" selected")
+      currentarticle = x[1] # None if None
+      log(str(a)+" group "+arg+" selected, article: "+repr(currentarticle))
 
 
   def cmdListGroup():
-    nonlocal currentgroup
+    nonlocal currentgroup, currentarticle
     if len(cmd)==1:
       if currentgroup is None:
         s.send(b"412 No group selected\r\n")
@@ -136,7 +139,8 @@ def session(log, s, a):
 
     s.send(("211 %d %d %d %s\r\n"%(x[0] or 0, x[1] or 0, x[2] or 0, group)).encode("ascii"))
     currentgroup = group
-    log(str(a)+" group "+currentgroup+" selected")
+    currentarticle = x[1] # None if None
+    log(str(a)+" group "+currentgroup+" selected, article: "+repr(currentarticle))
 
 #    s.send((repr(gtethan)+" - "+repr(ltethan)).encode("ascii")+b"\r\n")
 
@@ -156,6 +160,7 @@ def session(log, s, a):
     newarticle = ftnexport.nntp_prev(db, currentgroup, currentarticle)
     if newarticle is None:
       s.send(b"422 No previous article in this group\r\n")
+      return
     currentarticle = newarticle
     msgid = ftnexport.nntp_msgid(db, currentgroup, newarticle)
     s.send(("223 %d %s\r\n"%(newarticle, msgid)).encode("ascii"))
@@ -171,6 +176,7 @@ def session(log, s, a):
     newarticle = ftnexport.nntp_next(db, currentgroup, currentarticle)
     if newarticle is None:
       s.send(b"421 No next article in this group\r\n")
+      return
     currentarticle = newarticle
     msgid = ftnexport.nntp_msgid(db, currentgroup, newarticle)
     s.send(("223 %d %s\r\n"%(newarticle, msgid)).encode("ascii"))
@@ -178,12 +184,12 @@ def session(log, s, a):
 
   def cmdArticle():
     nonlocal currentgroup, currentarticle
-    response,head,body={
-        "ARTICLE": ("220", True, True),
-        "HEAD": ("221", True, False),
-        "BODY": ("222", False, True),
-        "STAT": ("223", False, False)
-    }
+    response,multiline,head,body={
+        "ARTICLE": ("220", True, True, True),
+        "HEAD": ("221", True, True, False),
+        "BODY": ("222", True, False, True),
+        "STAT": ("223", False, False, False)
+    }[cmds]
 
     # 1) demultiplex parameters
     msgid = None
@@ -213,8 +219,8 @@ def session(log, s, a):
 
     # 2) fetching
     if msgid is not None:
-      out = nntp_fetch(db, msgid=arg, head=head, body=body)
-      if out is None:
+      dbmsgid, data = ftnexport.nntp_fetch(db, msgid=msgid, withheader=head, withbody=body)
+      if dbmsgid is None:
         s.send(b"430 No article with that message-id\r\n")
         return
     elif article is not None:
@@ -222,18 +228,20 @@ def session(log, s, a):
         s.send(b"412 No newsgroup selected\r\n")
         return
       group=currentgroup
-      out = nntp_fetch(db, group=group, article=article, head=head, body=body)
-      if out is None:
+      dbmsgid, data = ftnexport.nntp_fetch(db, group=group, article=article, withheader=head, withbody=body)
+      if dbmsgid is None:
         s.send(b"423 No article with that number\r\n")
         return
+      msgid = dbmsgid
     else:
       s.send("501 Could not interpret arguments\r\n")
       return
 
-    s.send((response+" "+"0" if article is None else str(article)+" "+msgid+"\r\n").encode("ascii"))
-    for l in out:
-      s.send(l.encode("utf-8")+b"\r\n")
-    s.send(b".\r\n")
+    s.send((response+" "+("0" if article is None else str(article))+" "+msgid+"\r\n").encode("ascii"))
+    if multiline:
+      for l in data:
+        s.send(l.encode("utf-8")+b"\r\n")
+      s.send(b".\r\n")
 
     # 3) update
     if article is not None:

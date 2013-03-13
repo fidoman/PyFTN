@@ -304,7 +304,7 @@ def list_echoes():
 
 
 
-opts=getopt.getopt(sys.argv[1:], "ndb")
+opts=getopt.getopt(sys.argv[1:], "ndbv")
 optflags = set(map(lambda x: x[0], opts[0]))
 optdata = opts[1]
 print (optflags, optdata)
@@ -343,6 +343,13 @@ elif "-b" in optflags: # bounce message #
     db.prepare("select source, destination, msgid, header, body, origcharset, receivedfrom from messages where id=$1").first(mid)
   if forward(srcid, dstid, msgid, header, body, tosrc=True, newsubj="message bounced at "+ftnconfig.ADDRESS):
     db.prepare("update messages set processed=6 where id=$1")(mid)
+  exit()
+
+elif "-v" in optflags: # view
+  mid = int(optdata[0])
+  mid, srcid, dstid, msgid, header, body, origcharset, receivedfrom = \
+    db.prepare("select id, source, destination, msgid, header, body, origcharset, receivedfrom from messages where id=$1").first(mid)
+  view(mid, srcid, dstid, header, body)
   exit()
 
 committer = ftnexport.netmailcommitter()

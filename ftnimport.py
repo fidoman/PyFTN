@@ -323,6 +323,7 @@ class session:
     self.domains = {}
     self.last_message_for_address = {}
     self.Q_update_addr_msg = None
+    self.Q_get_max_numfordest = None
     for domain_id, domain_name in db.prepare("SELECT id, name FROM domains;"):
       #print(domain_id, domain_name)
       if domain_name=="fidonet node": 
@@ -632,19 +633,27 @@ class session:
       raise FTNDupMSGID(msgid)
 
     if not self.Q_msginsert:
-      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, origcharset, processed, receivedfrom, receivedtimestamp)"
-          " values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id")
+      self.Q_msginsert = self.db.prepare("insert into messages (source, destination, msgid, header, body, "
+            "origcharset, processed, receivedfrom, receivedtimestamp, numberfordestination) "
+            "values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id")
 
     if not self.Q_update_addr_msg:
       self.Q_update_addr_msg = self.db.prepare("update addresses set last=$2 where id=$1")
+
+    if not self.Q_get_max_numfordest:
+      self.Q_get_max_numfordest = self.db.prepare("select max(numberfordestination) from messages where destination=$1")
 
     with postgresql.alock.ExclusiveLock(self.db, IMPORTLOCK): # lock per all table messages
       # begin insert-lock
       # guarantees that for greater id greater timestamp
       timestamp = datetime.datetime.now(datetime.timezone.utc)
       print ("Transaction state", self.x.state, str(timestamp))
-      new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id, timestamp)[0][0]
-      print ("insert msg #", new_msg, "to address", destid)
+      if destdomname=="echo":
+        numfordest = (self.Q_get_max_numfordest.first(destid) or 0) + 1
+      else:
+        numfordest = None
+      new_msg=self.Q_msginsert(origid, destid, msgid, header, body, origcharset, processed, recvfrom_id, timestamp, numfordest)[0][0]
+      print ("insert msg #", new_msg, "to address", destid, "number", numfordest)
       self.Q_update_addr_msg(destid, new_msg)
       # end insert-lock
 
