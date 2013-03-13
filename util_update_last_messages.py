@@ -6,9 +6,14 @@ db=ftnconfig.connectdb()
 
 Q_max = db.prepare("select max(id) from messages where destination=$1")
 
+x=db.xact()
+x.start()
+db.execute("LOCK TABLE ADDRESSES")
+db.execute("LOCK TABLE MESSAGES")
 for (addr,domain,text,last) in db.prepare("select id, domain, text, last from addresses")():
 #  print (addr, end=' ')
   maxid = Q_max(addr)[0][0]
   if last!=maxid:
     print ("update %d/%s"%(domain, text), repr(last), "->", repr(maxid))
     db.prepare("update addresses set last=$2 where id=$1")(addr, maxid)
+x.commit()
