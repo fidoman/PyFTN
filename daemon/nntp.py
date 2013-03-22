@@ -11,18 +11,25 @@ import ftnconfig
 import ftnimport
 import ftnexport
 
-sessions=[]
-
 
 # https://tools.ietf.org/html/rfc1036
 # https://tools.ietf.org/html/rfc5536
 # https://tools.ietf.org/html/rfc5537
+
+# XOVER
+# https://tools.ietf.org/html/rfc2980
+# LIST OVERVIEW.FMT, XOVER
 
 spaces=re.compile(b"\s+")
 msgrange=re.compile(b"(\d+)(-(\d*))?$")
 digits=re.compile(b"\d+$")
 
 def session(log, s, a):
+
+  db = None
+  servicing = None
+  currentgroup = None
+  currentarticle = None
 
   def prepare_not_pipelining_response():
     try:
@@ -39,9 +46,11 @@ def session(log, s, a):
 
   def cmdConnection():
     nonlocal db, servicing
+    if servicing:
+      raise Exception("internal data mess: servicing is True before connection!")
     try:
       db = ftnconfig.connectdb()
-      servicing = True
+      servicing = servicing or True
       s.send(b"201 Read-only server intact\r\n")
     except:
       log(str(a)+"\nexception\n"+traceback.format_exc())
@@ -359,10 +368,6 @@ None:	(False, cmdConnection),
     procedure()
 
   try:
-    db = None
-    servicing = None
-    currentgroup = None
-    currentarticle = None
 
     dispatch_command(None) # incoming connection greeting
 
@@ -387,5 +392,3 @@ None:	(False, cmdConnection),
 #protocol state variables:
 #  group = None or value
 #  article = None or value
-
-

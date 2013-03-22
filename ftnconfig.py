@@ -83,10 +83,10 @@ robotnames = {
 FTNPORT=24555
 NNTPPORT=11119
 DAEMONBIND=[
-#    (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
-#    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
-    (socket.AF_INET, ('0.0.0.0', NNTPPORT), "nntp"),
-    (socket.AF_INET6, ('::', NNTPPORT), "nntp"),
+    (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
+    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
+#    (socket.AF_INET, ('0.0.0.0', NNTPPORT), "nntp"),
+#    (socket.AF_INET6, ('::', NNTPPORT), "nntp"),
 ]
 # add binding with specifying session function
 
@@ -155,7 +155,7 @@ RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_
             "ECHOLIST|STATS|COOKING|LINUX|HAM|GOLDED|OS2|ASIAN_LINK|WINDOWS|ARGUS|EASTSTAR|FIDO-REQ|FDN_ANNOUNCE|"
             "ALLFIX_|BBS_PROMOTION|KOFO_|FUNNY|SYNC_|SYNCHRONET|SYNCDATA|LORD|BBS_CARNIVAL|RSS\.DEALEXTREME\.COM|"
             "ALT-BBS-ADS|IPV6|MEMORIES|JAMNNTPD|AMATEUR_RADIO|FIDONEWS|.*?\.GER$|ESSNASA|MAKENL_NG|CFORSALE|IREX|"
-            "MYSTIC|ZCC-PUBLIC")
+            "MYSTIC|ZCC-PUBLIC|AUTOMOTIVE|DBRIDGE|INTERNET|CHATTER|FILEGATE")
 
 RE_cp850 = re.compile("no_such_echo")
 

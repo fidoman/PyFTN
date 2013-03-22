@@ -963,17 +963,23 @@ def nntp_fetch(db, withheader, withbody, msgid=None, group=None, article=None):
 
   if msgid is not None:
     criteria.append("msgid=$%d"%parampos)
+    print("parsed:", nntp_parse_messageid(msgid))
     param.append(nntp_parse_messageid(msgid))
     parampos+=1
 
   if group is not None:
     criteria.append("destination=(select id from addresses where text=$%d and domain=%d)"%(parampos, db.FTN_domains["echo"]))
+    print("query group=", group)
     param.append(group)
     parampos+=1
 
   if article is not None:
     criteria.append("numberfordestination=$%d"%parampos)
+    print("query article=", article)
     param.append(article)
+    parampos+=1
+
+  qstr="["+"|".join((str(msgid), str(group), str(article)))+"]"
 
   q="select "+",".join(fields)+" from messages where " + " and ".join(criteria)
 
@@ -987,7 +993,7 @@ def nntp_fetch(db, withheader, withbody, msgid=None, group=None, article=None):
 
   msgdata = {}
   for n, v in zip(range(10),r):
-    print (fields[n], "<=", repr(v))
+    print (qstr, fields[n], "<=", repr(v))
     msgdata[fields[n]] = v
 
   if not withheader and not withbody:
@@ -997,25 +1003,32 @@ def nntp_fetch(db, withheader, withbody, msgid=None, group=None, article=None):
 
    if withheader:
     header = msgdata["header"]
+    ftnheader=header.find("FTN")
+
+    tzutc = None
+    reply = None
+    for kludge in ftnheader.findall("KLUDGE"):
+      if kludge.get("name")=="TZUTC:":
+        tzutc = kludge.get("value")
+      elif kludge.get("name")=="REPLY:":
+        reply = kludge.get("value")
+    # ..References:
 
     msgdate=header.find("date").text
     if msgdate is not None:
-      for kludge in header.findall("KLUDGE"):
-        if kludge.get("name")=="TZUTC:":
-          tzutc = kludge.get("value")
-          break
-      else:
-        tzutc=None
-
-      msgdate=date_to_RFC3339(msgdate, tzutc)
+      date3339 = date_to_RFC3339(msgdate, tzutc)
+      msgdate=time.strftime("%a, %d %b %Y %H:%M:%S", time.strptime(date3339[:-7], "%Y-%m-%d %H:%M:%S")) + \
+        " " + date3339[-6:-3]+date3339[-2:]
     else:
-      msgdate=str(msgdata["receivedtimestamp"])
+      msgdate=msgdata["receivedtimestamp"].strftime("%a, %d %b %Y %H:%M:%S %z")
     yield "Date: "+msgdate
     srcdom, srcname = get_addr(db, msgdata["source"])
     if srcdom != db.FTN_domains["node"]:
       srcname = "Not-a-valid-source-{%d}"%msgdata["source"]
     yield "From: "+(header.find("sendername").text or '')+" <"+srcname+">"
     yield "Message-ID: "+nntp_make_messageid(msgdata["msgid"])
+    if reply is not None:
+      yield "In-Reply-To: "+nntp_make_messageid(reply)
     destdom, destname = get_addr(db, msgdata["destination"])
     if destdom != db.FTN_domains["echo"]:
       destname = "Not-a-valid-newsgroup-{%d}"%msgdata["destination"]
@@ -1105,7 +1118,7 @@ def nntp_parse_messageid(s):
         ([], False))
     if lingeringesc:
       raise Exception("bad MSGID")
-    return "<"+r+"@"+m.group(2)+">"
+    return ''.join(r)
   else:
     return s
 
