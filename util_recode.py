@@ -4,10 +4,11 @@ import ftnconfig
 
 db=ftnconfig.connectdb()
 
-MIDs=db.prepare("select id from messages where source=14776")
+#MIDs=db.prepare("select id from messages where source=14776")
+MIDs=[(1875112,)]
 
 for (MID,) in MIDs:
-  newc="latin-1"
+  newc="utf-8"
   h,b,c=db.prepare("select header, body, origcharset from messages where id=$1").first(MID)
 
 #print(c)

@@ -17,5 +17,5 @@ print( db.prepare("select t.domain, t.text from subscriptions s, addresses t whe
 
 assert( input("enter 'yes' to confirm: ")=="yes" )
 
-db.prepare("delete from links where id=$1")(link_id)
 db.prepare("delete from subscriptions where subscriber=$1")(addr_id)
+db.prepare("delete from links where id=$1")(link_id)

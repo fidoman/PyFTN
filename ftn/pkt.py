@@ -15,17 +15,21 @@ debug=False
 def read_asciiz(fo, maxlen=None):
   buf=io.BytesIO()
   count=0
-  while (maxlen is None) or (count<maxlen):
+  while (maxlen is None) or (count<maxlen): # really count<=maxlen as zero must always be after maxlen bytes
     c=fo.read(1)
     if len(c)==0:
       raise FTNFail("EOF reading mandatory packet field")
     if c==b"\0":
-      break
+      buf.seek(0)
+      return buf.read()
+      #break
     buf.write(c)
     count+=1
 
-  buf.seek(0)
-  return buf.read()
+  raise FTNFail("field of maximum length %d bytes is read but trailing ZERO is not encountered"%maxlen)
+
+  #buf.seek(0)
+  #return buf.read()
 
 RE_rfc3339 = re.compile("(\d\d\d\d)-(\d\d)-(\d\d)[Tt ](\d\d):(\d\d):(\d\d)(\.\d+)?([Zz]|([+-])(\d\d):(\d\d))")
 # 1 year 2 month 3 day 4 hour 5 minute 6 second 7 fractions 8 tzoffset 9 offset sign 10 offset hours 11 offset minutes
@@ -188,10 +192,11 @@ class PKT:
   def save(self, file, format='pkt2'):
 
     def cut(s, l):
-      if len(s)<l:
-        return s+b"\0"
-      else:
-        return s[:l]
+      return s[:l]+b"\0"
+#      if len(s)<l:
+#        return s+b"\0"
+#      else:
+#        return s[:l]
 
     if type(file) is str:
       f=open(file, "wb")

@@ -4,6 +4,7 @@ import sys
 import ftnconfig
 import ftnimport
 import ftnexport
+import functools
 from ftn.ftn import FTNAlreadySubscribed, FTNNoAddressInBase
 
 # add|remove domain area subscriber
@@ -154,6 +155,15 @@ with ftnimport.session(db) as sess:
           sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+aname, sendmode="direct")
         else:
           print ("local subscription")
+
+  elif cmd == "relink":
+    subslist = ftnexport.get_node_subscriptions(db, subscriber, domain)
+    if len(subslist)==0:
+      print ("nothing to relink")
+    else:
+      substext = functools.reduce(lambda x, y: x + "+" + y + "\n", subslist, "")
+      print ("".join(substext))
+      sess.send_message("Sergey Dorofeev", ("node", subscriber), robot, None, pw, substext)
 
 
   else:

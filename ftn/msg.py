@@ -176,7 +176,10 @@ class MSG:
         self.body += [l]
 
     while len(self.body) and (self.body[-1][:8] == b"SEEN-BY:"):
-      self.seenby.update(addr_expand(list(filter(bool,self.body[-1][9:].decode("ascii").split(" "))),(None,None,None,None)))
+      seenbyline = addr_expand(list(filter(bool,self.body[-1][9:].decode("ascii").split(" "))),(None,None,None,None))
+      if seenbyline[0][1] is None:
+        raise FTNFail("SEEN-BY without Net")
+      self.seenby.update(seenbyline)
       del self.body[-1]
 
     self.orig=(fname, (fzone,fnet,fnode,fpnt))
@@ -271,6 +274,9 @@ class MSG:
       self.attr, self.nextreply)+self.make_body()
 
   def add_seenby(self, a):
+    if a.startswith("None/"):
+      print("Ignore bad SEEN-BY "+a)
+      return
     addr=str2addr(a)
     self.seenby.add((None,addr[1],addr[2],None))
 
