@@ -192,7 +192,10 @@ class PKT:
   def save(self, file, format='pkt2'):
 
     def cut(s, l):
-      return s[:l]+b"\0"
+      """ FTS-0001 says about "Null terminated string" and about "max 72 bytes in subj and max 36 bytes in to/from
+          software usually wants zero byte to be present and usually drops message if it cannot find it in 
+          specified frame. So useful string length is one byte lesser. """
+      return s[:l-1]+b"\0"
 #      if len(s)<l:
 #        return s+b"\0"
 #      else:

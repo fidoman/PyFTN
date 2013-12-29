@@ -16,7 +16,7 @@ if not os.path.exists(LOG):
 byarea={}
 
 lines=[]
-for l in open(LOG):
+for l in open(LOG, encoding="cp866"): # data from tics is copied as is though it is bad way
     lines.append(l)
     a=list(map(str.strip, spc.split(l)))
     date=a[0]
@@ -42,20 +42,17 @@ areas.sort()
 outp = []
 
 for area in areas:
-  outp.append ("AREA: "+ area+"\n")
+#  outp.append ("AREA: "+ area+"\n")
   for file, src in byarea[area]:
-    outp.append ("  %20s %23s\n"%(file, src))
+    outp.append ("%-20s %-32s %-23s\n"%(area, file, src))
   outp.append("\n")
 
 db=ftnconfig.connectdb()
 
 with ftnimport.session(db) as sess:
   sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "файлэхи",
-"""Привет All
-
+"""
 %s
-
-Вот так
 """%("".join(outp)))
 
 fo=open(OLDLOG, "a")
