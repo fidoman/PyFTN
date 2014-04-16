@@ -10,9 +10,9 @@
 <dependency name='network' grouping='require_all' restart_on='none' type='service'>
     <service_fmri value='svc:/milestone/network:default' />
 </dependency>
-<dependency name='postgresql' grouping='require_all' restart_on='none' type='service'>
+<!--dependency name='postgresql' grouping='require_all' restart_on='none' type='service'>
     <service_fmri value='svc:/application/database/postgresql:default'/>
-</dependency>
+</dependency-->
 
 <method_context><method_credential user='fido' group='uucp' /></method_context>
 <exec_method type='method' name='start' exec='/lib/svc/method/ftndaemon start' timeout_seconds='120' />

@@ -90,6 +90,7 @@ from socketutil import *
 def session(s, a):
   try:
     db = connectdb()
+    log(str(a)+" connected to database from %s:%d"%(db.client_address, db.client_port))
     addresses = []
     password = None
     filename = None
@@ -188,7 +189,7 @@ def session(s, a):
 
 
           except FTNWrongPassword:
-            log("address %s excluded due to wrong password"%address)
+            log(str(a)+"address %s excluded due to wrong password"%address)
           except:
             log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
 
@@ -206,6 +207,8 @@ def session(s, a):
   finally:
     log(str(a)+" end")
     s.close()
+    db.close()
+    log(str(a)+" connected to database closed: "+str(db.closed))
 
 
 sockets=[]

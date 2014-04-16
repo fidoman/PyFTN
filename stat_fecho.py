@@ -55,7 +55,7 @@ with ftnimport.session(db) as sess:
 %s
 """%("".join(outp)))
 
-fo=open(OLDLOG, "a")
+fo=open(OLDLOG, "a", encoding="cp866")
 for l in lines:
     fo.write(l)
 fo.close
@@ -63,5 +63,3 @@ os.unlink(LOG)
 
 
 #2012-02-21 08:30:12 from 2:5020/1200 file PNT5025.ZIP area PNTLIST replaces PNT5025.ZIP
-
-

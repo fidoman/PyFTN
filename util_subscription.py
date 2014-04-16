@@ -76,7 +76,7 @@ with ftnimport.session(db) as sess:
       tid =  ftnconfig.get_addr_id(db, db.FTN_domains[domain], area)
       print (tid)
       for aid, vital, level in ftnexport.get_subscribers(db, tid):
-        print (ftnconfig.get_addr(db, aid))      
+        print (ftnconfig.get_addr(db, aid))
 
   elif cmd == "showuplink": # show areas subsribed as vital
     if area==".": # show for link

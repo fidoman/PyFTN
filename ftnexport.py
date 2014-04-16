@@ -12,13 +12,16 @@ import functools
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, \
 	ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, \
-	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler, HOSTNAME
+	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler, HOSTNAME, \
+        BUNDLETIMELIMIT, PACKETTIMELIMIT
 import ftnimport
 import ftn.msg
 import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword, date_to_RFC3339
 from stringutil import *
 import postgresql.alock
+
+get_time = time.time
 
 # AUTOCOMMIT assumed
 
@@ -373,6 +376,9 @@ class netmailcommitter:
     self.msgarqlist=[]
     self.db = connectdb()
 
+  def __del__(self):
+    self.db.close()
+
   def show(self):
     print ("netmail committer:", self.newstatus, self.msglist)
 
@@ -419,6 +425,9 @@ class echomailcommitter:
   def __init__(self):
     self.lasts = {} # subscription: lastsent
     self.db = connectdb()
+
+  def __del__(self):
+    self.db.close()
 
   def add_one(self, k, v):
     if k in self.lasts and v<=self.lasts[k]:
@@ -754,6 +763,7 @@ class pktpacker:
         self.packet.date=time.localtime()
         self.packet.msg=[]
         self.packet.approxlen=0
+        self.start_time = get_time()
 
       self.packet.msg.append(m)
       self.packet.approxlen+=len(m.pack()) # double packing :(
@@ -764,7 +774,7 @@ class pktpacker:
     # if m is not None it will be send else just last_sent will be updated
     self.committer.add(commitdata)
 
-    if self.packet and self.packet.approxlen>PACKETTHRESHOLD:
+    if self.packet and (self.packet.approxlen>PACKETTHRESHOLD or get_time()-self.start_time>PACKETTIMELIMIT):
       for x in self.pack():
         yield x
 
@@ -818,6 +828,7 @@ class bundlepacker:
   def add_item(self, p, commitdata):
     if p is not None:
       if self.bundle is None:
+        self.start_time = get_time()
         fo = io.BytesIO()
         self.bundle = (fo, zipfile.ZipFile(fo, "w", zipfile.ZIP_DEFLATED))
 
@@ -828,7 +839,7 @@ class bundlepacker:
 
     self.committer.add(commitdata)
 
-    if self.bundle and self.bundle[0].tell()>BUNDLETHRESHOLD:
+    if self.bundle and (self.bundle[0].tell()>BUNDLETHRESHOLD or get_time()-self.start_time>BUNDLETIMELIMIT):
       for x in self.pack():
         yield x
 
