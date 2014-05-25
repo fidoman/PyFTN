@@ -619,7 +619,7 @@ class session:
         raise Exception("invalid domain after checkaddress ??? %d"%destdom)
       verify_subscription = r[0][0]
   
-      if verify_subscription:
+      if verify_subscription: # move to ftnaccess
         # check if message received from subscribed to the destination's address
         r=self.db.prepare("select count(id) from subscriptions where subscriber=$1 and target=$2")(recvfrom_id, destid)
         # flaw: allow to flood with messages to non-existent addresses. should be checked with trigger in database
