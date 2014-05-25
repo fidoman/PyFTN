@@ -46,6 +46,7 @@ def getregentry():
 decoding_map = codecs.make_identity_dict(range(128))
 decoding_map.update({
     0x008d: 0x200b,	# zero width space
+    0x009d: 0x2060,	# word joiner
 })
 
 ### Encoding Map
@@ -180,6 +181,7 @@ encoding_map = {
     0x007e: 0x007e,     #  TILDE
     0x007f: 0x007f,     #  DELETE
     0x200b: 0x008d,
+    0x2060: 0x009d,
 }
 
 if __name__ == '__main__':

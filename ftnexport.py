@@ -141,7 +141,11 @@ def get_subscriber_messages_e_heavy(db, subscriber, domain):
         #id_msg, src, dest, msgid, header, body, recvfrom, withsubscr
 
 def get_subscriber_messages_e(db, subscriber, domain):
+  start_time = get_time()
   for target_id, target_name, target_last, subs_id, subs_last in get_subscriptions_x(db, subscriber, domain):
+    if get_time()-start_time>BUNDLETIMELIMIT-5:
+      print("Abandoning do to export time limit")
+      break
     if target_last>subs_last:
       print ("something new", target_id, target_name, target_last, subs_id, subs_last)
       for mid,msrc,mdst,mmsgid,mhdr,mbody,mchr,mrecvfrom,mproc in db.prepare(

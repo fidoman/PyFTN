@@ -88,6 +88,7 @@ from ftn.ftn import FTNWrongPassword
 from socketutil import *
 
 def session(s, a):
+  db = None
   try:
     db = connectdb()
     log(str(a)+" connected to database from %s:%d"%(db.client_address, db.client_port))
@@ -207,8 +208,12 @@ def session(s, a):
   finally:
     log(str(a)+" end")
     s.close()
-    db.close()
-    log(str(a)+" connected to database closed: "+str(db.closed))
+    if db:
+      db.close()
+      log(str(a)+" connection from %s:%d is closed: %s "% \
+            (db.client_address, db.client_port, str(db.closed)))
+    else:
+      log(str(a)+" not database connection")
 
 
 sockets=[]

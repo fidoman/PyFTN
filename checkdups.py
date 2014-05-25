@@ -38,15 +38,15 @@ for f in os.listdir(DUPDIR):
 #        print ("not echomail")
 #        continue
 
-    print("---")
-    print("From:",header.find("sendername").text, origdomname, origaddr)
-    print("To:  ",header.find("recipientname").text, destdomname, destaddr)
-    print("Date:",header.find("date").text)
-    print("Subj:",header.find("subject").text)
+#    print("---")
+#    print("From:",header.find("sendername").text, origdomname, origaddr)
+#    print("To:  ",header.find("recipientname").text, destdomname, destaddr)
+#    print("Date:",header.find("date").text)
+#    print("Subj:",header.find("subject").text)
 
     #print(body)
 
-    print("message in database ---")
+#    print("message in database ---")
     dbmessages=Q_msgget(msgid)
     if len(dbmessages)>1:
       raise Exception("multiple messages in database with this MSGID")
@@ -54,11 +54,11 @@ for f in os.listdir(DUPDIR):
     dbsd = db.FTN_backdomains[dbsd]
     dbdd = db.FTN_backdomains[dbdd]
 
-    print("From:",dbheader.find("sendername").text, dbsd, dbst)
-    print("To:  ",dbheader.find("recipientname").text, dbdd, dbdt)
-    print("Date:",dbheader.find("date").text)
-    print("Subj:",dbheader.find("subject").text)
-    print("----------------------------------------------------------------------")
+#    print("From:",dbheader.find("sendername").text, dbsd, dbst)
+#    print("To:  ",dbheader.find("recipientname").text, dbdd, dbdt)
+#    print("Date:",dbheader.find("date").text)
+#    print("Subj:",dbheader.find("subject").text)
+#    print("----------------------------------------------------------------------")
 
     subj1 = header.find("subject").text
     subj2 = dbheader.find("subject").text
