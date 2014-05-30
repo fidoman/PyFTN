@@ -1,0 +1,52 @@
+This project was initially started as just library to manipulate FIDO MSG and PKT files.
+Later this library was used to create replacement for FTN tosser software.
+
+1. Environment.
+
+PyFTN messaging core is useless if not backened as specially crafted mailer.
+It can be used as tosser drop-in replacement, but it will be slower and more resource-consuming than classical software.
+Tha main feature is the ability to operate outbound in memory and single-copy storage. It frees sysop from burden of watching outbound and stale links as it if there
+is no sessions then no any load on resources is given.
+Two main features must be present in mailer to work with PyFTN:
+1 - this is less important and really not required though very easy to implement: 
+Mailer should send received files to PyFTN ftndaemon or store it is special format inbound with folder for each address. This allows easily identify
+source of each received file and protects from some kinds of spoofing. There is patches for bforce and binkd.
+2 - essential feature: mailer must be able to connect ftndaemon and query it for outbound files. This feature is currently implemented only for bforce mailer.
+
+2. Components.
+
+First component is FTN mailer. It answers and initiates FTN sessions and transfers packets, bundles and files and file requests.
+Second is ftn daemon. It provides service for mailer for pushing received files to databases and querying outgoing files.
+Third - command line utilities. Some of them serve for sysop to do maintenance operation and some are essential for node functionality.
+Fourth - file storage. Generally the same as in any FTN software and some additional for specific needs of PyFTN: refused mail, secondary inbound and outbound.
+Fifth - database. All netmail and echomail messages are stored in postgresql database.
+
+3. Sysop's utilities
+
+util_subscription.py - manupulate subscriptions
+[...]
+
+4. Netmail architecture
+
+Fetching netmail is based on "netmail subscriptions" - which node can get netmail for given node. E.g. hub is subscribed for its nodes, host for all city's nodes etc.
+Nodelist is used for building primary hierarchy and routing files make additional relations. After fetching and successful sending (based on information from mailer)
+message is marked as processed and not fetched anymore.
+
+5. Echomail architecture
+
+For each node subscription to each echo the table is maintained. This table has also column "last_sent" that allows to know which last message in echo was send to given node.
+When node queries for its messages, all messages in subscribed echoes that have id greater than last_sent are exported and packed in PKTs and then in bundles.
+There is limits for messages per PKT, PKT per bundle (size limits) and time limits for export as FTN session that stales more than for 1 minute is timeouted.
+Whith exported messages, PKTs and bundles special objects ("committers") are created so when mailer reports successfull send corresponding commiters updates "last_sent"
+pointers (similarly as committer updates "processed" for netmail messages).
+For echomail committers it is essential that messages are exported strictly sorted by id (at least inside per-area group).
+
+6. Importing
+
+On each message request unpack process is started (ftnpush.py) so before receive is started all incoming mail is processed (for example areafix requests are
+answered in same session).
+
+7. Parallel process.
+
+Though impossible with classical FTN locking, netmail, echomail and fileechoes can be processed in parallel.
+But simultaneous export process of same type for same node is allowed (as it breaks committers architecture).
