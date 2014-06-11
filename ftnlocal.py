@@ -36,6 +36,17 @@ def unsubscribe(db, sess, node, targetdomain, pattern):
           r.append("no matching area: " + pattern)
     return r
 
+def reset(db, sess, node, targetdomain, arg):
+    r = []
+    pattern, timestamp = map(str.strip, arg.split(" ", 1))
+    for target in ftnexport.get_matching_targets(db, targetdomain, pattern):
+        try:
+          r.append(sess.reset_subscription(targetdomain, target, node, timestamp) + ": " + target)
+        except FTNNoAddressInBase:
+          r.append("no such area: " + target)
+    if len(r)==0:
+          r.append("no matching area: " + pattern)
+    return r
 
 def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_local):
   dom, text = db.prepare("select domain, text from addresses where id=$1").first(src)
@@ -53,15 +64,11 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
         break
       elif len(cmd)==0:
         continue
-      elif cmd.startswith("%RESCAN "):
-        reply.append("Rescan not implemented, contact sysop: "+cmd)
       elif cmd.startswith("%PING"):
         reply.append("NOP: "+cmd)
       elif cmd.startswith("%QUERY"):
         for area in ftnexport.get_node_subscriptions(db, text, domain):
           reply.append(area)
-      elif cmd.startswith("%INFO"):
-        reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%HELP"):
         reply.append("Use following command:")
         reply.append("  %QUERY          -- list of subscribed areas")
@@ -72,6 +79,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
         reply.append("        you can use ? to substitite any one character an area name")
         reply.append("        or * to substitude any number of any characters in area name")
         reply.append("        areaname must be UPPERCASE")
+        reply.append("  %RESET area YYYY-MM-DD -- reset area to specified date")
         reply.append("")
       elif cmd.startswith("%LIST"):
         for area in ftnexport.get_all_targets(db, domain):
@@ -80,6 +88,8 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
         reply.append("Sorry not implemented: "+cmd)
       elif cmd.startswith("%PAUSE"):
         reply.append("Sorry not implemented: "+cmd)
+      elif cmd.startswith("%RESET"):
+        reply += reset(db, sess, text, domain, cmd[7:])
       elif cmd.startswith("-"):
         reply += unsubscribe(db, sess, text, domain, cmd[1:])
       elif cmd.startswith("+"):

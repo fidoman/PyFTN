@@ -495,6 +495,21 @@ class session:
     return "unsubscribed"
 
 
+  def reset_subscription(self, target_domain, target_addr, subscriber_addr, timestamp):
+    target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
+    subscriber=get_addr_id(self.db, self.db.FTN_domains["node"], subscriber_addr)
+    reset_id=self.db.prepare("select min(id) from messages where destination=$1 and receivedtimestamp>=$2::text::timestamptz").first(target, timestamp)
+    if reset_id is None:
+      return "no messages after specified date"
+    try:
+      self.db.prepare("update subscriptions set lastsent=$3 where subscriber=$1 and target=$2")(subscriber, target, reset_id)
+      return "reset to %d"%reset_id
+    except:
+      print ("Exception in reset_subscription")
+      traceback.print_exc()
+      return "failed"
+
+
   def import_link_conn(self, node, conninfo):
     """ match database records with given table """
 
