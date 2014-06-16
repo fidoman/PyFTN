@@ -3,6 +3,7 @@
 # check that messages in dupearea really the same as in database
 
 import os
+import sys
 from ftnconfig import *
 import ftn.msg
 import postgresql
@@ -21,8 +22,13 @@ Q_msgget = db.prepare("select m.id, m.msgid, m.header, m.body, m.origcharset, s.
 
 #DUPDIR=BADDIR
 
-print(DUPDIR)
-for f in os.listdir(DUPDIR):
+if len(sys.argv)<2:
+  print(DUPDIR)
+  filelist=os.listdir(DUPDIR)
+else:
+  filelist=sys.argv[1:]
+
+for f in filelist:
   fn, fext = os.path.splitext(f)
   if fext==".msg" and fn.find(".db")==-1:
 
@@ -79,7 +85,7 @@ for f in os.listdir(DUPDIR):
         subjmatch = subj1.replace("\x0A","")==subj2.replace("\x0A","")
 
     print ("Same subject:",subjmatch)
-    
+
     match = subjmatch and (body.strip()==dbbody.strip() or dbbody.strip().startswith(body.strip()))
 
     print("and same body:", match)
