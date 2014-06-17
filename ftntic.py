@@ -6,6 +6,7 @@ import re
 import zlib
 import hashlib
 import datetime
+import json
 
 import ftnconfig
 import ftnaccess
@@ -265,11 +266,8 @@ try:
     fnameslen = int(db.prepare("select array_upper(names, 1) from files where id=$1").first(f_id) or 0)
     db.prepare("update files set names[$1]=$2")(fnameslen+1, fname)
 
-  print (ticdata)
-  1/0 # insert all other tic's fields
-# description path seen-by's
-  db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename) values ($1, $2, $3, $4, $5, $6, $7)")\
-    (f_id, tic_origin_id, area_id, ftnconfig.get_link_id(db, tic_src), datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname)
+  db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename, other) values ($1, $2, $3, $4, $5, $6, $7, $8)")\
+    (f_id, tic_origin_id, area_id, ftnconfig.get_link_id(db, tic_src), datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata))
   print ("inserted successfully")
   os.unlink(ffullname)
   os.unlink(fullname)
