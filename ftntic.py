@@ -69,6 +69,23 @@ def get_single(t, k, conv=None):
       raise BadTic("cannot use value in field %s"%k)
   else:
     r = x[0]
+  del t[k]
+  return r
+
+def get_optional(t, k, conv=None):
+  x = t.get(k)
+  if not x:
+    return None
+  if len(x)>1:
+    raise BadTic("tic has not single field %s"%k)
+  if conv:
+    try:
+      r = conv(x[0])
+    except:
+      raise BadTic("cannot use value in field %s"%k)
+  else:
+    r = x[0]
+  del t[k]
   return r
 
 def get_first(t, k):
@@ -86,7 +103,6 @@ for l in tic:
 #  print (op, ">>", data)
   ticdata.setdefault(op.upper(), []).append(data)
 
-print (ticdata)
 db = ftnconfig.connectdb()
 
 try:
@@ -98,21 +114,48 @@ try:
   #
   # in both cases refuse tic if no row fetched - tics are allowed for password links only
 
-  tic_dest = get_single(ticdata, "TO")
-  print ("to", tic_dest)
-  if tic_dest != ftnconfig.ADDRESS:
-    raise WrongTic("tic for %s"%tic_dest)
-
-  tic_src = get_single(ticdata, "FROM")
+  tic_src = get_optional(ticdata, "FROM")
   print ("from", tic_src)
-  if expect_addr:
-    if tic_src!=expect_addr:
-      raise WrongTic("source address do not match expected")
+  if tic_src is None:
+    tic_src=expect_addr
+
+  tic_dest = get_optional(ticdata, "TO")
+  print ("to", tic_dest)
+
+  q="select l.address, l.my, l.authentication from links l"
+  q_args=[]
+  if tic_src:
+    src_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_src)
+    q += (" and" if q_args else " where") + " address=$%d"%(len(q_args)+1)
+    q_args.append(src_id)
   else:
-    passw = get_single(ticdata, "PW")
-    linkpassw = ftnconfig.get_link_password(db, tic_src)
-    if passw!=linkpassw:
-      raise WrongTic("invalid password for %s"%tic_src)
+    src_id = None
+
+  if tic_dest:
+    dest_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_dest)
+    q += (" and" if q_args else " where") + " my=$%d"%(len(q_args)+1)
+    q_args.append(src_id)
+  else:
+    dest_id = None
+
+  print (q)
+  print (q_args)
+
+  possible_links = db.prepare(q)(*q_args)
+  if len(possible_links) > 1:
+    raise WrongTic("ambiguos link %s->%s"%(str(tic_src),str(tic_dest)))
+
+  if len(possible_links) == 0:
+    raise WrongTic("no matching link %s->%s"%(str(tic_src),str(tic_dest)))
+
+  src_id, dest_id, authinfo = possible_links[0]
+  pw = authinfo.find("RobotsPassword").text
+
+  print (src_id, dest_id, pw)
+
+  tic_passw = get_single(ticdata, "PW")
+  if tic_passw!=pw:
+    raise WrongTic("invalid password for %s"%tic_src)
 
   # source and destination verified, now try to find file
   # but before we should check if link can post to specified area
@@ -222,7 +265,7 @@ try:
     fnameslen = int(db.prepare("select array_upper(names, 1) from files where id=$1").first(f_id) or 0)
     db.prepare("update files set names[$1]=$2")(fnameslen+1, fname)
 
-  print (tic_data)
+  print (ticdata)
   1/0 # insert all other tic's fields
 # description path seen-by's
   db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename) values ($1, $2, $3, $4, $5, $6, $7)")\
