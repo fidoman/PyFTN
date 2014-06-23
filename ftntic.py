@@ -14,27 +14,6 @@ import ftnimport
 
 skip_access_check = True
 
-if len(sys.argv)<2:
-  print ("specify file name of tic file to process")
-  exit (-1)
-
-fullname = sys.argv[1]
-filepath, filename = os.path.split(fullname)
-
-if len(sys.argv)>2:
-  expect_addr = sys.argv[2]
-else:
-  expect_addr = None
-
-if len(sys.argv)>3:
-  print ("too many parameters")
-  exit (-2)
-
-print(filepath, filename, expect_addr)
-
-if not filename.lower().endswith(".tic"):
-  print ("this should be .tic file")
-  exit (-3)
 
 # read tic
 # if format is wrong rename to .bad
@@ -54,8 +33,9 @@ class NoFile(BadTic):
   pass
 
 class DupPost(BadTic):
-  pass
-
+  def __init__(self, msg, filename):
+    BadTic.__init__(self, msg)
+    self.filename = filename
 
 def get_single(t, k, conv=None):
   x = t.get(k)
@@ -96,24 +76,26 @@ def get_first(t, k):
   return x[0]
 
 
-tic = open(fullname, "r", encoding="cp866")
-ticdata = {}
-for l in tic:
-  op, data = re.split("\s+", l, 1)
-  data = data.strip()
-#  print (op, ">>", data)
-  ticdata.setdefault(op.upper(), []).append(data)
+def read_tic(f):
+  if f[-4:].lower()!=".tic":
+    raise BadTic("it should be .tic file")
+  ticdata = {}
+  for l in open(f, "r", encoding="cp866"):
+    op, data = re.split("\s+", l, 1)
+    data = data.strip()
+#    print (op, ">>", data)
+    ticdata.setdefault(op.upper(), []).append(data)
+  return ticdata
 
-db = ftnconfig.connectdb()
-
-try:
-  # need to change it
+def import_tic(db, fullname, expect_addr):
   # if "TO" is present
   #   get from links with matching from and to addresses and verify password
   # if "TO" is absent
   #   get to and password from links by from. if two rows are fetched - refuse tic
   #
   # in both cases refuse tic if no row fetched - tics are allowed for password links only
+  filepath, filename = os.path.split(fullname)
+  ticdata = read_tic(fullname)
 
   tic_src = get_optional(ticdata, "FROM")
   print ("from", tic_src)
@@ -198,87 +180,100 @@ try:
 
   print ("file matches")
   # >>> LOCK FILEECHOES POSTINGS
+  with postgresql.alock.ExclusiveLock(self.db, ftnconfig.FECHOIMPORTLOCK):
+    # calculate hash
+    # verify if it exists in database
+    # if not, post as new (new blob, new name, new destination)
+    # if yes, register new name (if differ) and destination for file
 
-  # calculate hash
-  # verify if it exists in database
-  # if not, post as new (new blob, new name, new destination)
-  # if yes, register new name (if differ) and destination for file
+    # check if it is not duplicate tic
+    # select posting of same origin, area, filename, origin_record
+    # if any has same filesize and hash - compare content and drop duplicate
 
-  # check if it is not duplicate tic
-  # select posting of same origin, area, filename, origin_record
-  # if any has same filesize and hash - compare content and drop duplicate
+    tic_origin = get_single(ticdata, "ORIGIN")
+    tic_origin_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_origin)
+    area_id = ftnconfig.get_addr_id(db, db.FTN_domains["fileecho"], area)
+    tic_originrec = get_first(ticdata, "PATH")
 
-  tic_origin = get_single(ticdata, "ORIGIN")
-  tic_origin_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_origin)
-  area_id = ftnconfig.get_addr_id(db, db.FTN_domains["fileecho"], area)
-  tic_originrec = get_first(ticdata, "PATH")
+    print("check if tic is first %s %d %s %s"%((tic_origin, area_id, fname, tic_originrec)))
 
-  print("check if tic is first %s %d %s %s"%((tic_origin, area_id, fname, tic_originrec)))
-
-  for prev_f, prev_l, prev_h, prev_p in db.prepare("select f.id, f.length, f.sha512, p.id from files f inner join file_post p ON p.filedata=f.id "
+    for prev_f, prev_l, prev_h, prev_p in db.prepare("select f.id, f.length, f.sha512, p.id from files f inner join file_post p ON p.filedata=f.id "
         "where p.origin=$1 and p.destination=$2 and p.filename=$3 and p.origin_record=$4")(tic_origin_id, area_id, fname, tic_originrec):
-    raise DupPost("similar posting %d, abandom"%prev_p)
-    # not sure would one check here if file content is different
+      os.rename(ffullname, ffullname+".dup")
+      os.rename(fullname, fullname+".dup")
+      raise DupPost("similar posting %d, abandom"%prev_p, ffullname)
+      # tic with the same first record of PATH - the same posting
 
-  sha512 = hashlib.new("sha512")
-  f=open(ffullname, "rb")
-  while(True):
-    z=f.read(262144)
-    if not z:
-      break
-    sha512.update(z)
-  f.close()
-  print(sha512.hexdigest())
+    sha512 = hashlib.new("sha512")
+    f=open(ffullname, "rb")
+    while(True):
+      z=f.read(262144)
+      if not z:
+        break
+      sha512.update(z)
+    f.close()
+    print(sha512.hexdigest())
 
-  oldf_id = db.prepare("select id from files where sha512=$1").first(sha512.digest())
-  if oldf_id is None:
-    print("new file content")
-    if fsize<=262144:
-      print ("save as bytea")
-      newf_id = db.prepare("insert into files (length, sha512, content) values ($1, $2, $3) returning id").first(fsize, sha512.digest(), open(ffullname, "rb").read())
+    oldf_id = db.prepare("select id from files where sha512=$1").first(sha512.digest())
+    if oldf_id is None:
+      print("new file content")
+      if fsize<=262144:
+        print ("save as bytea")
+        newf_id = db.prepare("insert into files (length, sha512, content) values ($1, $2, $3) returning id").first(fsize, sha512.digest(), open(ffullname, "rb").read())
+      else:
+        print ("save as large object")
+        with ftnimport.session(db) as sess:
+          lo=sess.db.prepare("select lo_create(0)").first()
+          print("created lo", lo)
+          lo_handle=sess.db.prepare("select lo_open($1, 131072)").first(lo)
+          f=open(ffullname, "rb")
+          while(True):
+            z=f.read(262144)
+            if not z:
+              break
+            if sess.db.prepare("select lowrite($1, $2)").first(lo_handle, z) != len(z):
+              raise Exception("error writing file data to database")
+          f.close()
+          if sess.db.prepare("select lo_close($1)").first(lo_handle) != 0:
+            raise Exception("error closing large object")
+
+          newf_id = db.prepare("insert into files (length, sha512, lo) values ($1, $2, $3) returning id").first(fsize, sha512.digest(), lo)
+
+      f_id = newf_id
     else:
-      print ("save as large object")
-      with ftnimport.session(db) as sess:
-        lo=sess.db.prepare("select lo_create(0)").first()
-        print("created lo", lo)
-        lo_handle=sess.db.prepare("select lo_open($1, 131072)").first(lo)
-        f=open(ffullname, "rb")
-        while(True):
-          z=f.read(262144)
-          if not z:
-            break
-          if sess.db.prepare("select lowrite($1, $2)").first(lo_handle, z) != len(z):
-            raise Exception("error writing file data to database")
-        f.close()
-        if sess.db.prepare("select lo_close($1)").first(lo_handle) != 0:
-          raise Exception("error closing large object")
+      print("use old", oldf_id)
+      f_id = oldf_id
 
-        newf_id = db.prepare("insert into files (length, sha512, lo) values ($1, $2, $3) returning id").first(fsize, sha512.digest(), lo)
+    # add name for filedata
+    is_with_name = db.prepare("select id from files where $1 = ANY(names)").first(fname)
+    if not is_with_name:
+      fnameslen = int(db.prepare("select array_upper(names, 1) from files where id=$1").first(f_id) or 0)
+      db.prepare("update files set names[$1]=$2")(fnameslen+1, fname)
 
-    f_id = newf_id
-  else:
-    print("use old", oldf_id)
-    f_id = oldf_id
-
-  # add name for filedata
-  is_with_name = db.prepare("select id from files where $1 = ANY(names)").first(fname)
-  if not is_with_name:
-    fnameslen = int(db.prepare("select array_upper(names, 1) from files where id=$1").first(f_id) or 0)
-    db.prepare("update files set names[$1]=$2")(fnameslen+1, fname)
-
-  db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename, other) values ($1, $2, $3, $4, $5, $6, $7, $8)")\
-    (f_id, tic_origin_id, area_id, ftnconfig.get_link_id(db, tic_src), datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata))
-  print ("inserted successfully")
-  os.unlink(ffullname)
-  os.unlink(fullname)
+    db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename, other) values ($1, $2, $3, $4, $5, $6, $7, $8)")\
+      (f_id, tic_origin_id, area_id, ftnconfig.get_link_id(db, tic_src), datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata))
+    print ("inserted successfully")
+    os.unlink(ffullname)
+    os.unlink(fullname)
 
   # <<< UNLOCK FILEECHOES POSTINGS
 
-except DupPost as e:
-  print (e)
-  os.rename(ffullname, ffullname+".dup")
-  os.rename(fullname, fullname+".dup")
 
-except BadTic as e:
-  print (e)
+if __name__=="__main__":
+  db = ftnconfig.connectdb()
+  if len(sys.argv)<2:
+    print ("specify file name of tic file to process")
+    exit (-1)
 
+  fullname = sys.argv[1]
+
+  if len(sys.argv)>2:
+    expect_addr = sys.argv[2]
+  else:
+    expect_addr = None
+
+  if len(sys.argv)>3:
+    print ("too many parameters")
+    exit (-2)
+
+  import_tic(db, fullname, expect_addr)
