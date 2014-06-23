@@ -1,12 +1,74 @@
 #!/usr/local/bin/python3 -bb
 
 import os
+import re
+import time
+import hashlib
+
+re_UTIME=re.compile(".*? (\d{9,10}) .*")
+re_FTRACK=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC .*?")
+re_FTRACK3=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC\+3 .*?")
+re_FTRACKUX=re.compile(".*? (\d\d \S\S\S \d\d\d\d \d\d:\d\d:\d\d) UTC\+(\d\d\d\d)")
 
 import ftnconfig
 
 fareas = ftnconfig.FAREASDIR
 
-for d in os.listdir(fareas):
+def read_info(f):
+  tic = {}
+  addto = None
+  for l in open(f, encoding="cp866"):
+    l = l.rstrip()
+    if l.startswith("AREA: "):
+      tic["AREA"]=[l[6:]]
+    elif l.startswith("AREADESC: "):
+      tic["AREADESC"]=[l[10:]]
+    elif l.startswith("RECEIVED AS: "):
+      tic["FILE"]=[l[13:]]
+    elif l.startswith("RECEIVED FROM: "):
+      tic["FROM"]=[l[15:]]
+    elif l.startswith("FROM: "):
+      tic["FROM"]=[l[6:]]
+    elif l.startswith("REPLACED: "):
+      tic["REPLACES"]=[l[10:]]
+    elif l.startswith("ORIGIN: "):
+      tic["ORIGIN"]=[l[8:]]
+    elif l.startswith("FILE DATE: "):
+      tic["DATE"]=[l[11:]]
+    elif l.startswith("DATE: "):
+      tic["DATE"]=[l[6:]]
+    elif l.startswith("CRC: "):
+      tic["CRC"]=[l[5:]]
+    elif l.startswith("FREQ AS: "):
+      tic["FREQ"]=[l[9:]]
+    elif l.startswith("DECLARED SIZE: "):
+      tic["SIZE"]=[l[15:]]
+    elif l=="PATH ->":
+      addto = tic.setdefault("PATH", [])
+    elif l=="SEENBY ->":
+      addto = tic.setdefault("SEENBY", [])
+    elif l=="REPLACED ->":
+      addto = tic.setdefault("REPLACES", [])
+    else:
+      if addto is not None:
+        addto.append(l)
+      else:
+        raise Exception("cannot interpret [%s]"%repr(l))
+  return tic
+
+def filehash(f):
+  h=hashlib.sha512()
+  h.update(open(f,"rb").read())
+  return h.hexdigest()
+
+print ("FILEDATES")
+FILEDATES="filedates.dat"
+if not os.path.exists(FILEDATES):
+ files=set()
+ filedates = {}
+ default_time = 1000000000
+
+ for d in os.listdir(fareas):
   farea_dir = os.path.join(fareas, d)
   if not os.path.isdir(farea_dir):
     continue
@@ -14,23 +76,109 @@ for d in os.listdir(fareas):
 
   print (farea, farea_dir)
 
-  files=set()
-  infos=set()
-  descs=set()
   for f in os.listdir(farea_dir):
+    fname = os.path.join(farea_dir, f)
     if f.endswith(".desc"):
-      descs.add(f)
+      #descs.add(f)
+      pass
     elif f.endswith(".info"):
-      infos.add(f)
+      #infos.add(f)
+      try: 
+        tic = read_info(fname)
+      except Exception as e:
+        print("error:", f, e)
+        exit()
+
+      sent = None
+      if "DATE" in tic:
+        try:
+          sent = int(tic["DATE"][0])
+        except:
+          #print("bad date", tic["DATE"][0])
+          #exit()
+          pass
+
+      if sent is None and "PATH" in tic:
+        chance = False
+        for origin_rec in tic["PATH"]:
+          if len(origin_rec)>30:
+            chance = True
+
+          try:
+            sent=int(re_UTIME.match(origin_rec).group(1))
+            break
+          except Exception as e:
+            print("no utime:", f, e, "\n", origin_rec)
+
+          try:
+            sent=re_FTRACK.match(origin_rec).group(1)
+            sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))
+            break
+          except Exception as e:
+            print("no ftrtime:", f, e, "\n", origin_rec)
+
+          try:
+            sent=re_FTRACK3.match(origin_rec).group(1)
+            sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))+3*3600
+            break
+          except Exception as e:
+            print("no ftr3time:", f, e, "\n", origin_rec)
+
+          try:
+            sent=re_FTRACKUX.match(origin_rec).group(1)
+            senttz=re_FTRACKUX.match(origin_rec).group(2)
+            sent=time.mktime(time.strptime(sent, "%d %b %Y %H:%M:%S"))+int(senttz[:2])*3600+int(senttz[2:4])*60
+            break
+          except Exception as e:
+            print("no ftruxtime:", f, e, "\n", origin_rec)
+
+
+        else:
+          if chance:
+            print("cannot get time from PATH", f)
+            exit()
+          else:
+            print("no chances, continue...")
+            sent = default_time
+
+      filedates[fname[:-5]] = sent
+
     else:
-      files.add(f)
-  for f in files:
-    if f+".info" not in infos:
-      print (f)
+      files.add(fname)
 
-# all files not having desc import as hatched 2001-01-01
-# import and delete
 
+ fdfile = open(FILEDATES, "w")
+ for f, d in filedates.items():
+  print(f)
+  fdfile.write(f+"\t"+str(int(d or default_time))+"\t"+filehash(f)+"\n")
+  files.remove(f)
+ for f in files:
+  print(f)
+  fdfile.write(f+"\t"+str(default_time)+"\t"+filehash(f)+"\n")
+ fdfile.close()
+
+print("TIC ARCHIVE")
+TICARCHIVE="tics.dat"
+if not os.path.exists(TICARCHIVE):
+  print("read tics")
+  for inb in [ftnconfig.INBOUND, ftnconfig.DINBOUND]:
+    #print (inb)
+    for addr in os.listdir(inb):
+      #print (addr)
+      addrdir=os.path.join(inb, addr, "pwd-in-archive")
+      if os.path.isdir(addrdir):
+        for date in os.listdir(addrdir):
+          #print (" ", date)
+          datedir=os.path.join(addrdir, date)
+          for hhmm in os.listdir(datedir):
+            #print ("   ",hhmm)
+            timedir=os.path.join(datedir,hhmm)
+            print(timedir)
+            utime = time.mktime(time.strptime(date+hhmm, "%Y%m%d%H%M"))
+            for f in os.listdir(timedir):
+              fname=os.path.join(timedir, f)
+              if f[-4:].upper()==".TIC":
+                print(utime, f)
 # index all files stored in pwd-in-archive
 # save index for restart, add to it new files
 
