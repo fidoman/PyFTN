@@ -11,6 +11,7 @@ re_FTRACK3=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC\+3 .*?")
 re_FTRACKUX=re.compile(".*? (\d\d \S\S\S \d\d\d\d \d\d:\d\d:\d\d) UTC\+(\d\d\d\d)")
 
 import ftnconfig
+import ftntic
 
 fareas = ftnconfig.FAREASDIR
 
@@ -157,6 +158,21 @@ if not os.path.exists(FILEDATES):
   fdfile.write(f+"\t"+str(default_time)+"\t"+filehash(f)+"\n")
  fdfile.close()
 
+print ("read filedates by hash")
+fareas_hashes={}
+for l in open(FILEDATES):
+  x=l.rstrip().split("\t")
+  fareas_hashes[x[2]]=(x[0],x[1])
+
+
+post_queue = open("post.dat","w")
+
+
+
+# timestamp; type; filename
+# type = "del" | "farea" | "arch"
+
+
 print("TIC ARCHIVE")
 TICARCHIVE="tics.dat"
 if not os.path.exists(TICARCHIVE):
@@ -173,19 +189,32 @@ if not os.path.exists(TICARCHIVE):
           for hhmm in os.listdir(datedir):
             #print ("   ",hhmm)
             timedir=os.path.join(datedir,hhmm)
-            print(timedir)
+            #print(timedir)
             utime = time.mktime(time.strptime(date+hhmm, "%Y%m%d%H%M"))
             for f in os.listdir(timedir):
               fname=os.path.join(timedir, f)
               if f[-4:].upper()==".TIC":
-                print(utime, f)
-# index all files stored in pwd-in-archive
-# save index for restart, add to it new files
+                tic=ftntic.read_tic(fname)
+                ticfile=os.path.split(ftntic.get_single(tic, "FILE"))[1]
+                try:
+                  ticfname=ftntic.find_file(ticfile, timedir)
+                except ftntic.NoFile as e:
+                  print("no file", utime, f, ticfile, e)
+                  exit()
+                tichash=filehash(ticfname)
+                try:
+                  fareas_same = fareas_hashes.pop(tichash)
+                  post_queue.write("\t".join((str(fareas_same[1]), "del", fareas_same[0]))+"\n")
+                except KeyError:
+                  pass
+                post_queue.write("\t".join((str(int(utime)), "tic", fname))+"\n")
 
-# make list of all files with .info
-# order by received time from .info together with archive
+for x in fareas_hashes.values():
+  post_queue.write("\t".join((str(x[1]), "farea", x[0]))+"\n")
 
-# import in recv-time order by list and delete (excluding having symlinks in outboxes)
+post_queue.close()
+
+# sort file with sort -n
 
 # stop old tic processing
 # import newly appeared files
