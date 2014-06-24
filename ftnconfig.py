@@ -107,7 +107,7 @@ BUNDLELOCK=2
 TICLOCK=3
 EXPORTLOCK={"netmail": 4, "echomail": 5, "fileecho": 6, "filebox": 7}
 IMPORTLOCK=8
-FECHOIMPORTLOCK=db.prepare("select oid from pg_class where relname='file_post'").first();
+#FECHOIMPORTLOCK=db.prepare("select oid from pg_class where relname='file_post'").first();
 
 # ---------------------------------------------------------------------------------------
 

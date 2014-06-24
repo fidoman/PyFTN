@@ -87,6 +87,19 @@ def read_tic(f):
     ticdata.setdefault(op.upper(), []).append(data)
   return ticdata
 
+def find_file(name, path):
+  n1=os.path.join(path, name)
+  if os.path.exists(n1):
+    return n1
+  n1=os.path.join(path, name.lower())
+  if os.path.exists(n1):
+    return n1
+  n1=os.path.join(path, name.upper())
+  if os.path.exists(n1):
+    return n1
+  raise NoFile("no match for %s at %s"%(name, path))
+
+
 def import_tic(db, fullname, expect_addr):
   # if "TO" is present
   #   get from links with matching from and to addresses and verify password
