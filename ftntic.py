@@ -7,6 +7,7 @@ import zlib
 import hashlib
 import datetime
 import json
+import time
 
 import ftnconfig
 import ftnaccess
@@ -14,6 +15,7 @@ import ftnimport
 
 skip_access_check = True
 
+import postgresql
 
 # read tic
 # if format is wrong rename to .bad
@@ -100,7 +102,7 @@ def find_file(name, path):
   raise NoFile("no match for %s at %s"%(name, path))
 
 
-def import_tic(db, fullname, expect_addr):
+def import_tic(db, fullname, expect_addr=None, import_utime=None):
   # if "TO" is present
   #   get from links with matching from and to addresses and verify password
   # if "TO" is absent
@@ -193,7 +195,9 @@ def import_tic(db, fullname, expect_addr):
 
   print ("file matches")
   # >>> LOCK FILEECHOES POSTINGS
-  with postgresql.alock.ExclusiveLock(self.db, ftnconfig.FECHOIMPORTLOCK):
+  if db.FECHOIMPORTLOCK is None:
+    db.FECHOIMPORTLOCK=db.prepare("select oid from pg_class where relname='file_post'").first()
+  with postgresql.alock.ExclusiveLock(db, db.FECHOIMPORTLOCK, 0):
     # calculate hash
     # verify if it exists in database
     # if not, post as new (new blob, new name, new destination)
@@ -204,7 +208,8 @@ def import_tic(db, fullname, expect_addr):
     # if any has same filesize and hash - compare content and drop duplicate
 
     tic_origin = get_single(ticdata, "ORIGIN")
-    tic_origin_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_origin)
+    with ftnimport.session(db) as sess:
+      tic_origin_id = sess.check_addr("node", tic_origin)
     area_id = ftnconfig.get_addr_id(db, db.FTN_domains["fileecho"], area)
     tic_originrec = get_first(ticdata, "PATH")
 
@@ -258,13 +263,24 @@ def import_tic(db, fullname, expect_addr):
       f_id = oldf_id
 
     # add name for filedata
-    is_with_name = db.prepare("select id from files where $1 = ANY(names)").first(fname)
+    is_with_name = db.prepare("select id from files where $1 = ANY(names) and id=$2").first(fname, f_id)
     if not is_with_name:
       fnameslen = int(db.prepare("select array_upper(names, 1) from files where id=$1").first(f_id) or 0)
-      db.prepare("update files set names[$1]=$2")(fnameslen+1, fname)
+      db.prepare("update files set names[$1]=$2 where id=$3")(fnameslen+1, fname, f_id)
 
-    db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_timestamp, origin_record, filename, other) values ($1, $2, $3, $4, $5, $6, $7, $8)")\
-      (f_id, tic_origin_id, area_id, ftnconfig.get_link_id(db, tic_src), datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata))
+    if import_utime is None:
+      utime = int(time.mktime(time.gmtime())) # convert_post  time to float and use fractions if you have rate more than one file per some seconds 
+    else:
+      utime = int(import_utime)
+
+    print ("current utime", utime)
+    while db.prepare("select id from file_post where post_time=$1").first(utime):
+      utime+=1
+    print ("insert with utime", utime)
+
+    db.prepare("insert into file_post (filedata, origin, destination, recv_from, recv_as, recv_timestamp, origin_record, filename, other, post_time) "
+                    "values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")\
+      (f_id, tic_origin_id, area_id, src_id, dest_id, datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata), utime)
     print ("inserted successfully")
     os.unlink(ffullname)
     os.unlink(fullname)

@@ -14,6 +14,7 @@ def connectdb(dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip())
   db = postgresql.open(dbstring)
   init_domains(db)
   init_commuter(db)
+  db.FECHOIMPORTLOCK = None
   return db
 
 # system-specific settings
@@ -107,7 +108,7 @@ BUNDLELOCK=2
 TICLOCK=3
 EXPORTLOCK={"netmail": 4, "echomail": 5, "fileecho": 6, "filebox": 7}
 IMPORTLOCK=8
-#FECHOIMPORTLOCK=db.prepare("select oid from pg_class where relname='file_post'").first();
+#=db.prepare("select oid from pg_class where relname='file_post'").first();
 
 # ---------------------------------------------------------------------------------------
 
