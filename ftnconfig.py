@@ -269,9 +269,15 @@ def get_link_password(db, linkaddr, forrobots=False):
     authinfo=pw[linkaddr]=x[0][0]
 
   if forrobots:
-    return authinfo.find("RobotsPassword").text
+    if authinfo.find("RobotsPassword") is not None:
+      return authinfo.find("RobotsPassword").text
+    else:
+      return None
   else:
-    return authinfo.find("ConnectPassword").text
+    if authinfo.find("ConnectPassword") is not None:
+      return authinfo.find("ConnectPassword").text
+    else:
+      return None
 
 
 

@@ -29,7 +29,7 @@ def read_info(f):
     elif l.startswith("RECEIVED FROM: "):
       tic["FROM"]=[l[15:]]
     elif l.startswith("FROM: "):
-      tic["FROM"]=[l[6:]]
+      tic["DOWNLOADED"]=[l[6:]]
     elif l.startswith("REPLACED: "):
       tic["REPLACES"]=[l[10:]]
     elif l.startswith("ORIGIN: "):
@@ -62,110 +62,112 @@ def filehash(f):
   h.update(open(f,"rb").read())
   return h.hexdigest()
 
-print ("FILEDATES")
-FILEDATES="filedates.dat"
-if not os.path.exists(FILEDATES):
- files=set()
- filedates = {}
- default_time = 1000000000
+if __name__ == "__main__":
 
- for d in os.listdir(fareas):
-  farea_dir = os.path.join(fareas, d)
-  if not os.path.isdir(farea_dir):
-    continue
-  farea = d.upper()
-
-  print (farea, farea_dir)
-
-  for f in os.listdir(farea_dir):
-    fname = os.path.join(farea_dir, f)
-    if f.endswith(".desc"):
-      #descs.add(f)
-      pass
-    elif f.endswith(".info"):
-      #infos.add(f)
-      try: 
-        tic = read_info(fname)
-      except Exception as e:
-        print("error:", f, e)
-        exit()
-
-      sent = None
-      if "DATE" in tic:
-        try:
-          sent = int(tic["DATE"][0])
-        except:
-          #print("bad date", tic["DATE"][0])
-          #exit()
+  print ("FILEDATES")
+  FILEDATES="filedates.dat"
+  if not os.path.exists(FILEDATES):
+    files=set()
+    filedates = {}
+    default_time = 1000000000
+  
+    for d in os.listdir(fareas):
+      farea_dir = os.path.join(fareas, d)
+      if not os.path.isdir(farea_dir):
+        continue
+      farea = d.upper()
+  
+      print (farea, farea_dir)
+  
+      for f in os.listdir(farea_dir):
+        fname = os.path.join(farea_dir, f)
+        if f.endswith(".desc"):
+          #descs.add(f)
           pass
-
-      if sent is None and "PATH" in tic:
-        chance = False
-        for origin_rec in tic["PATH"]:
-          if len(origin_rec)>30:
-            chance = True
-
-          try:
-            sent=int(re_UTIME.match(origin_rec).group(1))
-            break
+        elif f.endswith(".info"):
+          #infos.add(f)
+          try: 
+            tic = read_info(fname)
           except Exception as e:
-            print("no utime:", f, e, "\n", origin_rec)
+            print("error:", f, e)
+            exit()
+  
+          sent = None
+          if "DATE" in tic:
+            try:
+              sent = int(tic["DATE"][0])
+            except:
+              #print("bad date", tic["DATE"][0])
+              #exit()
+              pass
+  
+          if sent is None and "PATH" in tic:
+            chance = False
+            for origin_rec in tic["PATH"]:
+              if len(origin_rec)>30:
+                chance = True
+ 
+              try:
+                sent=int(re_UTIME.match(origin_rec).group(1))
+                break
+              except Exception as e:
+                print("no utime:", f, e, "\n", origin_rec)
+  
+              try:
+                sent=re_FTRACK.match(origin_rec).group(1)
+                sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))
+                break
+              except Exception as e:
+                print("no ftrtime:", f, e, "\n", origin_rec)
+  
+              try:
+                sent=re_FTRACK3.match(origin_rec).group(1)
+                sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))+3*3600
+                break
+              except Exception as e:
+                print("no ftr3time:", f, e, "\n", origin_rec)
+   
+              try:
+                sent=re_FTRACKUX.match(origin_rec).group(1)
+                senttz=re_FTRACKUX.match(origin_rec).group(2)
+                sent=time.mktime(time.strptime(sent, "%d %b %Y %H:%M:%S"))+int(senttz[:2])*3600+int(senttz[2:4])*60
+                break
+              except Exception as e:
+                print("no ftruxtime:", f, e, "\n", origin_rec)
 
-          try:
-            sent=re_FTRACK.match(origin_rec).group(1)
-            sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))
-            break
-          except Exception as e:
-            print("no ftrtime:", f, e, "\n", origin_rec)
+ 
+            else:
+              if chance:
+                print("cannot get time from PATH", f)
+                exit()
+              else:
+                print("no chances, continue...")
+                sent = default_time
 
-          try:
-            sent=re_FTRACK3.match(origin_rec).group(1)
-            sent=time.mktime(time.strptime(sent, "@%Y%m%d.%H%M%S"))+3*3600
-            break
-          except Exception as e:
-            print("no ftr3time:", f, e, "\n", origin_rec)
-
-          try:
-            sent=re_FTRACKUX.match(origin_rec).group(1)
-            senttz=re_FTRACKUX.match(origin_rec).group(2)
-            sent=time.mktime(time.strptime(sent, "%d %b %Y %H:%M:%S"))+int(senttz[:2])*3600+int(senttz[2:4])*60
-            break
-          except Exception as e:
-            print("no ftruxtime:", f, e, "\n", origin_rec)
-
+          filedates[fname[:-5]] = sent
 
         else:
-          if chance:
-            print("cannot get time from PATH", f)
-            exit()
-          else:
-            print("no chances, continue...")
-            sent = default_time
-
-      filedates[fname[:-5]] = sent
-
-    else:
-      files.add(fname)
+          files.add(fname)
 
 
- fdfile = open(FILEDATES, "w")
- for f, d in filedates.items():
-  print(f)
-  fdfile.write(f+"\t"+str(int(d or default_time))+"\t"+filehash(f)+"\n")
-  files.remove(f)
- for f in files:
-  print(f)
-  fdfile.write(f+"\t"+str(default_time)+"\t"+filehash(f)+"\n")
- fdfile.close()
+    fdfile = open(FILEDATES, "w")
+    for f, d in filedates.items():
+      print(f)
+      fdfile.write(f+"\t"+str(int(d or default_time))+"\t"+filehash(f)+"\n")
+      files.remove(f)
+    for f in files:
+      print(f)
+      fdfile.write(f+"\t"+str(default_time)+"\t"+filehash(f)+"\n")
+    fdfile.close()
 
-print ("read filedates by hash")
-fareas_hashes={}
-for l in open(FILEDATES):
-  x=l.rstrip().split("\t")
-  fareas_hashes[x[2]]=(x[0],x[1])
+  print ("read filedates by hash")
+  fareas_hashes={}
+  for l in open(FILEDATES):
+    x=l.rstrip().split("\t")
+    fareas_hashes[x[2]]=(x[0],x[1])
 
 
-post_queue = open("post.dat","w")
+  post_queue = open("post.dat","w")
 
 
 
@@ -173,46 +175,46 @@ post_queue = open("post.dat","w")
 # type = "del" | "farea" | "arch"
 
 
-print("TIC ARCHIVE")
-TICARCHIVE="tics.dat"
-if not os.path.exists(TICARCHIVE):
-  print("read tics")
-  for inb in [ftnconfig.INBOUND, ftnconfig.DINBOUND]:
-    #print (inb)
-    for addr in os.listdir(inb):
-      #print (addr)
-      addrdir=os.path.join(inb, addr, "pwd-in-archive")
-      if os.path.isdir(addrdir):
-        for date in os.listdir(addrdir):
-          #print (" ", date)
-          datedir=os.path.join(addrdir, date)
-          for hhmm in os.listdir(datedir):
-            #print ("   ",hhmm)
-            timedir=os.path.join(datedir,hhmm)
-            #print(timedir)
-            utime = time.mktime(time.strptime(date+hhmm, "%Y%m%d%H%M"))
-            for f in os.listdir(timedir):
-              fname=os.path.join(timedir, f)
-              if f[-4:].upper()==".TIC":
-                tic=ftntic.read_tic(fname)
-                ticfile=os.path.split(ftntic.get_single(tic, "FILE"))[1]
-                try:
-                  ticfname=ftntic.find_file(ticfile, timedir)
-                except ftntic.NoFile as e:
-                  print("no file", utime, f, ticfile, e)
-                  exit()
-                tichash=filehash(ticfname)
-                try:
-                  fareas_same = fareas_hashes.pop(tichash)
-                  post_queue.write("\t".join((str(fareas_same[1]), "del", fareas_same[0]))+"\n")
-                except KeyError:
-                  pass
-                post_queue.write("\t".join((str(int(utime)), "tic", fname))+"\n")
+  print("TIC ARCHIVE")
+  TICARCHIVE="tics.dat"
+  if not os.path.exists(TICARCHIVE):
+    print("read tics")
+    for inb in [ftnconfig.INBOUND, ftnconfig.DINBOUND]:
+      #print (inb)
+      for addr in os.listdir(inb):
+        #print (addr)
+        addrdir=os.path.join(inb, addr, "pwd-in-archive")
+        if os.path.isdir(addrdir):
+          for date in os.listdir(addrdir):
+            #print (" ", date)
+            datedir=os.path.join(addrdir, date)
+            for hhmm in os.listdir(datedir):
+              #print ("   ",hhmm)
+              timedir=os.path.join(datedir,hhmm)
+              #print(timedir)
+              utime = time.mktime(time.strptime(date+hhmm, "%Y%m%d%H%M"))
+              for f in os.listdir(timedir):
+                fname=os.path.join(timedir, f)
+                if f[-4:].upper()==".TIC":
+                  tic=ftntic.read_tic(fname)
+                  ticfile=os.path.split(ftntic.get_single(tic, "FILE"))[1]
+                  try:
+                    ticfname=ftntic.find_file(ticfile, timedir)
+                  except ftntic.NoFile as e:
+                    print("no file", utime, f, ticfile, e)
+                    exit()
+                  tichash=filehash(ticfname)
+                  try:
+                    fareas_same = fareas_hashes.pop(tichash)
+                    post_queue.write("\t".join((str(fareas_same[1]), "del", fareas_same[0]))+"\n")
+                  except KeyError:
+                    pass
+                  post_queue.write("\t".join((str(int(utime)), "tic", fname))+"\n")
 
-for x in fareas_hashes.values():
-  post_queue.write("\t".join((str(x[1]), "farea", x[0]))+"\n")
+  for x in fareas_hashes.values():
+    post_queue.write("\t".join((str(x[1]), "farea", x[0]))+"\n")
 
-post_queue.close()
+  post_queue.close()
 
 # sort file with sort -n
 
