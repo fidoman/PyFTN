@@ -22,6 +22,7 @@ for l in open("post_s.dat"):
     print ("post from fecho", fn)
     if os.path.exists(fn+".info"):
       tic = read_info(fn+".info")
+      exit()
     else:
       print ("MAKING FAKE TIC")
       tic = {"FILE": [fn], "SIZE": [os.path.getsize(fn)]}

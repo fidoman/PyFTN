@@ -265,13 +265,14 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None):
         print ("save as large object")
         with ftnimport.session(db) as sess:
           lo=sess.db.prepare("select lo_create(0)").first()
-          print("created lo", lo)
+          print("created lo", lo,end='')
           lo_handle=sess.db.prepare("select lo_open($1, 131072)").first(lo)
           f=open(ffullname, "rb")
           while(True):
             z=f.read(262144)
             if not z:
               break
+            print(".", end='', flush=True)
             if sess.db.prepare("select lowrite($1, $2)").first(lo_handle, z) != len(z):
               raise Exception("error writing file data to database")
           f.close()
