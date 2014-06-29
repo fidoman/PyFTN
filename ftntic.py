@@ -13,8 +13,6 @@ import ftnconfig
 import ftnaccess
 import ftnimport
 
-skip_access_check = True
-
 import postgresql
 
 # read tic
@@ -115,7 +113,7 @@ def find_file(name, path):
   raise NoFile("no match for %s at %s"%(name, path))
 
 
-def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None):
+def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, ignore_pw=False, skip_access_check=False):
   # if "TO" is present
   #   get from links with matching from and to addresses and verify password
   # if "TO" is absent
@@ -174,9 +172,10 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None):
 
     print (src_id, dest_id, pw)
 
-    tic_passw = get_single(ticdata, "PW")
-    if tic_passw!=pw:
-      raise WrongTic("invalid password for %s"%tic_src)
+    if not ignore_pw:
+      tic_passw = get_single(ticdata, "PW")
+      if tic_passw!=pw:
+        raise WrongTic("invalid password for %s"%tic_src)
 
   # source and destination verified, now try to find file
   # but before we should check if link can post to specified area
@@ -205,7 +204,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None):
 
   fsize, checksum = sz_crc32(ffullname)
 
-  if checksum != fcrc:
+  if checksum != fcrc.upper():
     raise NoFile("file %s crc32 %s != %s"%(ffullname, checksum, fcrc))
 
   print ("file matches")

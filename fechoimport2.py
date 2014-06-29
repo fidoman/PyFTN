@@ -20,23 +20,34 @@ for l in open("post_s.dat"):
     ftntic.import_tic(db, fn, import_utime=ts)
   elif t=="farea":
     print ("post from fecho", fn)
+
     if os.path.exists(fn+".info"):
       tic = read_info(fn+".info")
-      exit()
     else:
-      print ("MAKING FAKE TIC")
-      tic = {"FILE": [fn], "SIZE": [os.path.getsize(fn)]}
+      tic = {}
+
+    if "FILE" not in tic:
+      tic["FILE"] = [fn]
+
+    if "SIZE" not in tic:
+      tic["SIZE"] = [os.path.getsize(fn)]
+
+    if "DESC" not in tic:
       if os.path.exists(fn+".desc"):
         desc = open(fn+".desc", encoding="cp866").read().strip()
-        print (desc)
-        tic["DESC"]=[desc]
+        tic["DESC"] = [desc]
+
+    if "AREA" not in tic:
       area=os.path.dirname(fn).split(os.path.sep)[-1].upper()
-      tic["AREA"]=[area]
+      tic["AREA"] = [area]
+
+    if "CRC" not in tic:
       _, crc = ftntic.sz_crc32(fn)
-      tic["CRC"]=[crc]
+      tic["CRC"] = [crc]
 
     print (tic)
-    ftntic.import_tic(db, fn+".faketic", ticdata=tic, import_utime=ts)
+
+    ftntic.import_tic(db, fn+".faketic", ticdata=tic, import_utime=ts, ignore_pw=True, skip_access_check=True)
     if os.path.exists(fn+".desc"):
       os.unlink(fn+".desc")
     if os.path.exists(fn+".info"):

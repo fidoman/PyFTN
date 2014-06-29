@@ -10,6 +10,8 @@ re_FTRACK=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC .*?")
 re_FTRACK3=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC\+3 .*?")
 re_FTRACKUX=re.compile(".*? (\d\d \S\S\S \d\d\d\d \d\d:\d\d:\d\d) UTC\+(\d\d\d\d)")
 
+re_CREATED=re.compile("(\S+) \(exported ([Bb]y .*)\)$")
+
 import ftnconfig
 import ftntic
 
@@ -27,7 +29,12 @@ def read_info(f):
     elif l.startswith("RECEIVED AS: "):
       tic["FILE"]=[l[13:]]
     elif l.startswith("RECEIVED FROM: "):
-      tic["FROM"]=[l[15:]]
+      infofrom=l[15:]
+      m_crt=re_CREATED.match(infofrom)
+      if m_crt:
+        infofrom = m_crt.group(1)
+        tic["CREATED"] = [m_crt.group(2)]
+      tic["FROM"]=[infofrom]
     elif l.startswith("FROM: "):
       tic["DOWNLOADED"]=[l[6:]]
     elif l.startswith("REPLACED: "):
@@ -69,7 +76,7 @@ if __name__ == "__main__":
   if not os.path.exists(FILEDATES):
     files=set()
     filedates = {}
-    default_time = 1000000000
+    default_time = 1000010370
   
     for d in os.listdir(fareas):
       farea_dir = os.path.join(fareas, d)
@@ -143,6 +150,7 @@ if __name__ == "__main__":
               else:
                 print("no chances, continue...")
                 sent = default_time
+                default_time += 1
 
           filedates[fname[:-5]] = sent
 
@@ -154,10 +162,13 @@ if __name__ == "__main__":
     for f, d in filedates.items():
       print(f)
       fdfile.write(f+"\t"+str(int(d or default_time))+"\t"+filehash(f)+"\n")
+      if not d:
+        default_time += 1
       files.remove(f)
     for f in files:
       print(f)
       fdfile.write(f+"\t"+str(default_time)+"\t"+filehash(f)+"\n")
+      default_time += 1
     fdfile.close()
 
   print ("read filedates by hash")
