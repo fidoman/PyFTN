@@ -10,7 +10,7 @@ re_FTRACK=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC .*?")
 re_FTRACK3=re.compile(".*? (@\d\d\d\d\d\d\d\d\.\d\d\d\d\d\d)\.UTC\+3 .*?")
 re_FTRACKUX=re.compile(".*? (\d\d \S\S\S \d\d\d\d \d\d:\d\d:\d\d) UTC\+(\d\d\d\d)")
 
-re_CREATED=re.compile("(\S+) \(exported ([Bb]y .*)\)$")
+re_CREATED=re.compile("(\S+) \(exported( .*?)? ([Bb]y .*)\)$")
 
 import ftnconfig
 import ftntic
@@ -33,7 +33,12 @@ def read_info(f):
       m_crt=re_CREATED.match(infofrom)
       if m_crt:
         infofrom = m_crt.group(1)
-        tic["CREATED"] = [m_crt.group(2)]
+        infodate = m_crt.group(2)
+        infocrt = m_crt.group(3)
+        print ("Complex from:", ", ".join(map(str, (infofrom, infodate, infocrt))))
+        tic["CREATED"] = [infocrt]
+        if infodate:
+          tic["DATE"] = [infodate.strip()]
       tic["FROM"]=[infofrom]
     elif l.startswith("FROM: "):
       tic["DOWNLOADED"]=[l[6:]]
