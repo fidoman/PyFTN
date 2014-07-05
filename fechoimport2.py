@@ -14,7 +14,12 @@ for l in open("post_s.dat"):
   print (ts, t, fn)
   if t=="del":
     print ("delete", fn, "and info and desc")
-    exit()
+    if os.path.exists(fn):
+      os.unlink(fn)
+    if os.path.exists(fn+".desc"):
+      os.unlink(fn+".desc")
+    if os.path.exists(fn+".info"):
+      os.unlink(fn+".info")
   elif t=="tic":
     print ("tic=", fn)
     ftntic.import_tic(db, fn, import_utime=ts)
@@ -26,8 +31,8 @@ for l in open("post_s.dat"):
     else:
       tic = {}
 
-    if "FILE" not in tic:
-      tic["FILE"] = [fn]
+    #if "FILE" not in tic:
+    tic["FILE"] = [fn] # Always use real file name
 
     if "SIZE" not in tic:
       tic["SIZE"] = [os.path.getsize(fn)]
