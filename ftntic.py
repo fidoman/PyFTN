@@ -195,7 +195,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
   fcrc = get_single(ticdata, "CRC")
 
   print (fname, fsize, fcrc)
-  ffullname=os.path.join(filepath, fname)
+  ffullname=find_file(fname, filepath)
   if not os.path.exists(ffullname):
     raise NoFile("file %s does not exists"%ffullname)
 
