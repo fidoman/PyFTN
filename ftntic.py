@@ -153,7 +153,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
     if tic_dest:
       dest_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], tic_dest)
       q += (" and" if q_args else " where") + " my=$%d"%(len(q_args)+1)
-      q_args.append(src_id)
+      q_args.append(dest_id)
     else:
       dest_id = None
 
