@@ -22,7 +22,10 @@ for l in open("post_s.dat"):
       os.unlink(fn+".info")
   elif t=="tic":
     print ("tic=", fn)
-    ftntic.import_tic(db, fn, import_utime=ts)
+    try:
+      ftntic.import_tic(db, fn, import_utime=ts, skip_access_check=True)
+    except ftntic.DupPost:
+      print ("dup detected")
   elif t=="farea":
     print ("post from fecho", fn)
 
