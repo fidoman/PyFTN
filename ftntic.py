@@ -179,7 +179,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
   # source and destination verified, now try to find file
   # but before we should check if link can post to specified area
-  area = get_single(ticdata, "AREA")
+  area = get_single(ticdata, "AREA").upper() # FTN areas must be uppercase
   print (area)
   if not skip_access_check:
     maypost = ftnaccess.may_post(db, tic_src, ("fileecho", area))
