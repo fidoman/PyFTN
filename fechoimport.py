@@ -81,7 +81,7 @@ if __name__ == "__main__":
   if not os.path.exists(FILEDATES):
     files=set()
     filedates = {}
-    default_time = 1000010370
+    default_time = 1000018463
   
     for d in os.listdir(fareas):
       farea_dir = os.path.join(fareas, d)
@@ -180,7 +180,7 @@ if __name__ == "__main__":
   fareas_hashes={}
   for l in open(FILEDATES):
     x=l.rstrip().split("\t")
-    fareas_hashes[x[2]]=(x[0],x[1])
+    fareas_hashes.setdefault(x[2], []).append((x[0],x[1]))
 
 
   post_queue = open("post.dat","w")
@@ -222,13 +222,15 @@ if __name__ == "__main__":
                   tichash=filehash(ticfname)
                   try:
                     fareas_same = fareas_hashes.pop(tichash)
-                    post_queue.write("\t".join((str(fareas_same[1]), "del", fareas_same[0]))+"\n")
+                    for fs1, fs2 in fareas_same: # drop all files in areas if the same exists in posting
+                      post_queue.write("\t".join((str(fs2), "del", fs1))+"\n")
                   except KeyError:
                     pass
                   post_queue.write("\t".join((str(int(utime)), "tic", fname))+"\n")
 
   for x in fareas_hashes.values():
-    post_queue.write("\t".join((str(x[1]), "farea", x[0]))+"\n")
+    for fs1, fs2 in x:
+      post_queue.write("\t".join((str(fs2), "farea", fs1))+"\n")
 
   post_queue.close()
 
