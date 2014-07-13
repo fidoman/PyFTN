@@ -174,8 +174,8 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
     if not ignore_pw:
       tic_passw = get_single(ticdata, "PW")
-      if tic_passw!=pw:
-        raise WrongTic("invalid password for %s"%tic_src)
+      if not ftnaccess.check_pw(pw, tic_passw):
+        raise WrongTic("invalid password [%s] for %s"%(tic_passw,tic_src))
 
   # source and destination verified, now try to find file
   # but before we should check if link can post to specified area
@@ -232,17 +232,21 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
     try:
       tic_originrec = get_first(ticdata, "PATH")
+    except BadTic as e:
+      print ("PATH is missing, no dupe checking")
+      print (e)
+      tic_originrec = None
+
+    if tic_originrec:
       print("check if tic is first %s %d %s %s"%((tic_origin, area_id, fname, tic_originrec)))
 
       for prev_f, prev_l, prev_h, prev_p in db.prepare("select f.id, f.length, f.sha512, p.id from files f inner join file_post p ON p.filedata=f.id "
           "where p.origin=$1 and p.destination=$2 and p.filename=$3 and p.origin_record=$4")(tic_origin_id, area_id, fname, tic_originrec):
         os.rename(ffullname, ffullname+".dup")
-        os.rename(fullname, fullname+".dup")
+        if not fullname.endswith(".faketic"):
+          os.rename(fullname, fullname+".dup")
         raise DupPost("similar posting %d, abandom"%prev_p, ffullname)
         # tic with the same first record of PATH - the same posting
-    except BadTic:
-      print ("PATH is missing, no dupe checking")
-      tic_originrec = None
 
     sha512 = hashlib.new("sha512")
     f=open(ffullname, "rb")
@@ -302,11 +306,11 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
                     "values ($1, $2, $3, $4, $5, $6, $7, $8, $9, free_posttime($10))")\
       (f_id, tic_origin_id, area_id, src_id, dest_id, datetime.datetime.now(datetime.timezone.utc), tic_originrec, fname, json.dumps(ticdata), utime)
     print ("inserted successfully")
+    print ("unlink", ffullname)
+    os.unlink(ffullname)
     if not fullname.endswith(".faketic"):
       print ("unlink", fullname)
       os.unlink(fullname)
-    print ("unlink", ffullname)
-    os.unlink(ffullname)
 
   # <<< UNLOCK FILEECHOES POSTINGS
 
