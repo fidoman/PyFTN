@@ -5,9 +5,9 @@ import ftnconfig
 import os
 
 db=ftnconfig.connectdb()
-address="2:5020/4441"
-password="TIW229LQ"
-classes=["echomail"]
+address="2:5059/37"
+password="SB6JV9W"
+classes=["fileecho"]
 outdir=os.path.join("static", address.replace("/", ".").replace(":","."))
 os.makedirs(outdir, exist_ok=True)
 
@@ -20,7 +20,7 @@ for outbfile, committer in ftnexport.file_export(db, address, password, classes)
         outf=open(os.path.join(outdir,outbfile.filename), "xb")
 
         while True:
-            d = outbfile.data.read(16384)
+            d = outbfile.data.read(16*1024*1024)
             if len(d)==0:
                 break
             written = outf.write(d)

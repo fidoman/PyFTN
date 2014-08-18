@@ -37,7 +37,7 @@ class DupPost(BadTic):
     BadTic.__init__(self, msg)
     self.filename = filename
 
-def get_single(t, k, conv=None):
+def get_single(t, k, conv=None, remove=True):
   x = t.get(k)
   if not x:
     raise BadTic("tic does not have required field %s"%k)
@@ -50,7 +50,8 @@ def get_single(t, k, conv=None):
       raise BadTic("cannot use value in field %s"%k)
   else:
     r = x[0]
-  del t[k]
+  if remove:
+    del t[k]
   return r
 
 def get_optional(t, k, conv=None):
@@ -80,7 +81,7 @@ def read_tic(f):
   if f[-4:].lower()!=".tic":
     raise BadTic("it should be .tic file")
   ticdata = {}
-  for l in open(f, "r", encoding="cp866"):
+  for l in open(f, "r", encoding=ftnconfig.TIC_CHARSET):
     op, data = re.split("\s+", l, 1)
     data = data.strip()
 #    print (op, ">>", data)
@@ -88,17 +89,27 @@ def read_tic(f):
   return ticdata
 
 def sz_crc32(fn):
-  checksum=0
   f=open(fn, "rb")
+  s, c = sz_crc32fd(f)
+  f.close()
+  return s, c
+
+def sz_crc32fd(fd):
+  checksum=0
   fsize = 0
   while(True):
-    z=f.read(262144)
+    z=fd.read(4*1024*1024)
     fsize += len(z)
     if not z:
       break
     checksum=zlib.crc32(z, checksum)
-  f.close()
   return fsize, "%08X"%checksum
+
+def sz_crc32s(s):
+  fsize = len(s)
+  checksum=zlib.crc32(s, 0)
+  return fsize, "%08X"%checksum
+
 
 def find_file(name, path):
   n1=os.path.join(path, name)
@@ -114,6 +125,7 @@ def find_file(name, path):
 
 
 def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, ignore_pw=False, skip_access_check=False):
+  " specify older import_utime value to make imported file the status of aarchive "
   # if "TO" is present
   #   get from links with matching from and to addresses and verify password
   # if "TO" is absent
@@ -192,7 +204,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
   except BadTic:
     fsize = None
 
-  fcrc = get_single(ticdata, "CRC")
+  fcrc = get_single(ticdata, "CRC", remove=False)
 
   print (fname, fsize, fcrc)
   ffullname=find_file(fname, filepath)
@@ -313,6 +325,23 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
       os.unlink(fullname)
 
   # <<< UNLOCK FILEECHOES POSTINGS
+
+def make_tic(t_from, t_to, t_pw, t_area, t_origin, t_file, t_size, t_crc, t_other):
+  # CRC must be extracted from other by caller or regenerated
+  tic="""FROM %s
+TO %s
+PW %s
+AREA %s
+ORIGIN %s
+FILE %s
+SIZE %d
+CRC %s
+"""%(t_from, t_to, t_pw, t_area, t_origin, t_file, t_size, t_crc)
+  for k, v in t_other.items():
+    for v1 in v:
+      tic += k+" "+v1+"\n"
+
+  return tic.encode(ftnconfig.TIC_CHARSET)
 
 
 if __name__=="__main__":

@@ -22,3 +22,35 @@ def check_pw(genuine, provided):
   if len(provided)==8 and provided==genuine[:8].upper():
     return True
   return False
+
+def check_link(db, address, password, forrobots):
+  "returns local address that is linked with remote address and verified with specified password"
+  matching = []
+  link_exists = False
+
+  password = password or ""
+  for my, authinfo in db.prepare("select ma.text, l.authentication from links l, addresses a, addresses ma "
+                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar and ma.id=l.my")(db.FTN_domains["node"], address):
+    link_exists = True
+
+    pw = ""
+    if forrobots:
+      if authinfo.find("RobotsPassword") is not None:
+        pw = authinfo.find("RobotsPassword").text
+    else:
+      if authinfo.find("ConnectPassword") is not None:
+        pw = authinfo.find("ConnectPassword").text
+
+    if check_pw(pw, password):
+      matching.append(my)
+
+  if len(matching)>2:
+    raise Exception("two links for %s with same local address and password in database"%address)
+
+  if link_exists:
+    if len(matching)==0:
+      print ("no match for specified password") # log bad password
+      return link_exists, None
+    return link_exists, matching[0] # checked link with known local address
+
+  return link_exists, ftnconfig.ADDRESS # no link, use default address

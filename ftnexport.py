@@ -9,6 +9,7 @@ import time
 import zipfile
 import os
 import functools
+import json
 
 from ftnconfig import suitable_charset, get_link_password, get_link_id, \
 	ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, \
@@ -20,6 +21,9 @@ import ftn.attr
 from ftn.ftn import FTNFail, FTNWrongPassword, date_to_RFC3339
 from stringutil import *
 import postgresql.alock
+import ftnaccess
+import ftntic
+import lo
 
 get_time = time.time
 
@@ -454,6 +458,29 @@ class echomailcommitter:
   def show(self):
     print("echomail committer:", self.lasts)
 
+class ticcommitter:
+  def __init__(self, db):
+    self.db = db.clone()
+    self.domain = db.FTN_domains["fileecho"]
+    self.data = None
+
+  def __del__(self):
+    self.db.close()
+
+  def add(self, d):
+    if self.data:
+      raise Exception("tic committer allows only one ticfile at time")
+    self.data = d
+
+  def commit(self):
+    print ("commit tic lastsent %d up to %d"%self.data)
+    self.db.prepare("update lastsent set lastsent=$3 where subscriber=$1 and domain=$2")(self.data[0], self.domain, self.data[1])
+    self.data = None
+
+class nullcommitter:
+  def commit(self):
+    pass
+
 # --- file export ---
 
 def get_pkt_n(db, link_id):
@@ -489,20 +516,21 @@ def file_export(db, address, password, what):
 
   print("export to", repr(address), repr(password), repr(what))
 
-  if password != (get_link_password(db, address) or ""):
-      raise FTNWrongPassword()
+  link_protected, myaddr = ftnaccess.check_link(db, address, password, False)
 
-  print("password is correct" if password else "password is empty")
+  if not myaddr:
+    raise FTNWrongPassword()
 
+  print("password is correct" if password else "password is empty", "local address", myaddr)
 
   # WARNING!
   # unprotected sessions never must do queries as it may result in leaking netmail
   # if address of some hub is spoofed
 
   addr_id = get_addr_id(db, db.FTN_domains["node"], address)
+  myaddr_id = get_addr_id(db, db.FTN_domains["node"], myaddr)
   link_pkt_format = get_link_pkt_format(db, address)
   link_bundler = get_link_bundler(db, address)
-
 
   if password and ("netmail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
@@ -633,6 +661,8 @@ def file_export(db, address, password, what):
         subscache = {}
         for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr, processed in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
 
+          # ??? "my" addr in subscription - is it used here
+
           will_export = True # do we really must send message or just update last_sent pointer
 
           #print("echomail %d"%id_msg, repr(dest))
@@ -651,7 +681,7 @@ def file_export(db, address, password, what):
             #print ("Archived message, will not export")
             will_export = False
 
-          # check commuter
+          # check commuter - NOT TESTED
           subscriber_comm = db.FTN_commuter.get(withsubscr)
           if subscriber_comm is not None: # must check as None==None => no export at all
             # get subscription through what message was received
@@ -726,12 +756,86 @@ def file_export(db, address, password, what):
 
 
   if password and ("fileecho" in what):
-   explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
-   if explock.acquire(False):
-    # ..send fileechoes
-    print ("exporting fileechoes (nothing here)")
-    pass #1/0
-    explock.release()
+    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
+    if explock.acquire(False):
+      try:
+        print ("exporting fileechoes")
+        subscache = {}
+        tic_password = password
+        t = ticpacker(lambda: get_tic_n(db, get_link_id(db, address)), lambda: ticcommitter(db))
+        for fp_id, fp_filename, fp_destination, fp_recv_from, fp_recv_as, fp_post_time, fp_filedata, fp_origin, fp_other, withsubscr, file_length, file_content, file_lo in \
+            db.prepare("select fp.id, fp.filename, fp.destination, fp.recv_from, fp.recv_as, fp.post_time, fp.filedata, fp.origin, fp.other, s.id, f.length, f.content, f.lo "
+            "from file_post fp, subscriptions s, files f "
+            "where exists(select * from subscriptions ss where ss.target=fp.destination and ss.subscriber=$1) and s.subscriber=$1 and "
+            "fp.post_time>(select lastsent from lastsent where subscriber=$1) and fp.destination=s.target and f.id=fp.filedata "
+            "order by fp.post_time")(addr_id):
+          print (fp_id, fp_filename, fp_destination)
+
+          will_export = True # do we really must send message or just update last_sent pointer
+
+          if fp_recv_from == addr_id:
+            #print ("Message from this link, will not export")
+            will_export = False
+
+          # check commuter - NOT TESTED
+          subscriber_comm = db.FTN_commuter.get(withsubscr)
+          if subscriber_comm is not None: # must check as None==None => no export at all
+            # get subscription through what message was received
+            recvfrom_subscription = db.prepare("select id from subscriptions where target=$1 and subscriber=$2").first(sub_tart, m_recvfrom)
+            recvfrom_comm = db.FTN_commuter.get(recvfrom_subscription)
+            if recvfrom_comm == subscriber_comm:
+              print("commuter %d - %d, will not export"%(withsubscr, recvfrom_subscription))
+              will_export = False
+    #          continue # do not forward between subscriptions in one commuter group (e.g. two uplinks)
+
+          if fp_destination in subscache:
+            subscribers = subscache[fp_destination]
+          else:
+            subscribers = db.prepare("select a.domain, a.text from subscriptions s, addresses a where s.target=$1 and s.subscriber=a.id")(fp_destination)
+
+            if not all([x[0]==db.FTN_domains["node"] for x in subscribers]):
+              raise FTNFail("subscribers from wrong domain for "+str(sub_targ))
+
+            #    print(sub_id, sub_targ, "all subscribers:", [x[1] for x in subscribers])
+
+            subscribers = subscache[fp_destination] = [x[1] for x in subscribers]
+
+          dsta = get_addr(db, fp_destination)
+
+          # modify path and seen-by
+          # seen-by's - get list of all subscribers of this target; add subscribers list
+
+          if will_export:
+            print("add seen-by", subscribers, " add path", myaddr)
+            fp_other = json.loads(fp_other)
+
+            fp_other["PATH"].append(myaddr+" "+str(fp_post_time)+" "+time.asctime(time.gmtime(fp_post_time))+" PyFTN")
+            seenby = set(fp_other["SEENBY"])
+            seenby.update(subscribers)
+            fp_other["SEENBY"]=list(seenby)
+
+            if "CRC" in fp_other:
+              file_crc32 = fp_other.pop("CRC")[0]
+              print ("filename %s length %d crc %s"%(fp_filename, file_length, file_crc32))
+            else:
+              if file_content:
+                file_crc32 = ftntic.sz_crc32s(file_content)[1]
+              else:
+                file_crc32 = ftntic.sz_crc32fd(lo.LOIOReader(db, file_lo))[1]
+
+            tic = ftntic.make_tic(myaddr, address, tic_password, dsta[1], get_addr(db, fp_origin)[1],
+                fp_filename, file_length, file_crc32, fp_other)
+
+          for x in t.add_item(((tic, (fp_filename, file_length, file_content or (db, file_lo))) if will_export else None), (addr_id, fp_post_time)): # ordering by post_time
+            yield x
+
+        for x in t.flush():
+          yield x
+
+      finally:
+        explock.release()
+    else:
+      print ("cannot acquire fileecho lock for", addr_id)
 
   return
 
@@ -891,6 +995,69 @@ class bundlepacker:
     if self.packto:
       for x in self.packto.flush():
         yield x
+
+
+class ticpacker:
+  def __init__(self, counter, commitgen, packto=None):
+    self.counter = counter
+    self.ticfile = None
+    self.commitgen = commitgen
+    self.packto = packto
+    self.committer = None
+
+  def add_item(self, t, commitdata):
+    """ t[0] is tic file as string
+        t[1] is data to send as bytea or readable object (filename, length, data)"""
+    self.ticfile = t
+
+    if self.committer is None:
+      self.committer = self.commitgen()
+
+    self.committer.add(commitdata)
+
+    if self.ticfile:
+      for x in self.pack():
+        yield x
+
+  def pack(self):
+    f = None
+    if self.ticfile:
+      # send file contents
+      f = outfile()
+      f.filename, f.length, data = self.ticfile[1]
+      if type(data)==bytes:
+        f.data = io.BytesIO(data)
+      elif type(data)==tuple:
+        print("sending lo")
+        f.data = lo.LOIOReader(*data) # db, lo_id
+      else:
+        raise Exception("data must be bytes or tuple (db, lo_id)")
+      # send tic
+      t = outfile()
+      t.data = io.BytesIO(self.ticfile[0])
+      t.filename = "pyftn%03d.tic"%(self.counter()%1000)
+      t.length = len(self.ticfile[0])
+      self.ticfile = None
+
+    if f or self.committer:
+      if self.packto:
+        for x in self.packto.add_item(f, nullcommitter()):
+          yield x
+        for x in self.packto.add_item(t, self.committer):
+          yield x
+      else:
+        yield f, nullcommitter()
+        yield t, self.committer
+
+    self.committer = None
+
+  def flush(self):
+    for x in self.pack():
+      yield x
+    if self.packto:
+      for x in self.packto.flush():
+        yield x
+
 
 # --------------- auxiliary functions ---------------------
 

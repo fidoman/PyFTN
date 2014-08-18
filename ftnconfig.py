@@ -99,7 +99,9 @@ MSGSIZELIMIT = 470000
 BUNDLETIMELIMIT=30
 PACKETTIMELIMIT=3
 
-TICWAIT=3*24*3600 # Seconds to wait for file if tic arrived first - 3 days
+TIC_WAIT=3*24*3600 # Seconds to wait for file if tic arrived first - 3 days
+
+TIC_CHARSET="cp866"
 
 # never change it
 
