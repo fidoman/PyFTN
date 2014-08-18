@@ -55,7 +55,11 @@ for l in open("post_s.dat"):
 
     print (tic)
 
-    ftntic.import_tic(db, fn+".faketic", ticdata=tic, import_utime=ts, ignore_pw=True, skip_access_check=True)
+    try:
+      ftntic.import_tic(db, fn+".faketic", ticdata=tic, import_utime=ts, ignore_pw=True, skip_access_check=True)
+    except ftntic.DupPost:
+      print ("dup detected")
+
     if os.path.exists(fn+".desc"):
       os.unlink(fn+".desc")
     if os.path.exists(fn+".info"):
