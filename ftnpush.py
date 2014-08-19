@@ -11,6 +11,7 @@ import time
 import tempfile
 
 import ftnimport
+import ftntic
 import ftn.msg
 import ftn.pkt
 import ftn.addr
@@ -240,11 +241,18 @@ if __name__ == "__main__":
 
       except Exception as e:
         print("error on file %s"%repr(f))
-        #os.rename(f, f+".bad")
         fx=open(f+".status", "w")
         fx.write(traceback.format_exc())
         fx.close()
 
-        #exit()
 
-  #print("Destinations:", repr(destinations))
+    for f in glob.glob(pnode_dir+"/pwd-in/*.[Tt][Ii][Cc]"):
+      print ("Tic file", f)
+      try:
+        ftntic.import_tic(db, f, node)
+      except Exception as e:
+        print("error on file %s"%repr(f))
+        os.rename(f, f+".bad")
+        fx=open(f+".status", "w")
+        fx.write(traceback.format_exc())
+        fx.close()
