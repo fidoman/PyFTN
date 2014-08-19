@@ -521,7 +521,7 @@ def file_export(db, address, password, what):
   if not myaddr:
     raise FTNWrongPassword()
 
-  print("password is correct" if password else "password is empty", "local address", myaddr)
+  print("password is correct" if link_protected else "unprotected session", "local address", myaddr)
 
   # WARNING!
   # unprotected sessions never must do queries as it may result in leaking netmail
@@ -532,7 +532,7 @@ def file_export(db, address, password, what):
   link_pkt_format = get_link_pkt_format(db, address)
   link_bundler = get_link_bundler(db, address)
 
-  if password and ("netmail" in what):
+  if link_protected and ("netmail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
     if explock.acquire(False):
       try:
@@ -643,7 +643,7 @@ def file_export(db, address, password, what):
     explock.release()
     pass
 
-  if password and ("echomail" in what):
+  if link_protected and ("echomail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["echomail"], addr_id)))
     if explock.acquire(False):
       try:
@@ -735,7 +735,7 @@ def file_export(db, address, password, what):
     else:
       print("could not acquire echomail lock")
 
-  if password and ("filebox" in what):
+  if link_protected and ("filebox" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["filebox"], addr_id)))
    if explock.acquire(False):
     # ..send freq filebox
@@ -755,7 +755,7 @@ def file_export(db, address, password, what):
     explock.release()
 
 
-  if password and ("fileecho" in what):
+  if link_protected and ("fileecho" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
     if explock.acquire(False):
       try:
