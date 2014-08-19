@@ -5,12 +5,18 @@ def may_subscribe(link, address):
       is it allowed to import by this subscription"""
   return True, True
 
-#def may_create():
+def may_create(link, address):
+  return True
+
 
 def may_post(db, node, address):
+  #print("*may post* check")
   node_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], node)
+  #print ("subscriber id", node_id)
   addr_id = ftnconfig.get_addr_id(db, db.FTN_domains[address[0]], address[1])
-  x=db.prepare("select id from subscriptions where subscriber=$1 and target=$2")(node_id, addr_id)
+  #print ("area id", addr_id)
+  x=db.prepare("select id from subscriptions where subscriber=$1 and target=$2 and writable=true")(node_id, addr_id)
+  #print ("subscriptions", x)
   return len(x)>0
 
 def check_pw(genuine, provided):
