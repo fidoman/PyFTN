@@ -1015,12 +1015,13 @@ class ticpacker:
 
     self.committer.add(commitdata)
 
-    if self.ticfile:
-      for x in self.pack():
-        yield x
+#    if self.ticfile :
+    # immediately send added item
+    for x in self.pack():
+      yield x
 
   def pack(self):
-    f = None
+    f = t = None
     if self.ticfile:
       # send file contents
       f = outfile()
