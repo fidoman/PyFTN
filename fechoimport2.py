@@ -42,8 +42,8 @@ for l in open("post_s.dat"):
 
     if "DESC" not in tic:
       if os.path.exists(fn+".desc"):
-        desc = open(fn+".desc", encoding="cp866").read().strip()
-        tic["DESC"] = [desc]
+        desc = open(fn+".desc").read().strip()
+        tic["DESC"] = desc.split("\n")
 
     if "AREA" not in tic:
       area=os.path.dirname(fn).split(os.path.sep)[-1].upper()

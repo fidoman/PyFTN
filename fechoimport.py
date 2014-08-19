@@ -109,9 +109,7 @@ if __name__ == "__main__":
             try:
               sent = int(tic["DATE"][0])
             except:
-              #print("bad date", tic["DATE"][0])
-              #exit()
-              pass
+              sent = time.mktime(time.strptime(tic["DATE"][0]))
   
           if sent is None and "PATH" in tic:
             chance = False
