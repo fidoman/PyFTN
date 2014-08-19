@@ -195,7 +195,8 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
   print (area)
   if not skip_access_check:
     maypost = ftnaccess.may_post(db, tic_src, ("fileecho", area))
-    raise WrongTic("%s may not post to %s"%(tic_src, area))
+    if not maypost:
+      raise WrongTic("%s may not post to %s"%(tic_src, area))
 
   fname = os.path.split(get_single(ticdata, "FILE"))[1]
 
@@ -339,7 +340,7 @@ CRC %s
 """%(t_from, t_to, t_pw, t_area, t_origin, t_file, t_size, t_crc)
   for k, v in t_other.items():
     for v1 in v:
-      tic += k+" "+v1+"\n"
+      tic += k+" "+v1.replace("\n", " ")+"\n"
 
   return tic.encode(ftnconfig.TIC_CHARSET)
 
