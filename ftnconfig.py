@@ -64,8 +64,11 @@ FAREASDIR = os.path.join(FIDODIR, "fareas")
 GROUPFILESBY=5000
 
 # routing files
-format1files = [os.path.join(FAREASDIR, "r50route/R50.ROU"), os.path.join(FAREASDIR, "net5020/n5020.rou")]
-format2files = [os.path.join(FAREASDIR, "r50route/R50.TRU"), os.path.join(FAREASDIR, "net5020/n5020.tru")]
+#format1files = [os.path.join(FAREASDIR, "r50route/R50.ROU"), os.path.join(FAREASDIR, "net5020/n5020.rou")]
+#format2files = [os.path.join(FAREASDIR, "r50route/R50.TRU"), os.path.join(FAREASDIR, "net5020/n5020.tru")]
+format1files = [os.path.join(FIDODIR, "nodelist/R50.ROU"), os.path.join(FIDODIR, "nodelist/N5020.ROU")]
+format2files = [os.path.join(FIDODIR, "nodelist/R50.TRU"), os.path.join(FIDODIR, "nodelist/N5020.TRU")]
+
 
 # logging
 DAEMONLOG="daemon.log"
