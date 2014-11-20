@@ -21,6 +21,8 @@ class BadWriter:
       self.badcounter=1
 
   def write(self, data, status):
+    open(self.counterfile,"w").write(str(self.badcounter+1))
+
     f=open(os.path.join(self.folder, "%012X.%s"%(self.badcounter, self.ext)), "wb")
     f.write(data)
     f.close()
@@ -32,8 +34,6 @@ class BadWriter:
 
     self.badcounter+=1
 
-  def __del__(self):
-    open(self.counterfile,"w").write(str(self.badcounter))
 
 badmsgs=BadWriter(BADDIR, os.path.join(BADDIR,CNT), "msg")
 #badpkts=BadWriter("badpkt", "badpkt/counter", "pkt")

@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3 -bb
 
+import sys
 import os
 import re
 import time
@@ -74,7 +75,37 @@ def filehash(f):
   h.update(open(f,"rb").read())
   return h.hexdigest()
 
+def filedigest(f):
+  h=hashlib.sha512()
+  h.update(open(f,"rb").read())
+  return h.digest()
+
 if __name__ == "__main__":
+  if len(sys.argv)>1 and sys.argv[1]=="cleanup":
+    db=ftnconfig.connectdb()
+    for clean_dir in sys.argv[2:]:
+      print ("cleaning files in", clean_dir)
+      for folder, subfolders, files in os.walk(clean_dir):
+        for file in files:
+          if file in set(('files.bbs', 'FILES.FGN')):
+            continue
+          fullname=os.path.join(folder, file)
+          hash = filedigest(fullname)
+          for existing in db.prepare("select id, names from files where sha512=$1")(hash):
+            print (fullname, existing)
+            os.unlink(fullname)
+            break
+          else:
+            n=db.prepare("select destination, (select length from files where id=filedata), filedata from file_post where filename=$1")(file.upper())
+            if n:
+              exist_dest, exist_len, exist_id = n[0]
+              if os.path.getsize(fullname) == exist_len:
+                print ("name and length match")
+                os.unlink(fullname)
+            print (fullname, "is new", n)
+
+    exit()
+
 
   print ("FILEDATES")
   FILEDATES="filedates.dat"

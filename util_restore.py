@@ -73,5 +73,9 @@ def nodelist():
 if sys.argv[1] == "nodelist":
   nodelist()
 
-if sys.argv[1] == "outbound":
+elif sys.argv[1] == "outbound":
   restore_fechoes()
+
+else:
+  f_id = int(sys.argv[1])
+  save(db, f_id, open(sys.argv[2], "wb"))

@@ -50,3 +50,11 @@ answered in same session).
 
 Though impossible with classical FTN locking, netmail, echomail and fileechoes can be processed in parallel.
 But simultaneous export process of same type for same node is allowed (as it breaks committers architecture).
+
+8. Local users
+
+There are dedicated tables to support local users.
+For each user lastread, old_unread, view_list tables are maintained.
+Any user access protocol must use these tables to keep mailbox look data.
+
+Report generators conceptually are special robot users that read their mail and write reports

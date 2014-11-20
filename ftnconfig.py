@@ -9,7 +9,7 @@ from ftn.ftn import FTNNoAddressInBase
 
 # ---------------------------------------------------------------------------------------
 
-def connectdb(dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip()):
+def connectdb(dbstring = open("/home/fido/PyFTN/database.cfg").read().strip()):
   # pq://user:password@hostname/databasename
   db = postgresql.open(dbstring)
   init_domains(db)
@@ -19,7 +19,7 @@ def connectdb(dbstring = open("/home/sergey/PyFTN/database.cfg").read().strip())
 
 # system-specific settings
 
-FIDODIR="/tank/home/fido"
+FIDODIR="/home/fido"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
 HOSTNAME="fluid.fidoman.ru"
@@ -88,7 +88,7 @@ FTNPORT=24555
 NNTPPORT=11119
 DAEMONBIND=[
     (socket.AF_INET, ('0.0.0.0', FTNPORT), "ftn"),
-    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
+#    (socket.AF_INET6, ('::', FTNPORT), "ftn"),
 #    (socket.AF_INET, ('0.0.0.0', NNTPPORT), "nntp"),
 #    (socket.AF_INET6, ('::', NNTPPORT), "nntp"),
 ]
