@@ -5,15 +5,20 @@ def may_subscribe(link, address):
       is it allowed to import by this subscription"""
   return True, True
 
-def may_create(link, address):
-  return True
-
-
-def may_post(db, node, address):
+def may_post(db, node_id, address):
   #print("*may post* check")
-  node_id = ftnconfig.get_addr_id(db, db.FTN_domains["node"], node)
-  #print ("subscriber id", node_id)
-  addr_id = ftnconfig.get_addr_id(db, db.FTN_domains[address[0]], address[1])
+  print ("subscriber id", node_id)
+  print ("address", address)
+  domain_id = db.FTN_domains[address[0]]
+  addr_id = db.prepare("select id from addresses where domain=$1 and text=$2").first(domain_id, address[1])
+  if addr_id is None:
+    print ("unknown address, checking autocreate")
+    x=db.prepare("select count(id) from links where address=$1 and $2 = any(autocreate)").first(node_id, domain_id)
+    if x!=1:
+      print ("autocreate is not allowed")
+      return False
+    print ("autocreate is permitted")
+    return True
   #print ("area id", addr_id)
   x=db.prepare("select id from subscriptions where subscriber=$1 and target=$2 and writable=true")(node_id, addr_id)
   #print ("subscriptions", x)
@@ -29,14 +34,15 @@ def check_pw(genuine, provided):
     return True
   return False
 
-def check_link(db, address, password, forrobots):
+def check_link(db, addr_id, password, forrobots):
   "returns local address that is linked with remote address and verified with specified password"
   matching = []
   link_exists = False
 
   password = password or ""
-  for my, authinfo in db.prepare("select ma.text, l.authentication from links l, addresses a, addresses ma "
-                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar and ma.id=l.my")(db.FTN_domains["node"], address):
+  for myaddr_id, authinfo, link_id in db.prepare(
+        "select l.my, l.authentication, l.id "
+        "from links l where l.address=$1")(addr_id):
     link_exists = True
 
     pw = ""
@@ -48,7 +54,7 @@ def check_link(db, address, password, forrobots):
         pw = authinfo.find("ConnectPassword").text
 
     if check_pw(pw, password):
-      matching.append(my)
+      matching.append((link_id, myaddr_id))
 
   if len(matching)>2:
     raise Exception("two links for %s with same local address and password in database"%address)
@@ -56,7 +62,8 @@ def check_link(db, address, password, forrobots):
   if link_exists:
     if len(matching)==0:
       print ("no match for specified password") # log bad password
-      return link_exists, None
-    return link_exists, matching[0] # checked link with known local address
+      return None, None
+    return matching[0][0], matching[0][1] # checked link with known local address
 
-  return link_exists, ftnconfig.ADDRESS # no link, use default address
+  return None, ftnconfig.get_addr_id(db, db.FTN_domains["node"], ftnconfig.ADDRESS) # no link, use default address
+
