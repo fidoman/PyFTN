@@ -9,6 +9,8 @@ from fechoimport import read_info
 
 db=ftnconfig.connectdb()
 
+fechoes_started = False
+
 for l in open("post_s.dat"):
   ts, t, fn = l.rstrip().split("\t")
   print (ts, t, fn)
@@ -28,6 +30,11 @@ for l in open("post_s.dat"):
       print ("dup detected")
   elif t=="farea":
     print ("post from fecho", fn)
+
+    if not os.path.exists(fn) and not fechoes_started:
+      continue
+    else:
+      fechoes_started = True
 
     if os.path.exists(fn+".info"):
       tic = read_info(fn+".info")
