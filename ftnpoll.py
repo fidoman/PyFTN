@@ -48,6 +48,9 @@ class poller:
         os.makedirs(basepath, exist_ok=True)
       except FileExistsError:
         pass
+      except:
+        print ("could not create outbound directory")
+        return
       try:
         touch=open(os.path.join(basepath,pollfilename),"a")
         touch.close()
