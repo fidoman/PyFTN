@@ -639,6 +639,7 @@ class session:
           print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
           destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
           if do_create:
+            print ("subscribe %s to %s %s as uplink"%(recvfrom, destdomname, destaddr))
             self.add_subscription(True, destdomname, destaddr, recvfrom)
         else:
           raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s"%(destdom, destaddr))
