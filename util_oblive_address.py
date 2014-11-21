@@ -2,6 +2,7 @@
 
 import sys
 import ftnconfig
+import ftnaccess
 import ftnimport
 
 if len(sys.argv)!=3:
@@ -18,22 +19,26 @@ db=ftnconfig.connectdb(input("enter connection string for admin connection: "))
 
 robot = ftnconfig.robotnames[domain]
 
-addr_id = ftnconfig.get_addr_id(db, db.FTN_domains[domain], area)
-print (addr_id)
-#msg_from = db.prepare("select count (*) from messages where source=$1")(addr_id)
-#print ("from:", msg_from)
-#msg_from = db.prepare("select count (*) from messages where destination=$1")(addr_id)
-#print ("to:", msg_from)
+addr_id = ftnconfig.get_taddr_id(db, (domain, area))
+if addr_id is None:
+  print ("not found")
+  exit()
+
+msg_from = db.prepare("select count (*) from messages where source=$1").first(addr_id)
+msg_to = db.prepare("select count (*) from messages where destination=$1").first(addr_id)
+print (addr_id, "from:", msg_from, "to:", msg_to)
 
 assert( input("enter 'yes' to confirm: ")=="yes" )
 
 with ftnimport.session(db) as sess:
   for (link_addr,subs_id) in db.prepare("select a.text, s.id from addresses a, subscriptions s where a.id=s.subscriber and s.target=$1")(addr_id):
     print ("unsubscribing",link_addr)
+    link_id = ftnconfig.find_link(db, link_addr)
+    my_id, pw=ftnaccess.link_password(db, link_id, forrobots=True)
+    sess.send_message(ftnconfig.get_taddr(db, my_id), ftnconfig.SYSOP, ("node", link_addr), robot, None, pw, "-"+area, sendmode="direct")
     db.prepare("delete from subscriptions where id=$1")(subs_id)
-    pw=ftnconfig.get_link_password(db, link_addr, forrobots=True)
-    sess.send_message(ftnconfig.SYSOP, ("node", link_addr), robot, None, pw, "-"+area, sendmode="direct")
-  sess.send_message(ftnconfig.SYSOP, ("echo", "FLUID.LOCAL"), "All", None, "removal", domain+" "+area+" removed from node")
+  sess.send_message(("node", ftnconfig.ADDRESS), ftnconfig.SYSOP, ("echo", "FLUID.LOCAL"), "All", None, "removal", domain+" "+area+" removed from node")
+  db.prepare("delete from deletedvitalsubscriptionwatermarks where target=$1")(addr_id)
   db.prepare("delete from addresses where id=$1")(addr_id)
 
 exit()
