@@ -15,6 +15,6 @@ with ftnimport.session(db) as sess:
             text = open(msgpath).read()
             #print (text)
 
-            sess.send_message("Sergey Dorofeev", ("echo", echo), 
+            sess.send_message(("node", ADDRESS), "Sergey Dorofeev", ("echo", echo), 
                 "All", None, msg, text)
 

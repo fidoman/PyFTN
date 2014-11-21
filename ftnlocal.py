@@ -53,8 +53,11 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
   if dom != db.FTN_domains["node"]:
     raise FTNFail("not our domain")
   print(text)
-  if (not password) or (password != get_link_password(db, text, forrobots=True)):
+  link_id, addr_id, myaddr_id = ftnaccess.check_link(db, text, password, True)
+  if myaddr_id is None:
     reply=["wrong password"]
+  elif link_id is None:
+    reply=["unknown link"]
   elif not is_local:
     reply=["request delivered not directly, please consider changing the password"]
   else:
@@ -102,7 +105,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
         reply+=subscribe(db, sess, text, domain, cmd)
 
   reply.append("")
-  sess.send_message(destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply), sendmode="direct")
+  sess.send_message(ftnconfig.get_taddr(db, myaddr_id), destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply), sendmode="direct")
   print(reply)
 
 

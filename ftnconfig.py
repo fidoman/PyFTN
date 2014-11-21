@@ -248,53 +248,17 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
 
     return charset
 
-# - 
+def find_link(db, addr_text):
+  return db.prepare("select l.id from links l, addresses a "
+    "where a.text=$2 and a.domain=$1 and a.id=l.address").first(db.FTN_domains["node"], addr_text)
+#    link_id=db.prepare("select id from links where address IS NULL")()[0][0]
 
-def get_link_password(db, linkaddr, forrobots=False):
-  try:
-    pw=db.link_passwords
-  except:
-    pw=db.link_passwords={}
-
-  try:
-    pwq=db.link_passwords_q
-  except:
-    pwq=db.link_passwords_q=db.prepare("select l.authentication from links l, addresses a "
-                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
-
+def get_link_polling(db, link_id):
+  if link_id is None:
+    return None
+  x=db.prepare("select l.connection from links l where l.id=$1")(link_id)
 #SELECT address, xpath('/FTNAUTH/ConnectPassword/text()',authentication)
 #  FROM links;
-
-
-  authinfo = pw.get(linkaddr)
-  if authinfo is None:
-    x = pwq(db.FTN_domains["node"], linkaddr)
-    if len(x)==0 or x[0][0] is None:
-      return None
-    authinfo=pw[linkaddr]=x[0][0]
-
-  if forrobots:
-    if authinfo.find("RobotsPassword") is not None:
-      return authinfo.find("RobotsPassword").text
-    else:
-      return None
-  else:
-    if authinfo.find("ConnectPassword") is not None:
-      return authinfo.find("ConnectPassword").text
-    else:
-      return None
-
-
-
-def get_link_polling(db, linkaddr):
-  x=db.prepare("select l.connection from links l, addresses a "
-                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar"
-                )(db.FTN_domains["node"], linkaddr)
-
-#SELECT address, xpath('/FTNAUTH/ConnectPassword/text()',authentication)
-#  FROM links;
-
-
   if len(x)==0 or x[0][0] is None:
       return None
   conninfo=x[0][0]
@@ -302,68 +266,18 @@ def get_link_polling(db, linkaddr):
   return conninfo.find("DoPoll") is not None
 
 
-def get_link_pkt_format(db, linkaddr):
-  try:
-    pw=db.link_pkt_format
-  except:
-    pw=db.link_pkt_format={}
+def get_link_packing(db, link_id):
+  if link_id is not None:
+    x = db.prepare("select pktformat, bundle from links where links.id=$1::integer")(link_id)
+  else:
+    x = []
+  if not x:
+    x = db.prepare("select pktformat, bundle from links where address IS NULL")()
 
-  try:
-    pwq=db.link_pkt_format_q
-  except:
-    pwq=db.link_pkt_format_q=db.prepare("select l.pktformat from links l, addresses a "
-                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
-
-  pktformat = pw.get(linkaddr)
-  if pktformat is None:
-    x = pwq(db.FTN_domains["node"], linkaddr)
-    if len(x)==0 or x[0][0] is None:
-      return db.prepare("select pktformat from links where address IS NULL")()[0][0]
-    pktformat=pw[linkaddr]=x[0][0]
-
-  return pktformat
-
-def get_link_bundler(db, linkaddr):
-  try:
-    pw=db.link_bundler
-  except:
-    pw=db.link_bundler={}
-
-  try:
-    pwq=db.link_bundler_q
-  except:
-    pwq=db.link_bundler_q=db.prepare("select l.bundle from links l, addresses a "
-                    "where l.address=a.id and a.domain=$1::integer and a.text=$2::varchar")
-
-  bundler = pw.get(linkaddr)
-  if bundler is None:
-    x = pwq(db.FTN_domains["node"], linkaddr)
-    if len(x)==0: # no config for the link
-      return db.prepare("select bundle from links where address IS NULL")()[0][0]
-    bundler=pw[linkaddr]=x[0][0]
-
-  return bundler
-
-
-
-def get_link_id(db, linkaddr, withfailback=False):
-  try:
-    linkids=db.link_ids
-  except:
-    linkids=db.link_ids={}
-
-  try:
-    linkids_q=db.link_ids_q
-  except:
-    linkids_q=db.link_ids_q=db.prepare(
-        "select l.id from links l, addresses a where l.address=a.id and a.domain=$1 and a.text=$2")
-
-  link_id = linkids_q.first(db.FTN_domains["node"], linkaddr)
-  if link_id:
-    return linkids.setdefault(linkaddr, link_id)
-  if withfailback:
-    link_id=db.prepare("select id from links where address IS NULL")()[0][0]
-  return link_id
+  if x:
+    return x[0]
+  else:
+    return [None, None]
 
 
 def get_addr_id(db, dom, addr):
@@ -401,6 +315,16 @@ def get_addr(db, addr_id):
 
   return addrs[addr_id]
 
+def get_taddr(db, addr_id):
+  x = db.prepare("select domain, text from addresses where id=$1").first(addr_id)
+  if not x:
+    return None
+  return db.FTN_backdomains[x[0]], x[1]
+
+def get_taddr_id(db, taddress):
+  dom = db.FTN_domains[taddress[0]]
+  x = db.prepare("select id from addresses where domain=$1 and text=$2").first(dom, taddress[1])
+  return x
 
 # -
 
@@ -411,8 +335,13 @@ def addrdir(base, addr):
 
 if __name__ == "__main__": 
   db=connectdb()
-  for i in range(100):
-#    print(get_link_password(db, "2:5020/2065"))
-#    print(get_link_password(db, "2:5020/715"))
-    print(get_link_password(db, "2:5020/1955"))
-    print(get_link_password(db, "2:5020/1955", True))
+  print(find_link(db, "2:5020/4441"))
+  print(find_link(db, "2:5123/11111"))
+  print(find_link(db, "2:5030/585"))
+  
+  print(get_link_polling(db, 160))
+  print(get_link_packing(db, 160))
+  
+  aid=get_taddr_id(db, ("node", "2:5020/12000"))
+  a=get_taddr(db, aid)
+  print(aid, a)

@@ -194,7 +194,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
   area = get_single(ticdata, "AREA").upper() # FTN areas must be uppercase
   print (area)
   if not skip_access_check:
-    maypost = ftnaccess.may_post(db, tic_src, ("fileecho", area))
+    maypost = ftnaccess.may_post(db, src_id, ("fileecho", area))
     if not maypost:
       raise WrongTic("%s may not post to %s"%(tic_src, area))
 

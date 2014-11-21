@@ -11,9 +11,9 @@ import os
 import functools
 import json
 
-from ftnconfig import suitable_charset, get_link_password, get_link_id, \
+from ftnconfig import suitable_charset, find_link, \
 	ADDRESS, PACKETTHRESHOLD, BUNDLETHRESHOLD, get_addr_id, get_addr, DOUTBOUND, addrdir, connectdb, \
-	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_pkt_format, get_link_bundler, HOSTNAME, \
+	EXPORTLOCK, PKTLOCK, BUNDLELOCK, TICLOCK, get_link_packing, HOSTNAME, \
         BUNDLETIMELIMIT, PACKETTIMELIMIT
 import ftnimport
 import ftn.msg
@@ -325,7 +325,7 @@ def denormalize_message(orig, dest, msgid, header, body, charset, echodest=None,
     for seenby in addseenby:
       #print("additional seenby", seenby)
       sbaddr=ftn.addr.str2addr(seenby)
-    
+
       if sbaddr[0]==dest_zone and not sbaddr[3]:
         msg.add_seenby(seenby)
 
@@ -408,7 +408,7 @@ class netmailcommitter:
      with ftnimport.session(self.db) as sess:
       for addr, name, deliverto, msg, charset in self.msgarqlist:
         print("send audit request to", addr)
-        sess.send_message("Audit tracker", addr, name, None, "Audit tracking response", """
+        sess.send_message(("node", ADDRESS), "Audit tracker", addr, name, None, "Audit tracking response", """
 This reply confirms that your message has been successfully delivered 
 to node %s
 
@@ -484,18 +484,24 @@ class nullcommitter:
 # --- file export ---
 
 def get_pkt_n(db, link_id):
+    if link_id is None:
+      link_id = db.prepare("select id from links where address is null").first()
     with postgresql.alock.ExclusiveLock(db, ((PKTLOCK, link_id))):
       r = db.prepare("select pktn from links where id=$1").first(link_id)
       db.prepare("update links set pktn=pktn+1 where id=$1")(link_id)
     return r
 
 def get_bundle_n(db, link_id):
+    if link_id is None:
+      link_id = db.prepare("select id from links where address is null").first()
     with postgresql.alock.ExclusiveLock(db, ((BUNDLELOCK, link_id))):
       r = db.prepare("select bundlen from links where id=$1").first(link_id)
       db.prepare("update links set bundlen=bundlen+1 where id=$1")(link_id)
     return r
 
 def get_tic_n(db, link_id):
+    if link_id is None:
+      link_id = db.prepare("select id from links where address is null").first()
     with postgresql.alock.ExclusiveLock(db, ((TICLOCK, link_id))):
       r = db.prepare("select ticn from links where id=$1").first(link_id)
       db.prepare("update links set ticn=ticn+1 where id=$1")(link_id)
@@ -516,23 +522,22 @@ def file_export(db, address, password, what):
 
   print("export to", repr(address), repr(password), repr(what))
 
-  link_protected, myaddr = ftnaccess.check_link(db, address, password, False)
+  link_id, addr_id, myaddr_id = ftnaccess.check_link(db, address, password, False)
 
-  if not myaddr:
+  if myaddr_id is None:
     raise FTNWrongPassword()
 
-  print("password is correct" if link_protected else "unprotected session", "local address", myaddr)
+  print("password is correct" if link_id else "unprotected session", "local address", myaddr_id)
 
   # WARNING!
   # unprotected sessions never must do queries as it may result in leaking netmail
   # if address of some hub is spoofed
 
-  addr_id = get_addr_id(db, db.FTN_domains["node"], address)
-  myaddr_id = get_addr_id(db, db.FTN_domains["node"], myaddr)
-  link_pkt_format = get_link_pkt_format(db, address)
-  link_bundler = get_link_bundler(db, address)
+  myaddr_text = ftnconfig.get_addr(db, myaddr_id)[1]
+  link_pkt_format, link_bundler = get_link_packing(db, link_id)
+  link_my_id, link_pw = ftnaccess.link_password(db, link_id)
 
-  if link_protected and ("netmail" in what):
+  if link_id and ("netmail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))
     if explock.acquire(False):
       try:
@@ -542,7 +547,7 @@ def file_export(db, address, password, what):
     # non-vital (CC) should be processed just like echomail
 
     # set password in netmail packets
-        p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: netmailcommitter())
+        p = pktpacker(link_pkt_format, myaddr_text, address, link_pw or '', lambda: get_pkt_n(db, link_id), lambda: netmailcommitter())
 
     #..firstly send pkts in outbound
         for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_subscriber_messages_n(db, addr_id, db.FTN_domains["node"]):
@@ -598,8 +603,7 @@ def file_export(db, address, password, what):
     # non-vital (CC) should be processed just like echomail
 
     # set password in netmail packets
-    link_id=get_link_id(db, address, withfailback=True)
-    p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, link_id), lambda: netmailcommitter(newstatus=7))
+    p = pktpacker(link_pkt_format, myaddr_text, address, link_pw or '', lambda: get_pkt_n(db, link_id), lambda: netmailcommitter(newstatus=7))
 
     #..firstly send pkts in outbound
     for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in get_direct_messages(db, addr_id):
@@ -643,7 +647,7 @@ def file_export(db, address, password, what):
     explock.release()
     pass
 
-  if link_protected and ("echomail" in what):
+  if link_id and ("echomail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["echomail"], addr_id)))
     if explock.acquire(False):
       try:
@@ -653,10 +657,10 @@ def file_export(db, address, password, what):
         #
 
         if link_bundler:
-          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: echomailcommitter(),
-            bundlepacker(link_bundler, address, lambda: get_bundle_n(db, get_link_id(db, address)), lambda: echomailcommitter()))
+          p = pktpacker(link_pkt_format, myaddr_text, address, link_pw or '', lambda: get_pkt_n(db, link_id), lambda: echomailcommitter(),
+            bundlepacker(link_bundler, address, lambda: get_bundle_n(db, link_id), lambda: echomailcommitter()))
         else:
-          p = pktpacker(link_pkt_format, ADDRESS, address, get_link_password(db, address) or '', lambda: get_pkt_n(db, get_link_id(db, address)), lambda: echomailcommitter())
+          p = pktpacker(link_pkt_format, myaddr_text, address, link_pw or '', lambda: get_pkt_n(db, link_id), lambda: echomailcommitter())
 
         subscache = {}
         for id_msg, xxsrc, dest, msgid, header, body, origcharset, recvfrom, withsubscr, processed in get_subscriber_messages_e(db, addr_id, db.FTN_domains["echo"]):
@@ -735,7 +739,7 @@ def file_export(db, address, password, what):
     else:
       print("could not acquire echomail lock")
 
-  if link_protected and ("filebox" in what):
+  if link_id and ("filebox" in what):
    explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["filebox"], addr_id)))
    if explock.acquire(False):
     # ..send freq filebox
@@ -755,14 +759,14 @@ def file_export(db, address, password, what):
     explock.release()
 
 
-  if link_protected and ("fileecho" in what):
+  if link_id and ("fileecho" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
     if explock.acquire(False):
       try:
         print ("exporting fileechoes")
         subscache = {}
         tic_password = password
-        t = ticpacker(lambda: get_tic_n(db, get_link_id(db, address)), lambda: ticcommitter(db))
+        t = ticpacker(lambda: get_tic_n(db, link_id), lambda: ticcommitter(db))
         for fp_id, fp_filename, fp_destination, fp_recv_from, fp_recv_as, fp_post_time, fp_filedata, fp_origin, fp_other, withsubscr, file_length, file_content, file_lo in \
             db.prepare("select fp.id, fp.filename, fp.destination, fp.recv_from, fp.recv_as, fp.post_time, fp.filedata, fp.origin, fp.other, s.id, f.length, f.content, f.lo "
             "from file_post fp, subscriptions s, files f "
@@ -806,10 +810,10 @@ def file_export(db, address, password, what):
           # seen-by's - get list of all subscribers of this target; add subscribers list
 
           if will_export:
-            print("add seen-by", subscribers, " add path", myaddr)
+            print("add seen-by", subscribers, " add path", myaddr_text)
             fp_other = json.loads(fp_other)
 
-            fp_other["PATH"].append(myaddr+" "+str(fp_post_time)+" "+time.asctime(time.gmtime(fp_post_time))+" PyFTN")
+            fp_other["PATH"].append(myaddr_text+" "+str(fp_post_time)+" "+time.asctime(time.gmtime(fp_post_time))+" PyFTN")
             seenby = set(fp_other["SEENBY"])
             seenby.update(subscribers)
             fp_other["SEENBY"]=list(seenby)
@@ -823,7 +827,7 @@ def file_export(db, address, password, what):
               else:
                 file_crc32 = ftntic.sz_crc32fd(lo.LOIOReader(db, file_lo))[1]
 
-            tic = ftntic.make_tic(myaddr, address, tic_password, dsta[1], get_addr(db, fp_origin)[1],
+            tic = ftntic.make_tic(myaddr_text, address, tic_password, dsta[1], get_addr(db, fp_origin)[1],
                 fp_filename, file_length, file_crc32, fp_other)
 
           for x in t.add_item(((tic, (fp_filename, file_length, file_content or (db, file_lo))) if will_export else None), (addr_id, fp_post_time)): # ordering by post_time

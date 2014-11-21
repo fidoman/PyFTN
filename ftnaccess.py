@@ -72,6 +72,30 @@ def check_link(db, address, password, forrobots):
     db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], address), \
     ftnconfig.get_addr_id(db, db.FTN_domains["node"], ftnconfig.ADDRESS) # no link, use default address
 
+def link_password(db, link_id, forrobots):
+    "returns matching myaddr_id and password"
+    if link_id is None:
+      return ftnconfig.get_taddr_id(db, ("node", ADDRESS)), None
+
+    x = db.prepare("select l.my, l.authentication from links l where l.id=$1")(link_id)
+
+    if len(x)>1:
+      raise Exception("DB error: link_id %d not unique"%link_id)
+    if len(x)==0:
+      return None, None
+
+    my_id, authinfo = x[0]
+
+    pw = ""
+    if forrobots:
+      if authinfo.find("RobotsPassword") is not None:
+        pw = authinfo.find("RobotsPassword").text
+    else:
+      if authinfo.find("ConnectPassword") is not None:
+        pw = authinfo.find("ConnectPassword").text
+
+    return my_id, pw
+
 # Tests:
 #  check valid link
 #  check existing link with bad password

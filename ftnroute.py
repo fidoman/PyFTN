@@ -4,7 +4,7 @@ import re
 
 """ Create vital netmail subscription (and remove unneeded) """
 
-from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, format1files, format2files, get_link_password
+from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, format1files, format2files
 from ftnimport import session
 from ftn.ftn import FTNAlreadySubscribed, FTNNoAddressInBase
 from ftn.addr import addr2str, str2addr, addr_expand

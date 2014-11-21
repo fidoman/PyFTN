@@ -48,8 +48,11 @@ expunge it too.
       sess.remove_subscription(domain, area, node)
 
       if node != ftnconfig.ADDRESS:
-        sess.send_message(ftnconfig.SYSOP, ("node", node), robot, None, 
-            ftnconfig.get_link_password(db, node, forrobots=True), "-"+area)
+        for link_id in ftnconfig.find_link(node):
+          my, pw = ftnaccess.link_password(db, link_id, True)
+          # FIX choose sender address (=my)
+          sess.send_message(ftnconfig.SYSOP, ("node", node), robot, None, 
+            pw, "-"+area)
 
       sess.forget_address(domain, area)
 
@@ -57,7 +60,15 @@ expunge it too.
 
   exit()
 
+
+
+exit()
+
+
+
+# ???
 outp=[]
+
 
 pw = ftnconfig.get_link_password(db, link, True)
 #print(pw)
@@ -73,5 +84,5 @@ else:
     print ("".join(outp))
 
     with ftnimport.session(db) as sess:
-        sess.send_message("Sergey Dorofeev", ("node", link),
+        sess.send_message((node, ftnconfig.ADDRESS), "Sergey Dorofeev", ("node", link),
                             robot, None, pw, "".join(outp))

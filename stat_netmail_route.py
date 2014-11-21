@@ -49,7 +49,7 @@ for l in textwrap.wrap(dirstr, 70):
 #exit()
 
 with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "схема роутинга нетмейла",
+  sess.send_message(("node", ftnconfig.ADDRESS), "Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "схема роутинга нетмейла",
 """Привет All
 
 %s

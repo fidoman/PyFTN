@@ -13,7 +13,8 @@ import re
 import os
 import time, datetime
 from hashlib import sha1
-from ftnconfig import suitable_charset, get_link_password, ADDRESS, get_addr_id, MSGSIZELIMIT, IMPORTLOCK
+from ftnconfig import suitable_charset, find_link, ADDRESS, get_addr_id, MSGSIZELIMIT, IMPORTLOCK
+import ftnaccess
 from stringutil import *
 import ftnpoll
 import postgresql.alock
@@ -35,13 +36,11 @@ class file_import:
 
     self.db = db
     self.address = address
-    if password is not None:
-      if password == get_link_password(db, address):
-        self.protected = True
-      else:
+
+    link_id, addr_id, myaddr_id = ftnaccess.check_link(db, address, password, False)
+    if myaddr_id is None:
         raise FTNWrongPassword()
-    else:
-      self.protected = False
+    self.protected = link_id is not None
 
     savedir = inbound_dir(address, self.protected, True)
     if not os.path.exists(savedir):
@@ -577,8 +576,8 @@ class session:
           print ("OK")
 
 
-  def send_message(self, sendername, recipient, recipientname, replyto, subj, body, flags = [], sendmode=None):
-    orig, dest, msgid, header, body = compose_message(self.db, ("node", ADDRESS), sendername, recipient, recipientname, replyto, subj, body, flags)
+  def send_message(self, sender, sendername, recipient, recipientname, replyto, subj, body, flags = [], sendmode=None):
+    orig, dest, msgid, header, body = compose_message(self.db, sender, sendername, recipient, recipientname, replyto, subj, body, flags)
     #print ("msg from:", orig)
     #print ("msg to  :", dest)
     #print ("msgid   :", msgid)

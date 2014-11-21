@@ -50,7 +50,7 @@ for area in areas:
 db=ftnconfig.connectdb()
 
 with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "файлэхи",
+  sess.send_message(("node", ftnconfig.ADDRESS), "Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "файлэхи",
 """
 %s
 """%("".join(outp)))

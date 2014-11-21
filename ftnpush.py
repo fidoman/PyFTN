@@ -53,13 +53,15 @@ b""" === < MESSAGE END > ===
 --- PyFTN
 \1Via """+ADDRESS.encode("ascii")+b""" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
 
-
-      link_pkt_format = get_link_pkt_format(sess.db, recv_from)
+      link_id = find_link(recv_from)
+      link_pkt_format, link_bundle = get_link_packing(sess.db, link_id)
+      myaddr_id, pw = ftnaccess.link_password(sess.db, link_id)
+      myaddr = get_taddr(db, myaddr_id)
 
       audit_p = ftn.pkt.PKT(format=link_pkt_format)
       audit_p.msg = [audit_m]
-      audit_p.password = get_link_password(db, recv_from).encode("ascii")
-      audit_p.source = ftn.addr.str2addr(ADDRESS)
+      audit_p.password = pw.encode("ascii")
+      audit_p.source = ftn.addr.str2addr(myaddr[1])
       audit_p.destination = ftn.addr.str2addr(recv_from)
       audit_p.date = time.localtime()[:6]
       destdir = addrdir(DOUTBOUND, recv_from)
@@ -102,7 +104,8 @@ def import_pkt(sess, fo, recv_from, bulk):
       file type: msg, pkt, tic, other (tic or msg attached file)
       orig_name is optional (for saving 'other' files) """
 
-  link_pkt_format = get_link_pkt_format(sess.db, recv_from)
+  link_id = find_link(sess.db, recv_from)
+  link_pkt_format, link_bundle = get_link_packing(sess.db, link_id)
 #  print (recv_from, link_pkt_format)
 
   x=ftn.pkt.PKT(fo, format=link_pkt_format)

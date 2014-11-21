@@ -27,8 +27,9 @@ class poller:
       #print("poll", a)
       a=ftnconfig.get_addr(self.db, a)[1]
       #print (a)
-      if ftnconfig.get_link_polling(self.db, a):
-        print ("poll",a)
+      link_id=ftnconfig.find_link(self.db, a)
+      if ftnconfig.get_link_polling(self.db, link_id):
+         print ("poll",a)
       else:
         #print ("not needed")
         continue
