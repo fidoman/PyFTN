@@ -615,7 +615,6 @@ class session:
     #  raise Exception("Verify senderaddress and destination address are listed. (area autocreate, destination is listed, ...)")
 
     origid = self.check_addr(origdomname, origaddr) # allow autocreate for source
-    destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
     # no autocreate. only on request and if exists in uplink lists
 
     # database must have trigger to check address to be created for nodelist and area for echolist and uplinks
@@ -635,14 +634,18 @@ class session:
 
       if verify_subscription: # move to ftnaccess
         # check if message received from subscribed to the destination's address
-        print("may_post=", ftnaccess.may_post(self.db, recvfrom_id, (destdomname, destaddr))) ###
-        r=self.db.prepare("select count(id) from subscriptions where subscriber=$1 and target=$2")(recvfrom_id, destid)
-        # flaw: allow to flood with messages to non-existent addresses. should be checked with trigger in database
+        maypost, do_create = ftnaccess.may_post(self.db, recvfrom_id, (destdomname, destaddr)))
+        if maypost:
+          print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
+          destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
+          if do_create:
+            self.add_subscription(True, destdomname, destaddr, recvfrom)
+        else:
+          raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s"%(destdom, destaddr))
+      else:
+            # flaw: allow to flood with messages to non-existent addresses. should be checked with trigger in database
         #  (allow create node/point only if nodelisted, area only if listed on bone/uplinks)
-        if r[0][0]==0:
-          raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s (id=%d)"%(destdom, destaddr, destid))
-        print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
-
+        destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
 
     if len(self.db.prepare("select id from messages where msgid=$1")(msgid)):
       raise FTNDupMSGID(msgid)

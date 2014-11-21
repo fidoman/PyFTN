@@ -16,13 +16,13 @@ def may_post(db, node_id, address):
     x=db.prepare("select count(id) from links where address=$1 and $2 = any(autocreate)").first(node_id, domain_id)
     if x!=1:
       print ("autocreate is not allowed")
-      return False
+      return False, None
     print ("autocreate is permitted")
-    return True
+    return True, True
   #print ("area id", addr_id)
   x=db.prepare("select id from subscriptions where subscriber=$1 and target=$2 and writable=true")(node_id, addr_id)
   #print ("subscriptions", x)
-  return len(x)>0
+  return len(x)>0, False
 
 def check_pw(genuine, provided):
   if provided==genuine:
