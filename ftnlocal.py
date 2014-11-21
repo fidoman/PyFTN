@@ -5,6 +5,7 @@
 from ftnconfig import *
 import ftnexport
 import ftnimport
+import ftnaccess
 import time
 from ftn.ftn import *
 
