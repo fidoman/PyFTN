@@ -21,7 +21,7 @@ for subs, count in Q_stat(db.FTN_domains["node"]):
 #exit()
 
 with ftnimport.session(db) as sess:
-    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "новый эхомейл для линков",
+    sess.send_message(("node", ftnconfig.ADDRESS), "Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "новый эхомейл для линков",
 """Привет All
 
 Количество незабранных сообщений в подписанных эхах
