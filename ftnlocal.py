@@ -2,7 +2,7 @@
 
 """ process local mail """
 
-from ftnconfig import *
+import ftnconfig
 import ftnexport
 import ftnimport
 import ftnaccess
@@ -114,17 +114,17 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
 #  print(db.prepare("select a.domain, a.text from addresses a, subscriptions s where s.id=$1 and a.id=s.target")(s)[0])
 #exit()
 
-db = connectdb()
-me = db.prepare("select id from addresses where domain=$1 and text=$2").first(db.FTN_domains["node"], ADDRESS)
-
-print(time.asctime(), "start ftnlocal")
+db = ftnconfig.connectdb()
 
 fixes_e = []
 fixes_f = []
-#my = []
+
+for me in ftnconfig.my_addrs(db):
+ print(time.asctime(), "start ftnlocal for", me)
 
 
-for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
+
+ for id_msg, src, dest, msgid, header, body, origcharset, recvfrom in ftnexport.get_subscriber_messages_n(db, me, db.FTN_domains["node"]):
 
   is_local = src==recvfrom
 
