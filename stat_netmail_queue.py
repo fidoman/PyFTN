@@ -30,7 +30,7 @@ for mid, sd, st, dd, dt, did in x(db.FTN_domains["node"]):
 #exit()
 
 with ftnimport.session(db) as sess:
-  sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "почтовая очередь",
+  sess.send_message(("node", ftnconfig.ADDRESS), "Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "почтовая очередь",
 """Привет All
 
 %s

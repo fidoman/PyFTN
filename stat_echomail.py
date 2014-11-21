@@ -32,7 +32,7 @@ with db.xact(isolation='SERIALIZABLE', mode='READ ONLY'):
 
 
 with ftnimport.session(db) as sess:
-    sess.send_message("Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "статистика эхомейла",
+    sess.send_message(("node", ftnconfig.ADDRESS), "Sergey Dorofeev", ("echo", "FLUID.REPORTS"), "All", None, "статистика эхомейла",
 """Привет All
 
 Traffic since last statistics generation:

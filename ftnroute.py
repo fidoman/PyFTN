@@ -4,7 +4,7 @@ import re
 
 """ Create vital netmail subscription (and remove unneeded) """
 
-from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, format1files, format2files
+from ftnconfig import connectdb, ADDRESS, NETMAIL_peers, NETMAIL_peerhosts, NETMAIL_uplinks, format1files, format2files, find_link
 from ftnimport import session
 from ftn.ftn import FTNAlreadySubscribed, FTNNoAddressInBase
 from ftn.addr import addr2str, str2addr, addr_expand
@@ -113,7 +113,7 @@ selfsubscribers.add(ADDRESS+".999")
 
 # filter links that are not password-protected
 for x in list(links) + downlinks:
-  if not get_link_password(db, x):
+  if not find_link(db, x, netmail=True):
     print ("skip", x)
   else:
     selfsubscribers.add(x)

@@ -248,7 +248,7 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
 
     return charset
 
-def find_link(db, addr_text):
+def find_link(db, addr_text, netmail=False): # netmail - find only allowed for netmail routing, implem. question
   return db.prepare("select l.id from links l, addresses a "
     "where a.text=$2 and a.domain=$1 and a.id=l.address").first(db.FTN_domains["node"], addr_text)
 #    link_id=db.prepare("select id from links where address IS NULL")()[0][0]
@@ -333,6 +333,10 @@ def addrdir(base, addr):
 
 # -
 
+def my_addrs(db):
+  return [x[0] for x in db.prepare("select my from links group by my")]
+  # get all "my" addresses from links
+
 if __name__ == "__main__": 
   db=connectdb()
   print(find_link(db, "2:5020/4441"))
@@ -345,3 +349,5 @@ if __name__ == "__main__":
   aid=get_taddr_id(db, ("node", "2:5020/12000"))
   a=get_taddr(db, aid)
   print(aid, a)
+
+  print(my_addrs(db))
