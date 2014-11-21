@@ -634,7 +634,7 @@ class session:
 
       if verify_subscription: # move to ftnaccess
         # check if message received from subscribed to the destination's address
-        maypost, do_create = ftnaccess.may_post(self.db, recvfrom_id, (destdomname, destaddr)))
+        maypost, do_create = ftnaccess.may_post(self.db, recvfrom_id, (destdomname, destaddr))
         if maypost:
           print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
           destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
