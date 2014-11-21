@@ -2,6 +2,7 @@
 
 import sys
 import ftnconfig
+import ftnaccess
 import ftnimport
 import ftnexport
 import functools
@@ -25,7 +26,9 @@ try:
 except:
   raise Exception("cannot manage subscriptions in domain", domain)
 
-pw = ftnconfig.get_link_password(db, subscriber, forrobots=True)
+link_id = ftnconfig.find_link(db, subscriber)
+my_id, pw = ftnaccess.link_password(db, link_id, forrobots=True)
+my_addr = ftnconfig.get_taddr(db, my_id)
 
 with ftnimport.session(db) as sess:
   if cmd == "add":
@@ -34,14 +37,14 @@ with ftnimport.session(db) as sess:
     except FTNAlreadySubscribed:
       print ("local subscription exists")
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
+      sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
   elif cmd == "remove":
     sess.remove_subscription(domain, area, subscriber)
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "-"+area, sendmode="direct")
+      sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "-"+area, sendmode="direct")
     else:
       print ("local subscription")
 
@@ -50,7 +53,7 @@ with ftnimport.session(db) as sess:
 #    except FTNAlreadySubscribed:
 #      print ("local subscription exists")
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
+      sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
@@ -58,15 +61,15 @@ with ftnimport.session(db) as sess:
     sess.check_addr(domain, area)
     sess.add_subscription(True, domain, area, subscriber)
     if subscriber != ftnconfig.ADDRESS:
-      sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
+      sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+area, sendmode="direct")
     else:
       print ("local subscription")
 
   elif cmd == "query": # send areafix request
-    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%QUERY", sendmode="direct")
+    sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%QUERY", sendmode="direct")
 
   elif cmd == "list": # send areafix request
-    sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%LIST", sendmode="direct")
+    sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "%LIST", sendmode="direct")
 
   elif cmd == "show": # show subscribed areas
     if area==".": # show for link
@@ -152,7 +155,7 @@ with ftnimport.session(db) as sess:
         except:
           print ("already subscribed")
         if subscriber != ftnconfig.ADDRESS:
-          sess.send_message(ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+aname, sendmode="direct")
+          sess.send_message(my_addr, ftnconfig.SYSOP, ("node", subscriber), robot, None, pw, "+"+aname, sendmode="direct")
         else:
           print ("local subscription")
 
@@ -163,7 +166,7 @@ with ftnimport.session(db) as sess:
     else:
       substext = functools.reduce(lambda x, y: x + "+" + y + "\n", subslist, "")
       print ("".join(substext))
-      sess.send_message("Sergey Dorofeev", ("node", subscriber), robot, None, pw, substext)
+      sess.send_message(my_addr, "Sergey Dorofeev", ("node", subscriber), robot, None, pw, substext)
 
 
   else:

@@ -632,9 +632,10 @@ class session:
       if len(r) == 0:
         raise Exception("invalid domain after checkaddress ??? %d"%destdom)
       verify_subscription = r[0][0]
-  
+
       if verify_subscription: # move to ftnaccess
         # check if message received from subscribed to the destination's address
+        print("may_post=", ftnaccess.may_post(self.db, recvfrom_id, (destdomname, destaddr))) ###
         r=self.db.prepare("select count(id) from subscriptions where subscriber=$1 and target=$2")(recvfrom_id, destid)
         # flaw: allow to flood with messages to non-existent addresses. should be checked with trigger in database
         #  (allow create node/point only if nodelisted, area only if listed on bone/uplinks)
@@ -642,7 +643,7 @@ class session:
           raise FTNNotSubscribed("%d/%s (id=%d)"%(self.FIDOADDR, recvfrom, recvfrom_id), "%d/%s (id=%d)"%(destdom, destaddr, destid))
         print("posting allowed for %d (%d/%s) to %d/%s"%(recvfrom_id, self.FIDOADDR, recvfrom, destdom, destaddr))
 
-  
+
     if len(self.db.prepare("select id from messages where msgid=$1")(msgid)):
       raise FTNDupMSGID(msgid)
 
@@ -679,7 +680,7 @@ class session:
 
   def import_link_auth(self, node, connectpassword, robotpassword, echolevel=None, fecholevel=None, echogroups=None, fechogroups=None):
     addr_id = self.check_addr("node", node)
-  
+
     authel = xml.etree.ElementTree.Element("FTNAuth")
     connectpwel = xml.etree.ElementTree.SubElement(authel, "ConnectPassword")
     connectpwel.text = connectpassword
