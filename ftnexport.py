@@ -533,9 +533,9 @@ def file_export(db, address, password, what):
   # unprotected sessions never must do queries as it may result in leaking netmail
   # if address of some hub is spoofed
 
-  myaddr_text = ftnconfig.get_addr(db, myaddr_id)[1]
+  myaddr_text = get_addr(db, myaddr_id)[1]
   link_pkt_format, link_bundler = get_link_packing(db, link_id)
-  link_my_id, link_pw = ftnaccess.link_password(db, link_id)
+  link_my_id, link_pw = ftnaccess.link_password(db, link_id, False)
 
   if link_id and ("netmail" in what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["netmail"], addr_id)))

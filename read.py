@@ -144,7 +144,7 @@ def submit(file, sendmode=None):
       body.append(l)
 
   with ftnimport.session(db) as sess:
-    sess.send_message(fromname, dest, toname, msgid, subj, "\n".join(body), flags, sendmode)
+    sess.send_message(("node", ftnconfig.ADDRESS), fromname, dest, toname, msgid, subj, "\n".join(body), flags, sendmode)
 
 
 def reply(srcid, dstid, msgid, header, body):

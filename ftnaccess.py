@@ -75,7 +75,7 @@ def check_link(db, address, password, forrobots):
 def link_password(db, link_id, forrobots):
     "returns matching myaddr_id and password"
     if link_id is None:
-      return ftnconfig.get_taddr_id(db, ("node", ADDRESS)), None
+      return ftnconfig.get_taddr_id(db, ("node", ftnconfig.ADDRESS)), None
 
     x = db.prepare("select l.my, l.authentication from links l where l.id=$1")(link_id)
 
