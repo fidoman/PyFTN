@@ -17,6 +17,7 @@ import ftn.pkt
 import ftn.addr
 from ftn.ftn import FTNFail, FTNDupMSGID, FTNNoMSGID, FTNNoOrigin, FTNNotSubscribed, ispkt, ismsg, istic, isbundle, FTNExcessiveMessageSize
 from ftnconfig import *
+import ftnaccess
 
 from badwriter import badmsgs, dupmsgs, secmsgs
 
@@ -53,9 +54,9 @@ b""" === < MESSAGE END > ===
 --- PyFTN
 \1Via """+ADDRESS.encode("ascii")+b""" ImmediateARqReply """+time.asctime().encode("ascii")+b"\n")
 
-      link_id = find_link(recv_from)
+      link_id = find_link(sess.db, recv_from)
       link_pkt_format, link_bundle = get_link_packing(sess.db, link_id)
-      myaddr_id, pw = ftnaccess.link_password(sess.db, link_id)
+      myaddr_id, pw = ftnaccess.link_password(sess.db, link_id, False)
       myaddr = get_taddr(db, myaddr_id)
 
       audit_p = ftn.pkt.PKT(format=link_pkt_format)
