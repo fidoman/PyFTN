@@ -28,3 +28,7 @@ elif cmd=="add":
   input("confirm add "+addr+" pw "+pasw)
   with ftnimport.session(db) as sess:
     sess.import_link_auth(addr, pasw, pasw)
+
+#authentication = <FTNAUTH><ConnectPassword>pwd</ConnectPassword><RobotsPassword>pwd</RobotsPassword></FTNAUTH>
+# my = 160 (myaddr_id)
+# lastsent = time.time()

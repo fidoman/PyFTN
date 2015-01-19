@@ -5,7 +5,7 @@ import ftnconfig
 db=ftnconfig.connectdb()
 
 #MIDs=db.prepare("select id from messages where source=14776")
-MIDs=[(1875112,)]
+MIDs=[(3113949,)]
 
 for (MID,) in MIDs:
   newc="utf-8"
@@ -21,7 +21,7 @@ for (MID,) in MIDs:
   h.find("subject").text      = h.find("subject").text.encode(c).decode(newc)
   b                           = b.encode(c).decode(newc)
 
-  print(c)
+  print("declared as", c)
   print(h.find("sendername").text)
   print(h.find("recipientname").text)
   print(h.find("subject").text)

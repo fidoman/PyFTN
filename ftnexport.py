@@ -767,8 +767,12 @@ def file_export(db, address, password, what):
         subscache = {}
         tic_password = password
         t = ticpacker(lambda: get_tic_n(db, link_id), lambda: ticcommitter(db))
-        for fp_id, fp_filename, fp_destination, fp_recv_from, fp_recv_as, fp_post_time, fp_filedata, fp_origin, fp_other, withsubscr, file_length, file_content, file_lo in \
-            db.prepare("select fp.id, fp.filename, fp.destination, fp.recv_from, fp.recv_as, fp.post_time, fp.filedata, fp.origin, fp.other, s.id, f.length, f.content, f.lo "
+        latest_post = db.prepare("select max(post_time) from file_post").first()
+        fruitful = False
+        for fp_id, fp_filename, fp_destination, fp_recv_from, fp_recv_as, fp_post_time, fp_filedata, \
+                fp_origin, fp_other, withsubscr, file_length, file_content, file_lo in \
+            db.prepare("select fp.id, fp.filename, fp.destination, fp.recv_from, fp.recv_as, fp.post_time, "
+              "fp.filedata, fp.origin, fp.other, s.id, f.length, f.content, f.lo "
             "from file_post fp, subscriptions s, files f "
             "where exists(select * from subscriptions ss where ss.target=fp.destination and ss.subscriber=$1) and s.subscriber=$1 and "
             "fp.post_time>(select lastsent from lastsent where subscriber=$1) and fp.destination=s.target and f.id=fp.filedata "
@@ -810,6 +814,8 @@ def file_export(db, address, password, what):
           # seen-by's - get list of all subscribers of this target; add subscribers list
 
           if will_export:
+            fruitful = True # something was exported
+
             print("add seen-by", subscribers, " add path", myaddr_text)
             fp_other = json.loads(fp_other)
 
@@ -830,8 +836,13 @@ def file_export(db, address, password, what):
             tic = ftntic.make_tic(myaddr_text, address, tic_password, dsta[1], get_addr(db, fp_origin)[1],
                 fp_filename, file_length, file_crc32, fp_other)
 
+          # code was migrated from echo export, so it cares about blocked exports to update 
+          # per-subscription last-sents
           for x in t.add_item(((tic, (fp_filename, file_length, file_content or (db, file_lo))) if will_export else None), (addr_id, fp_post_time)): # ordering by post_time
             yield x
+
+        if not fruitful:
+          print("empty export, must update per-subscriber lastsent up to", latest_post)
 
         for x in t.flush():
           yield x
