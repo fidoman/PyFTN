@@ -69,6 +69,7 @@ def nodelist():
   save(db, q_file(db, 'R50ROUTE', 'R50.TRU'), open(os.path.join(base, 'R50.TRU'), "wb"))
   save(db, q_file(db, 'NET5020', 'N5020.ROU'), open(os.path.join(base, 'N5020.ROU'), "wb"))
   save(db, q_file(db, 'NET5020', 'N5020.TRU'), open(os.path.join(base, 'N5020.TRU'), "wb"))
+  save(db, q_file(db, 'DAILYUTF', 'DAILYUTF.Z__'), open(os.path.join(base, 'DAILYUTF.ZIP'), "wb"))
 
 if sys.argv[1] == "nodelist":
   nodelist()
