@@ -142,7 +142,7 @@ class MSG:
           try:
             tpnt = int(value)
           except:
-            raise FTNFail("MSG: bad TOPT "+value)
+            raise FTNFail("MSG: bad TOPT "+repr(value))
         elif name.upper()==b"INTL":
           try:
             to,frm=value.decode("ascii").split(" ")
@@ -157,13 +157,13 @@ class MSG:
            self.path.extend(map(
             addr2str, addr_expand(list(filter(bool, value.decode("ascii").split(" "))), (None, None, None, None))))
           except:
-            raise FTNFail("MSG: bad PATH "+value)
+            raise FTNFail("MSG: bad PATH "+repr(value))
         elif name.upper()==b"ZPTH:":
           try:
            self.zpth.extend(map(
             addr2str, addr_expand(list(filter(bool, value.decode("ascii").split(" "))), (None, None, None, None))))
           except:
-            raise FTNFail("MSG: bad ZPTH "+value)
+            raise FTNFail("MSG: bad ZPTH "+repr(value))
         else:
           if name in self.kludge:
             if type(self.kludge[name]) is list:
