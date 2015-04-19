@@ -660,7 +660,7 @@ class session:
       self.Q_update_addr_msg = self.db.prepare("update addresses set last=$2 where id=$1")
 
     if not self.Q_get_max_numfordest:
-      self.Q_get_max_numfordest = self.db.prepare("select max(numberfordestination) from messages where destination=$1")
+      self.Q_get_max_numfordest = self.db.prepare("select last from addresses where id=$1")
 
     with postgresql.alock.ExclusiveLock(self.db, IMPORTLOCK): # lock per all table messages
       # begin insert-lock
