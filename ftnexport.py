@@ -59,7 +59,7 @@ def get_addrtree(db, addr):
 
 
 
-def get_subscriber_messages_n(db, subscriber, domain):
+def get_subscriber_messages_n_trashy(db, subscriber, domain):
   """ get all subscribed addresses in specified domain and 
       fetch all messages with id>lastsent or if lastsent is None - with processed==0 
       Non-vital netmail subscription should be processed as echomail """
@@ -89,6 +89,37 @@ def get_subscriber_messages_n(db, subscriber, domain):
 
   for m in query(subscriber, domain):
     yield m
+
+def get_subscriber_messages_n(db, subscriber, domain): # loopy
+  """ get all subscribed addresses in specified domain and 
+      fetch all messages with id>lastsent or if lastsent is None - with processed==0 
+      Non-vital netmail subscription should be processed as echomail """
+
+  # To evade this subgroup recursive scanning we must maintain table with pairs of msg-addr-(groupaddr - additional element for easy updating)
+  #  where addr is all addr that are group for the msg dest address and so on recursive
+  # but this table must be rebuilt when grouping changes
+  # OR track changes of addresses' group field and add/delete pairs accordingly
+
+  for subs_id, subs_target, is_direct in db.prepare("""
+    with recursive allsubscription(id, target, dir) as 
+    (
+        select s.id, s.target, 1 from subscriptions s, addresses a 
+        where s.subscriber=$1 and s.vital=TRUE and s.target=a.id and a.domain=$2
+      Union
+        select s.id, a.id, 0 from allsubscription s, addresses a 
+        where a.group = s.target
+              and (select count(id) from subscriptions where target=a.id) = 0
+              and a.domain = $2
+    )  
+    select * from allsubscription """)(subscriber, domain):
+
+#    print (db.prepare("select text from addresses where id=$1").first(subs_target), db.prepare("select count(*) from messages where destination=$1 and processed=0").first(subs_target))
+
+    for m in db.prepare("""select m.id, m.source, m.destination, m.msgid, m.header, m.body, m.origcharset, m.receivedfrom from messages m
+		where m.processed=0 and m.destination=$1""")(subs_target):
+      yield m
+
+
 
 def get_direct_messages(db, subscriber):
   try:
@@ -1346,10 +1377,13 @@ def get_supernode(db, addr):
     return None
 
 if __name__ == "__main__":
-    from ftnconfig import connectdb
+    import ftnconfig
 #    for s in get_node_subscriptions(connectdb(), "2:5020/4441", "echo"):
 #        if s.find("TEST")!=-1:
 #            print (s)
+    db = ftnconfig.connectdb()
 
-    print (get_subnodes(connectdb(), '2:5020/12000'))
+    print (get_subnodes(db, '2:5020/12000'))
 
+    for m in get_subscriber_messages_n_loopy(db, ftnconfig.get_addr_id(db, db.FTN_domains["node"], "2:5020/715"), 1):
+      print (m)
