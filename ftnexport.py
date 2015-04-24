@@ -794,7 +794,7 @@ def file_export(db, address, password, what):
     explock = postgresql.alock.ExclusiveLock(db, ((EXPORTLOCK["fileecho"], addr_id)))
     if explock.acquire(False):
       try:
-        print ("exporting fileechoes")
+        print ("exporting fileechoes for", address)
         subscache = {}
         tic_password = password
         t = ticpacker(lambda: get_tic_n(db, link_id), lambda: ticcommitter(db))
@@ -815,6 +815,15 @@ def file_export(db, address, password, what):
           if fp_recv_from == addr_id:
             #print ("Message from this link, will not export")
             will_export = False
+
+          other = json.loads(fp_other)
+          del fp_other
+          seenby = set(other.get("SEENBY", []))
+
+          if address in seenby:
+            print ("already in seenby list, not sending")
+            will_export = False
+          # dupe (own address) in path should be checked at import
 
           # check commuter - NOT TESTED
           subscriber_comm = db.FTN_commuter.get(withsubscr)
@@ -847,16 +856,14 @@ def file_export(db, address, password, what):
           if will_export:
             fruitful = True # something was exported
 
-            print("add seen-by", subscribers, " add path", myaddr_text)
-            fp_other = json.loads(fp_other)
+            #print("add seen-by", subscribers, " add path", myaddr_text)
 
-            fp_other["PATH"].append(myaddr_text+" "+str(fp_post_time)+" "+time.asctime(time.gmtime(fp_post_time))+" PyFTN")
-            seenby = set(fp_other["SEENBY"])
+            other.setdefault("PATH", []).append(myaddr_text+" "+str(fp_post_time)+" "+time.asctime(time.gmtime(fp_post_time))+" PyFTN")
             seenby.update(subscribers)
-            fp_other["SEENBY"]=list(seenby)
+            other["SEENBY"]=list(seenby)
 
-            if "CRC" in fp_other:
-              file_crc32 = fp_other.pop("CRC")[0]
+            if "CRC" in other:
+              file_crc32 = other.pop("CRC")[0]
               print ("filename %s length %d crc %s"%(fp_filename, file_length, file_crc32))
             else:
               if file_content:
@@ -864,8 +871,11 @@ def file_export(db, address, password, what):
               else:
                 file_crc32 = ftntic.sz_crc32fd(lo.LOIOReader(db, file_lo))[1]
 
-            tic = ftntic.make_tic(myaddr_text, address, tic_password, dsta[1], get_addr(db, fp_origin)[1],
-                fp_filename, file_length, file_crc32, fp_other)
+            #if fp_origin is None:
+            #  print("substitute empty origin with source")
+            #  fp_origin = fp_recv_from
+            tic = ftntic.make_tic(myaddr_text, address, tic_password, dsta[1], get_addr(db, fp_origin)[1] if fp_origin else None,
+                fp_filename, file_length, file_crc32, other)
 
           # code was migrated from echo export, so it cares about blocked exports to update 
           # per-subscription last-sents
