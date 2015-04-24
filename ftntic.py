@@ -329,18 +329,18 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
 def make_tic(t_from, t_to, t_pw, t_area, t_origin, t_file, t_size, t_crc, t_other):
   # CRC must be extracted from other by caller or regenerated
-  tic="""FROM %s
-TO %s
-PW %s
-AREA %s
-ORIGIN %s
-FILE %s
-SIZE %d
-CRC %s
-"""%(t_from, t_to, t_pw, t_area, t_origin, t_file, t_size, t_crc)
+  tic="""FROM %s\r
+TO %s\r
+PW %s\r
+AREA %s\r
+ORIGIN %s\r
+FILE %s\r
+SIZE %d\r
+CRC %s\r
+"""%(t_from, t_to, t_pw, t_area, t_origin or 'UNKNOWN', t_file, t_size, t_crc)
   for k, v in t_other.items():
     for v1 in v:
-      tic += k+" "+v1.replace("\n", " ")+"\n"
+      tic += k+" "+v1.replace("\n", " ")+"\r\n"
 
   return tic.encode(ftnconfig.TIC_CHARSET)
 
