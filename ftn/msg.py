@@ -124,12 +124,16 @@ class MSG:
       #print "echomail"
       self.area=text[0][5:]
       del text[0]
-      
+
 #    self.area=os.path.split(self.area)[-1]
 # ---
-      
+
+    skip_all_kludges = False
     for l in text:
       if l and l[0]==1:
+        if skip_all_kludges:
+          continue # skip this line
+
         spc=l.find(b" ")
         name = l[1:spc]
         value = l[spc+1:]
@@ -165,6 +169,11 @@ class MSG:
           except:
             raise FTNFail("MSG: bad ZPTH "+repr(value))
         else:
+          # special treatment for some PID values (quirks work-around)
+          if name==b"PID:" and value==b"SoupGate-Win32 v1.05":
+            print("Skip kludges in soupgate message")
+            skip_all_kludges = True
+
           if name in self.kludge:
             if type(self.kludge[name]) is list:
               self.kludge[name]+=[value]
@@ -173,6 +182,7 @@ class MSG:
           else:
             self.kludge[name]=value
       else:
+        skip_all_kludges = False # skip only to begin of text
         self.body += [l]
 
     while len(self.body) and (self.body[-1][:8] == b"SEEN-BY:"):
