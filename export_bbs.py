@@ -10,14 +10,14 @@ for a, b in db.prepare("select t.text, sr.text from subscriptions s, addresses s
             "where s.subscriber=sr.id and s.target=t.id and t.domain=3")():
   fareas.setdefault(a, set()).add(b)
 
-fa=open("/tank/home/fido/fareas.bbs", "w")
+fa=open("fareas.bbs", "w")
 fa.write("*****\n")
 for k, v in fareas.items():
   fa.write("/tank/home/fido/fareas/"+k.lower()+" "+k+" "+" ".join(v)+"\n")
 fa.close()
 
 
-pw=open("/tank/home/fido/passwd", "w")
+pw=open("passwd", "w")
 
 for a in db.prepare("select a.text from links l, addresses a "
             "where l.address=a.id and a.domain=$1 order by a.text")(db.FTN_domains["node"]):
