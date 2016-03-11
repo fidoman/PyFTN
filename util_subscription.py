@@ -168,6 +168,10 @@ with ftnimport.session(db) as sess:
       print ("".join(substext))
       sess.send_message(my_addr, "Sergey Dorofeev", ("node", subscriber), robot, None, pw, substext)
 
+  elif cmd == "rescan":
+    substext = "%rescan * 3"
+    sess.send_message(my_addr, "Sergey Dorofeev", ("node", subscriber), robot, None, pw, substext)
+
 
   else:
     raise Exception("unknown command", cmd)
