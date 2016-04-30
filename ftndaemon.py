@@ -71,7 +71,7 @@ def rununpack():
 
   if is_free:
     log("start to unpack")
-    os.system("./unpack quick >> log/quick.log")
+    os.system("~/unpack quick >> ~/log/quick.log")
   else:
     log("already unpacked")
 
@@ -147,6 +147,7 @@ def session(s, a):
         classesstr = val.lower().split(",")
         classes = set()
         allclasses = set(("netmail", "echomail", "fileecho", "filebox", "direct"))
+#        allclasses = set(("echomail", "fileecho", "filebox", "direct"))
         if ["all"]==classesstr:
           classes = allclasses
         else:

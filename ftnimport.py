@@ -113,12 +113,23 @@ def normalize_message(msg, charset="ascii"):
         except ftn.msg.DecodeError:
           pass
 
-      if not origaddr:
+      if not origaddr or origaddr[0]=='0':
+
+        print ("no origin, msgid:", repr(msgid))
         try:
           origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msgid.split(" ")[0].split("@")[0]))
           print ("got from msgid:", origaddr)
         except:
           pass
+
+        if not origaddr or origaddr[0]=='0':
+          try:
+            print("SYNC?")
+            origaddr=ftn.addr.addr2str(ftn.addr.str2addr(msgid.split(" ")[0].split("@")[1]))
+            print ("got from msgid (syncbbs):", origaddr)
+          except:
+            pass
+
 
       if not origaddr:
         raise FTNNoOrigin # No Origin, no MSGID with FTN address
@@ -263,7 +274,7 @@ def normalize_message(msg, charset="ascii"):
 
 import re
 
-RE_ftnsign = re.compile("(\r|\n|\r\n|\n\r)(---| \* Origin)")
+RE_ftnsign = re.compile("(\r|\n|\r\n|\n\r)(---| \* Origin)", re.I)
 def sign_invalidate(s):
     n=s.group(1)+s.group(2)[0]+"+"+s.group(2)[2:]
     #print("!!!",s.group(0),"->", n)
@@ -682,8 +693,9 @@ class session:
   def touched_addresses(self):
     return self.last_message_for_address.keys()
 
-  def import_link_auth(self, node, connectpassword, robotpassword, echolevel=None, fecholevel=None, echogroups=None, fechogroups=None):
+  def import_link_auth(self, myaddr, node, connectpassword, robotpassword, echolevel=None, fecholevel=None, echogroups=None, fechogroups=None):
     addr_id = self.check_addr("node", node)
+    my_id = self.check_addr("node", myaddr)
 
     authel = xml.etree.ElementTree.Element("FTNAuth")
     connectpwel = xml.etree.ElementTree.SubElement(authel, "ConnectPassword")
@@ -700,7 +712,7 @@ class session:
     exists = int(self.db.prepare("select count(*) from links where address=$1").first(addr_id))>0
 
     if not exists:
-      self.db.prepare("insert into links (address, authentication) values ($1, $2)")(addr_id, authel)
+      self.db.prepare("insert into links (my, address, authentication) values ($1, $2)")(my_id, addr_id, authel)
     else:
       self.db.prepare("update links set (authentication) = ($2) where address=$1")(addr_id, authel)
 

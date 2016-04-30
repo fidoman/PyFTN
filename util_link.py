@@ -20,14 +20,14 @@ if cmd=="list":
 
 elif cmd=="add":
   addr = sys.argv[2]
-  lid = ftnconfig.get_link_id(db, addr)
+  lid = ftnconfig.find_link(db, addr)
   if lid is not None:
     print("already exists")
     exit()
   pasw = sys.argv[3]
   input("confirm add "+addr+" pw "+pasw)
   with ftnimport.session(db) as sess:
-    sess.import_link_auth(addr, pasw, pasw)
+    sess.import_link_auth(myaddr, addr, pasw, pasw)
 
 #authentication = <FTNAUTH><ConnectPassword>pwd</ConnectPassword><RobotsPassword>pwd</RobotsPassword></FTNAUTH>
 # my = 160 (myaddr_id)
