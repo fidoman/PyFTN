@@ -170,9 +170,9 @@ class MSG:
             raise FTNFail("MSG: bad ZPTH "+repr(value))
         else:
           # special treatment for some PID values (quirks work-around)
-          if name==b"PID:" and value==b"SoupGate-Win32 v1.05":
-            print("Skip kludges in soupgate message")
-            skip_all_kludges = True
+#          if name==b"PID:" and value==b"SoupGate-Win32 v1.05":
+#            print("Skip kludges in soupgate message")
+#            skip_all_kludges = True
 
           if name in self.kludge:
             if type(self.kludge[name]) is list:
@@ -298,7 +298,7 @@ class MSG:
     addr=str2addr(a)
     self.zpth.append(addr2str((addr[0],addr[1],addr[2],None)))
 
-ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$")
+ORIGIN=re.compile(b" \* Origin:(.*)\((.* )?(\d+\:\d+/\d+(\.\d+)?(\@.*)?)\)$", re.I)
 
 def decode_origin(s):
   m=ORIGIN.match(s)
