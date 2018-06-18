@@ -114,12 +114,12 @@ class PKT:
         if debug: print("subj end %08X"%fo.tell())
         body=read_asciiz(fo)
         if debug: print("body end %08X"%fo.tell())
-        
+
         #print "load msg", msg_n, tnet, tnode
         msg=MSG()
         msg.load( (fname,(0,fnet,fnode,0)),
                 (tname,(0,tnet,tnode,0)),subj,date,attr,cost,body )
-        
+
         self.msg.append(msg)
         msg_n+=1
 

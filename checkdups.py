@@ -20,6 +20,15 @@ Q_msgget = db.prepare("select m.id, m.msgid, m.header, m.body, m.origcharset, s.
             "from messages m, addresses s, addresses d "
             "where m.msgid=$1 and m.source=s.id and m.destination=d.id")
 
+for c in Q_msgget("2:280/5003.4 56eee1c4")[0][3]:
+  print(ord(c), c)
+  if ord(c)==144:
+    print("***")
+    break
+import time
+time.sleep(2)
+exit()
+
 #DUPDIR=BADDIR
 
 if len(sys.argv)<2:
@@ -80,9 +89,9 @@ for f in filelist:
     subjmatch = subj1==subj2
     if not subjmatch:
         subjmatch = subj1==clean_str(subj2)
-    if not subjmatch:
-        subj1=ast.literal_eval('"'+subj1+'"')
-        subjmatch = subj1.replace("\x0A","")==subj2.replace("\x0A","")
+#    if not subjmatch:
+#        subj1=ast.literal_eval('"'+subj1+'"')
+#        subjmatch = subj1.replace("\x0A","")==subj2.replace("\x0A","")
 
     print ("Same subject:",subjmatch)
 

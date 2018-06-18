@@ -13,6 +13,7 @@ def set_link(lid, data):
   pass
 
 cmd=sys.argv[1]
+myaddr=ftnconfig.ADDRESS
 
 if cmd=="list":
   for lid, addr in db.prepare("select l.id, a.text from links l, addresses a where a.id=l.address"):

@@ -61,7 +61,7 @@ def q_file(db, area, name):
     " order by post_time desc").first(db.FTN_domains["fileecho"], area, name)
 
 def nodelist():
-  f_id = q_file(db, 'DAILYLST', 'NODELIST.___')
+  f_id = q_file(db, 'DAILYLST', 'DAILYLST.___')
   print (f_id)
   save(db, f_id, open(ftnconfig.NODELIST, "wb"))
   base = os.path.split(ftnconfig.NODELIST)[0]
@@ -70,6 +70,7 @@ def nodelist():
   save(db, q_file(db, 'NET5020', 'N5020.ROU'), open(os.path.join(base, 'N5020.ROU'), "wb"))
   save(db, q_file(db, 'NET5020', 'N5020.TRU'), open(os.path.join(base, 'N5020.TRU'), "wb"))
   save(db, q_file(db, 'DAILYUTF', 'DAILYUTF.Z__'), open(os.path.join(base, 'DAILYUTF.ZIP'), "wb"))
+#  save(db, q_file(db, 'R50ECHOLST', 'ECHO50.LST'), open(os.path.join(base, 'ECHO50.LST'), "wb"))
 
 if sys.argv[1] == "nodelist":
   nodelist()

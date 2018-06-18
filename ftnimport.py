@@ -712,7 +712,7 @@ class session:
     exists = int(self.db.prepare("select count(*) from links where address=$1").first(addr_id))>0
 
     if not exists:
-      self.db.prepare("insert into links (my, address, authentication) values ($1, $2)")(my_id, addr_id, authel)
+      self.db.prepare("insert into links (my, address, authentication) values ($1, $2, $3)")(my_id, addr_id, authel)
     else:
       self.db.prepare("update links set (authentication) = ($2) where address=$1")(addr_id, authel)
 

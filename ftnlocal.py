@@ -53,10 +53,11 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
   dom, text = db.prepare("select domain, text from addresses where id=$1").first(src)
   if dom != db.FTN_domains["node"]:
     raise FTNFail("not our domain")
-  print(text)
+  print("*fix for:", text)
   link_id, addr_id, myaddr_id = ftnaccess.check_link(db, text, password, True)
   if myaddr_id is None:
     reply=["wrong password"]
+    raise(Exception("cannot find my address to reply to *fix message"))
   elif link_id is None:
     reply=["unknown link"]
   elif not is_local:
@@ -106,6 +107,7 @@ def fix(db, sess, src, srcname, destname, domain, password, msgid, cmdtext, is_l
         reply+=subscribe(db, sess, text, domain, cmd)
 
   reply.append("")
+  print("*fix reply from:", myaddr_id, ftnconfig.get_taddr(db, myaddr_id))
   sess.send_message(ftnconfig.get_taddr(db, myaddr_id), destname+" Robot", ("node", text), srcname, msgid, "report", "\n".join(reply), sendmode="direct")
   print(reply)
 
@@ -174,14 +176,24 @@ fixes_f.sort(key = lambda x: x[2])
 
 for id_msg, src, _, sn, h, mi, b, is_local in fixes_e:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "AreaFix", "echo", h, mi, b, is_local)
-    db.prepare("update messages set processed=1 where id=$1")(id_msg)
+    print("fix:", sess, src, sn, "AreaFix", "echo", h, mi, b, is_local)
+    try:
+      fix(db, sess, src, sn, "AreaFix", "echo", h, mi, b, is_local)
+      db.prepare("update messages set processed=1 where id=$1")(id_msg)
+    except Exception as e:
+      print(e)
+      continue
     
 
 for id_msg, src, _, sn, h, mi, b, is_local in fixes_f:
   with ftnimport.session(db) as sess:
-    fix(db, sess, src, sn, "FileFix", "fileecho", h, mi, b, is_local)
-    db.prepare("update messages set processed=1 where id=$1")(id_msg)
+    print("fix:", sess, src, sn, "AreaFix", "echo", h, mi, b, is_local)
+    try:
+      fix(db, sess, src, sn, "FileFix", "fileecho", h, mi, b, is_local)
+      db.prepare("update messages set processed=1 where id=$1")(id_msg)
+    except Exception as e:
+      print(e)
+      continue
 
 exit()
 
