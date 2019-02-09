@@ -256,7 +256,10 @@ if __name__ == "__main__":
         ftntic.import_tic(db, f, node)
       except Exception as e:
         print("error on file %s"%repr(f))
-        os.rename(f, f+".bad")
+        try:
+          os.rename(f, f+".bad")
+        except:
+          pass
         fx=open(f+".status", "w")
         fx.write(traceback.format_exc())
         fx.close()

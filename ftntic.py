@@ -123,6 +123,38 @@ def find_file(name, path):
     return n1
   raise NoFile("no match for %s at %s"%(name, path))
 
+def find_matching_file(filepath, name, size, crc):
+  """ search in the directory for file with similar name and matching size and CRC """
+  # if size and CRC not specified then require strict name matching
+  files = os.listdir(filepath)
+  candidates=[]
+  for f in files:
+    if f==name or f.startswith(name+"."):
+      candidates.append(f)
+  if not candidates:
+    for f in files:
+      if f.lower()==name.lower() or f.lower().startswith(name.lower()+"."):
+        candidates.append(f)
+  if not candidates:
+    for f in files:
+      if name.lower().startswith(f.lower()):
+        candidates.append(f)
+
+  print(name, candidates)
+  for c in candidates:
+    cf = os.path.join(filepath, c)
+    print(c)
+    fsz, fcrc = sz_crc32(cf)
+    print(fsz, fcrc)
+    if fsz == size and fcrc==crc:
+      print("exact match")
+      return cf
+    if size is None and fcrc==crc:
+      print("match bases on CRC (size unknown)")
+      return cf
+
+  return None
+
 
 def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, ignore_pw=False, skip_access_check=False):
   " specify older import_utime value to make imported file the status of aarchive "
@@ -139,12 +171,12 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
     filepath = os.path.dirname(fullname)
 
   tic_src = get_optional(ticdata, "FROM")
-  print ("from", tic_src)
+  print ("TIC from:", tic_src)
   if tic_src is None:
     tic_src=expect_addr
 
   tic_dest = get_optional(ticdata, "TO")
-  print ("to", tic_dest)
+  print ("TIC to", tic_dest)
 
   if tic_src is None and tic_dest is None and skip_access_check:
     print ("Importing non-FTN file")
@@ -169,8 +201,8 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
     else:
       dest_id = None
 
-    print (q)
-    print (q_args)
+    #print (q)
+    #print (q_args)
 
     possible_links = db.prepare(q)(*q_args)
     if len(possible_links) > 1:
@@ -182,7 +214,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
     src_id, dest_id, authinfo = possible_links[0]
     pw = authinfo.find("RobotsPassword").text
 
-    print (src_id, dest_id, pw)
+    print ("TIC src_id, dst_id, pw:", src_id, dest_id, pw)
 
     if not ignore_pw:
       tic_passw = get_single(ticdata, "PW")
@@ -192,7 +224,7 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
   # source and destination verified, now try to find file
   # but before we should check if link can post to specified area
   area = get_single(ticdata, "AREA").upper() # FTN areas must be uppercase
-  print (area)
+  print("TIC area:", area)
   if not skip_access_check:
     maypost = ftnaccess.may_post(db, src_id, ("fileecho", area))
     if not maypost:
@@ -207,8 +239,9 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
   fcrc = get_single(ticdata, "CRC", remove=False)
 
-  print (fname, fsize, fcrc)
-  ffullname=find_file(fname, filepath)
+  print ("TIC name, size, crc:", fname, fsize, fcrc)
+  ffullname=find_matching_file(filepath, fname, fsize, fcrc)
+
   if not os.path.exists(ffullname):
     raise NoFile("file %s does not exists"%ffullname)
 
