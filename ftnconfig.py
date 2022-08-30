@@ -7,19 +7,9 @@ import os
 import ftn.addr
 from ftn.ftn import FTNNoAddressInBase
 
-# ---------------------------------------------------------------------------------------
-
-def connectdb(dbstring = open("/home/fido/PyFTN/database.cfg").read().strip()):
-  # pq://user:password@hostname/databasename
-  db = postgresql.open(dbstring)
-  init_domains(db)
-  init_commuter(db)
-  db.FECHOIMPORTLOCK = None
-  return db
-
 # system-specific settings
 
-FIDODIR="/home/fido"
+FIDODIR="/tank/fido/home"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
 HOSTNAME="fluid.fidoman.ru"
@@ -117,6 +107,15 @@ IMPORTLOCK=8
 
 # ---------------------------------------------------------------------------------------
 
+def connectdb(dbstring = open(FIDODIR+"/PyFTN/database.cfg").read().strip()):
+  # pq://user:password@hostname/databasename
+  db = postgresql.open(dbstring)
+  init_domains(db)
+  init_commuter(db)
+  db.FECHOIMPORTLOCK = None
+  return db
+
+
 # - values configured in database
 
 def init_domains(db):
@@ -161,7 +160,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "INTERBONE\.|RSS\.IBASH\.ORG\.RU|CHERKASSY\.|AT\.TALK|SMOLENSK\.|Z\.TAVSAR\.|WIT\.|STV\.|54\.|"
             "RSS\.IPFW\.RU\.BASH|RSS\.COMPULENTA\.RU|4441\.|KOENIG\.|ALTYN\.|NIKOLAEV\.|TSK\.|ESIB\.|"
             "KN\.|XSTATION\.|HIPPY\.|ISRA\.RUS|DIATLO\.|FIDONET\.ONLINE\.BBS|5049\.|PSKOV\.|SEBASTOPOL\.|"
-            "ALT\.RUSSIAN\.Z1|CRIMEA\.|ZC\.SYSOP|ZC\.TALKS|HOBBIT\.")
+            "ALT\.RUSSIAN\.Z1|CRIMEA\.|ZC\.SYSOP|ZC\.TALKS|HOBBIT\.|TG\.|NINO\.")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|OTHERNETS|FIDOTEST|"

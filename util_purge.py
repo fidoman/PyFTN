@@ -19,7 +19,7 @@ for area in open(purgelist):
 
   # 1. verify that there is nothing there
   if domain == "fileecho":
-    print (area, os.listdir("/tank/home/fido/fareas/"+area.lower()))
+    print (area, os.listdir(ftnconfig.FIDODIR+"/fareas/"+area.lower()))
   elif domain == "echo":
     count = db.prepare("select count(*) from messages where destination=$1").first(aid)
     print (area, count)

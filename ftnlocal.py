@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 """ process local mail """
 

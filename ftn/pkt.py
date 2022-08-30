@@ -218,7 +218,11 @@ class PKT:
          self.source[3],self.destination[3],b"\0\0\0\0")) # b"XPKT"
       for m in self.msg:
 
-        m.date = m.date.decode("ascii")
+        try:
+          m.date = m.date.decode("ascii")
+        except:
+          raise FTNFail("bad date %s in msg %s %s %s"%(repr(m.date),repr(m.orig),repr(m.dest), repr(m.area)))
+
         x = RE_rfc3339.match(m.date)
         if x:
           m.kludge[b"TZUTC:"] = ("-" if x.group(9)=='-' else '' + x.group(10) + x.group(11)).encode("ascii")

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 """ listen for incoming connection:
     processes received files 
@@ -193,7 +193,7 @@ def session(s, a):
           except FTNWrongPassword:
             log(str(a)+"address %s excluded due to wrong password"%address)
           except:
-            log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
+            log(str(a)+" exception in GET on address %s: %s"%(address, traceback.format_exc()))
 
         # "QUEUE EMPTY" must be sent only after all addresses are processed
         log(str(a)+" that's all")

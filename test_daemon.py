@@ -3,7 +3,7 @@
 # connect to daemon and push incoming file
 # connect to daemon and get outbound
 
-address = "1:123/500"
+link_addr = "2:5097/31"
 encoding = "utf-8"
 
 
@@ -24,9 +24,13 @@ if not os.path.isdir("test"):
 s = socket.socket(socket.AF_INET)
 
 import ftnconfig
+import ftnaccess
+
 db=ftnconfig.connectdb()
-password = ftnconfig.get_link_password(db, address)
-print (address, password)
+link_id = ftnconfig.find_link(db, link_addr)
+my_id, password = ftnaccess.link_password(db, link_id, forrobots=False)
+
+print (link_addr, my_id, password)
 
 do_send = False
 
@@ -34,7 +38,7 @@ s.connect(("127.0.0.1", 24555))
 try:
   print(readline(s))
 
-  s.send(b"ADDRESS "+address.encode(encoding)+b"\n")
+  s.send(b"ADDRESS "+link_addr.encode(encoding)+b"\n")
   s.send(b"PASSWORD "+password.encode(encoding)+b"\n")
 
   if do_send:

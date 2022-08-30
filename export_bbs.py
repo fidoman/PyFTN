@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 from ftnconfig import connectdb, get_link_password
 
@@ -13,7 +13,7 @@ for a, b in db.prepare("select t.text, sr.text from subscriptions s, addresses s
 fa=open("fareas.bbs", "w")
 fa.write("*****\n")
 for k, v in fareas.items():
-  fa.write("/tank/home/fido/fareas/"+k.lower()+" "+k+" "+" ".join(v)+"\n")
+  fa.write(ftnconfig.FIDODIR+"/fareas/"+k.lower()+" "+k+" "+" ".join(v)+"\n")
 fa.close()
 
 

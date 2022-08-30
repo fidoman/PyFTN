@@ -136,7 +136,7 @@ def session(log, s, a):
           except FTNWrongPassword:
             log("address %s excluded due to wrong password"%address)
           except:
-            log(str(a)+" exception on addess %s: %s"%(address, traceback.format_exc()))
+            log(str(a)+" exception in GET (ftn.py) on address %s: %s"%(address, traceback.format_exc()))
 
         # "QUEUE EMPTY" must be sent only after all addresses are processed
         log(str(a)+" that's all")

@@ -175,6 +175,20 @@ def get_subscriber_messages_e_heavy(db, subscriber, domain):
     yield m
         #id_msg, src, dest, msgid, header, body, recvfrom, withsubscr
 
+## version before 2022-08-18
+#def get_subscriber_messages_e(db, subscriber, domain):
+#  start_time = get_time()
+#  for target_id, target_name, target_last, subs_id, subs_last in get_subscriptions_x(db, subscriber, domain):
+#    if get_time()-start_time>BUNDLETIMELIMIT-5:
+#      print("Abandoning do to export time limit")
+#      break
+#    if target_last>subs_last:
+#      print ("something new", target_id, target_name, target_last, subs_id, subs_last)
+#      for mid,msrc,mdst,mmsgid,mhdr,mbody,mchr,mrecvfrom,mproc in db.prepare(
+#            "select m.id, m.source, m.destination, m.msgid, m.header, "
+#            "m.body, m.origcharset, m.receivedfrom, m.processed from messages m where destination=$1 and id>$2 order by id")(target_id, subs_last):
+#        yield mid, msrc, mdst, mmsgid, mhdr, mbody, mchr, mrecvfrom, subs_id, mproc
+
 def get_subscriber_messages_e(db, subscriber, domain):
   start_time = get_time()
   for target_id, target_name, target_last, subs_id, subs_last in get_subscriptions_x(db, subscriber, domain):
@@ -183,10 +197,28 @@ def get_subscriber_messages_e(db, subscriber, domain):
       break
     if target_last>subs_last:
       print ("something new", target_id, target_name, target_last, subs_id, subs_last)
-      for mid,msrc,mdst,mmsgid,mhdr,mbody,mchr,mrecvfrom,mproc in db.prepare(
+
+      start_id = subs_last # position to start export 
+      # after exporting block ('LIMIT 200') start from position after last exported message
+
+      while True:
+        last_id = None # update to number if something is exported
+
+        query = db.prepare(
             "select m.id, m.source, m.destination, m.msgid, m.header, "
-            "m.body, m.origcharset, m.receivedfrom, m.processed from messages m where destination=$1 and id>$2 order by id")(target_id, subs_last):
-        yield mid, msrc, mdst, mmsgid, mhdr, mbody, mchr, mrecvfrom, subs_id, mproc
+            "m.body, m.origcharset, m.receivedfrom, m.processed from messages m where destination=$1 and id>$2 order by id limit 200")
+
+        data = query.chunks(target_id, start_id)
+
+        for x in data:
+          for mid,msrc,mdst,mmsgid,mhdr,mbody,mchr,mrecvfrom,mproc in x:
+            last_id = mid
+            yield mid, msrc, mdst, mmsgid, mhdr, mbody, mchr, mrecvfrom, subs_id, mproc
+
+        if last_id is None:
+          break
+        start_id = last_id # query messages with strict gt, so no +1 here
+
 
 
 def _get_messages(db, dest_id, lastsent):

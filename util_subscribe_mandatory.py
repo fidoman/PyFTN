@@ -5,7 +5,7 @@ import ftnimport
 
 db=ftnconfig.connectdb()
 
-area="FLUID.LOCAL"
+area="FLUID.INFO"
 
 robot = ftnconfig.robotnames["echo"]
 
