@@ -254,6 +254,9 @@ if __name__ == "__main__":
       print ("Tic file", f)
       try:
         ftntic.import_tic(db, f, node)
+
+      except ftntic.NoFile as e:
+        print("no file, may be later")
       except Exception as e:
         print("error on file %s"%repr(f))
         try:

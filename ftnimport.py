@@ -504,7 +504,6 @@ class session:
     op(target, subscriber)
     return "unsubscribed"
 
-
   def reset_subscription(self, target_domain, target_addr, subscriber_addr, timestamp):
     target=get_addr_id(self.db, self.db.FTN_domains[target_domain], target_addr)
     subscriber=get_addr_id(self.db, self.db.FTN_domains["node"], subscriber_addr)

@@ -22,6 +22,7 @@ NETMAIL_peers = [] #"2:5020/274", "2:5020/545", "2:5020/1042", "2:5020/3274"] # 
 NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 NETMAIL_peers += ["2:5020/101"]
 NETMAIL_peers += ["2:5020/614"] # fileecho uplinks
+NETMAIL_peers += ["2:5020/2038"]
 
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
@@ -29,6 +30,7 @@ NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
                      ("2:5097/0", "2:5097/31"),
                      ("2:5012/0", "2:5012/200"),
                      ("2:5040/0", "2:5040/2"),
+                     ("2:5030/0", "2:5030/731"),
 ]
 
 

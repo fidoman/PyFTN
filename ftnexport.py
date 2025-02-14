@@ -29,7 +29,7 @@ get_time = time.time
 
 # AUTOCOMMIT assumed
 
-def get_subscribers(db, target, onlyvital=False):
+def get_subscribers(db, target, onlyvital=False, with_lastsent=False):
     """ query all subscribers including that who are subscribed to group of the target """
 
     for r in db.prepare(""" 
@@ -39,10 +39,14 @@ def get_subscribers(db, target, onlyvital=False):
       union
         select a.group, g.level+1 from addresses a, all_groups g where a.id = g.id
     )
-    select s.subscriber, s.vital, g.level from subscriptions s, all_groups g 
+    select s.subscriber, s.vital, g.level, s.lastsent from subscriptions s, all_groups g 
     where s.target = g.id""" + (" and s.vital = True" if onlyvital else ""))(target):
 
-        yield r
+        if not with_lastsent:
+          yield r[:3]
+        else:
+          yield r
+
 
 def get_addrtree(db, addr):
     for a in db.prepare("""

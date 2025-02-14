@@ -1,0 +1,1 @@
+ select files.id, files.names, files.sha512, file_post.id, file_post.destination, to_timestamp(file_post.post_time) as ts from file_post, files where file_post.filedata=files.id and 'DAILYUTF.Z51' = any(files.names) order by ts

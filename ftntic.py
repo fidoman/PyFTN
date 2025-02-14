@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 import sys
 import os
@@ -126,6 +126,10 @@ def find_file(name, path):
 def find_matching_file(filepath, name, size, crc):
   """ search in the directory for file with similar name and matching size and CRC """
   # if size and CRC not specified then require strict name matching
+#  print(crc); os.abort()
+
+  filepath=os.path.join(filepath, crc.lower())
+
   files = os.listdir(filepath)
   candidates=[]
   for f in files:
