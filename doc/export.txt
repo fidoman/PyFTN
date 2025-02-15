@@ -1,0 +1,14 @@
+
+Echomail, first version:
+  Just scan all database for messages that have id greater that last sent id for specific echo and match that echo
+  One query for all echoes
+  Slow, as requires heavy index access
+
+Echomail, second version:
+  Keep per-echo last-received, and before querying messages check that there are something new
+  Per-echo queries
+  Can seem hang if big archive was imported (long query and little output - mailer session may timeout)
+
+Netmail:
+  Use address hierarchy, each link receives all addresses under his subscribed addresses, except for the address
+  has own link with subscription.

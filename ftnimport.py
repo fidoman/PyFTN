@@ -658,7 +658,7 @@ class session:
         #  (allow create node/point only if nodelisted, area only if listed on bone/uplinks)
         destid = self.check_addr(destdomname, destaddr) # check node in nodelist and area exists
 
-    if len(self.db.prepare("select id from messages where msgid=$1")(msgid)):
+    if len(self.db.prepare("select id from messages where msgid=$1 and destination=$2")(msgid, destid)):
       raise FTNDupMSGID(msgid)
 
     if not self.Q_msginsert:

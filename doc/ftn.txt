@@ -1,0 +1,239 @@
+1. п²п╣я┌п╪п╣п╧п╩ п©п╣я─п╣п╢п╟я▒я┌я│я▐ п╢п╦п╫п╟п╪п╦я┤п╣я│п╨п╦ пЁп╣п╫п╣я─п╦я─я┐п╣п╪я▀п╪п╦ п©п╟п╨п╣я┌п╟п╪п╦ п©п╬ п╬п╢п╫п╬п╪я┐ я│п╬п╬п╠я┴п╣п╫п╦я▌
+2. п╜я┘п╬п╪п╣п╧п╩ п©п╟п╨я┐п╣я┌я│я▐ п╡ п╬п╢п╦п╫ п╠п╟п╫п╢п╩ п╢п╬ п╬п©я─п╣п╢п╣п╩я▒п╫п╫п╬пЁп╬ я─п╟п╥п╪п╣я─п╟, п©п╬я│п╩п╣п╢я┐я▌я┴п╦п╣ п╫п╟я┤п╦п╫п╟я▌я┌ пЁп╣п╫п╣я─п╦я─п╬п╡п╟я┌я▄я│я▐ п©п╬я│п╩п╣ п╬я┌п©я─п╟п╡п╨п╦ п©п╣я─п╡п╬пЁп╬
+3. п╓я█я┘п╦ - п╨п╟п╨ п╩п╦п╫п╨п╦ п╫п╟ я└п╟п╧п╩я▀
+4. п║п©я┐п╩ п╬я─пЁп╟п╫п╦п╥я┐п╣я┌я│я▐ п╨п╟п╨ п╢п╣я─п╣п╡п╬ domain/z.net.node.point/in
+                                                        in-unchecked
+                                                        out
+                                                        out.hold
+                                                        out.force
+5. пёп╥п╣п╩ я─п╟п╠п╬я┌п╟п╣я┌ п╨п╟п╨ п╢п╣п╪п╬п╫
+6. п■п╩я▐ п╤я┐я─п╫п╟п╩п╦я─п╬п╡п╟п╫п╦я▐ п╪п╣п╧п╩п╣я─ п╥п╟п©я─п╟я┬п╦п╡п╟п╣я┌ п╫п╬п╪п╣я─ я│п╣я│я│п╦п╦ я┐ п╢п╣п╪п╬п╫п╟. п÷п╬ п╬п╨п╬п╫я┤п╟п╫п╦п╦ я│п╣я│я│п╦п╦ я┐п╡п╣п╢п╬п╪п╩я▐п╣я┌ п╢п╣п╪п╬п╫п╟.
+7. п÷я─п╬п╡п╣я─п╨п╟ п©я─п╟п╡ п╢п╬я│я┌я┐п©п╟ п©я─п╬п╡п╣я─я▐п╣я┌я│я▐ я┌я─п╦пЁпЁп╣я─п╟п╪п╦ п╡ п╠п╟п╥п╣.
+
+
+?
+Запустить мейлер, разрешив приём входящих и исходящие звонки.
+При появлении файлов во входном каталоге мейлера запустить распаковщик.
+Распаковать полученные сообщения с расширениями
+
+
+Тоссер.
+связь линк (группа линков) - эха (группа эх)
+  отправлять линку: да/нет
+  принимать от линка: да/нет/запрет (давать уведомление)
+  менять статус: да/нет/запрет
+ftn:
+  packet tossing
+    input: source, messages
+    output: messages, destinations
+
+                MESSAGE/FILE
+                BASE
+            toss ^ | (re)scan/freq
+                 | v
+INBOUND ------> TOSSER -----> OUTBOUND
+        new mail       output
+        event          mail command
+        messages       messages
+
+
+store
+1. Working with external objects
+  External channels
+2. Working with internal objects
+  Executing code
+
+configuration
+Objects: node, link, echo
+node:
+  address
+  sysop
+  access methods, protocols and worktime
+  services
+    echoes
+    fileechoes
+  default link parameters
+link:
+  (node to me)
+  my session password
+  him session password
+  access to services
+    netmail forwarding
+    pkt forwarding
+    echoes
+    fileechoes
+    file forwarding
+  services state
+    echo subscriptions
+    fileecho subscriptions
+
+objects
+1. Channels
+  a. basic channel (point to point or broadcast)
+       transports just messages
+  b. addressed channel (network)
+       each transported message has info: src, dst etc.
+2. Objects
+  a. basic channel replicator
+       message for dst channel = f( message, src channel, dst channel, config )
+  b. adressed channel replicator
+       new messages = f( message, message info, config )
+  c. gates
+       addressed -> basic channel - message address enpacking and delivering
+       basic -> addressed channel - message address extractig and sending
+       addressed -> addressed channel - message address translating
+       basic -> basic channel - message transorming
+
+meta
+object - of some object type
+  class:
+    physical
+    informational
+      object type
+      description of something
+  identification method
+
+
+computer objects:
+  functions
+  state automates
+  program automates (state autos with programs as messages)
+  state/program automates or functions with visualized state (output) and/or external input
+
+each computer object has:
+  state
+  outputted state
+  event input
+  external event input
+  event output
+  external event output
+
+organizational object:
+  components
+  components work principles - componet types
+  external communications
+
+object1 -> object2: message with request
+object2: checks permission
+object2 -> component of object2: action command
+
+So, objects:
+  external
+  internal
+
+External objects:
+
+  interface for real object
+  They have:
+    real object indentify method
+    input for getting info about correspondending real object 
+    output for controlling real object
+    internal interface for controlling and monitoring
+
+Internal objects:
+  program object
+    They are real object so can be represented as external object or be replaced
+    with model
+
+  models of reality objects
+  They have:
+    modelling functions
+    model variables
+    internal interface same as same external object have
+
+
+Object, components, relations between components
+  description of components, which are in the objects: types, quantity - one, array
+  description of message channels between objects
+  description of messages, which objects may send
+  description of permissions, which messages must correspond
+
+
+Mgetty
+  перед компиляцией в policy.h (копируется из policy.h-dist) 
+    define FIDO
+    define AUTO_PPP
+
+Структура папок
+  /var/ftn
+  /var/spool/ftn
+
+spool/2:5020/12000/unchecked-in
+		  /pwd-in
+                  /pwd-xxx-in (xxx - номер пароля)
+		  /out
+
+binkd
+  send-if-pwd
+  kill-dup-partial-files
+  kill-old-partial-files
+  kill-old-bsy
+  prescan
+
+
+/usr/local/ftn
+/usr/local/etc
+/usr/local/dialup
+/usr/local/fax
+/usr
+/var/ftn
+/var/www/html
+/var/fidogate
+/etc/ppp
+/etc/crontab
+/etc/group
+/etc/passwd
+/var/spool/mail
+/etc/aliases
+/etc/smrsh
+
+SPOOL
+
+/var/log/ftn
+/var/run/ftn
+/var/spool/bforce
+/var/spool/fidogate
+/var/spool/ftrack
+/var/lock/fidogate
+/var/log/news for group news
+/var/run/news for group news
+/usr/bin/rnews
+/var/spool/news
+
+mimesend
+efix
+mgetty -DFIDO
+
+== configuration
+
+Objects: node, link, echo
+node:
+  address
+  sysop
+  access methods, protocols and worktime
+  services
+    echoes
+    fileechoes
+  default link parameters
+link:
+  (node to me)
+  my session password
+  him session password
+  access to services
+    netmail forwarding
+    pkt forwarding
+    echoes
+    fileechoes
+    file forwarding
+  services state
+    echo subscriptions
+    fileecho subscriptions
+    
+---
+autosubscription: by mask/group/group mask
+groups: autoupdate by echo mask ('all echoes with mask "xx.*"')
+---
+perm. table:
+ links*groups
+ 
+ 

@@ -3,7 +3,8 @@
 find . -maxdepth 1 -type f -not -iname '*.tic' \
 -not -iname '*.mo?' -not -iname '*.tu?' -not -iname '*.we?' -not -iname '*.th?' -not -iname '*.fr?' -not -iname '*.sa?' -not -iname '*.su?' \
 -not -iname '*.mo?-*' -not -iname '*.tu?-*' -not -iname '*.we?-*' -not -iname '*.th?-*' -not -iname '*.fr?-*' -not -iname '*.sa?-*' -not -iname '*.su?-*' \
--not -iname '*.bad' -not -iname '*.dup' -not -iname '*.status' -not -iname '*.pkt' -not -iname '*.pkt-*' | while read x
+-not -iname '*.bad' -not -iname '*.dup' -not -iname '*.status' -not -iname '*.pkt' -not -iname '*.pkt-*' \
+-not -iname '*.msg' -not -iname '*.msg-*' | while read x
 #
 do
     x=`basename "$x"`

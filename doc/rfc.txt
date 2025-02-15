@@ -1,0 +1,18 @@
+Path
+From
+Message-ID
+X-Comment-To
+References
+User-Agent
+Sender
+Distribution
+NNTP-Posting-Host
+X-Trace
+X-Complaint-To
+
+Internet -> FIDO
+  generate MSGID
+  save relation Message-ID - MSGID
+
+FIDO -> Internet
+  use base to restore Message-ID from REPLY kludge

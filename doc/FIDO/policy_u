@@ -1,0 +1,1727 @@
+                            FidoNet Policy Document               Version 4.07
+                                                                  June 9, 1989
+
+
+This policy document has been accepted by vote of the FidoNet coordinator
+structure, and is the current FidoNet policy document until superceded.
+
+(There are no differences between this version and 4.06 except the statement
+above.)
+
+
+
+1  Overview
+
+This document establishes the policy for sysops who are members of the
+FidoNet organization of electronic bulletin board systems.  FidoNet is
+defined by a NodeList issued weekly by the International Coordinator.
+
+Separate policy documents may be issued at the zone, region, or net level to
+provide additional detail on local procedures.  Ordinarily, these lower-level
+policies may not contradict this policy.  However, with the approval of the
+International Coordinator, local policy can be used to implement differences
+required due to local conditions.  These local policies may not place
+additional restrictions on members of FidoNet beyond those included in this
+document, other than enforcement of local mail periods.
+
+
+
+1.0  Language
+
+The official language of FidoNet is English.  All documents must exist in
+English.  Translation into other languages is encouraged.
+
+
+1.1  Introduction
+
+FidoNet is an amateur electronic mail system.  As such, all of its partici-
+pants and operators are unpaid volunteers.  From its early beginning as a few
+friends swapping messages back and forth (1984), it now (1989) includes over
+5,000 systems on six continents.
+
+FidoNet is not a common carrier or a value-added service network and is a
+public network only in as much as the independent, constituent nodes may
+individually provide public access to the network on their system.
+
+FidoNet is large enough that it would quickly fall apart of its own weight
+unless some sort of structure and control were imposed on it.  Multinet
+operation provides the structure. Decentralized management provides the
+control.  This document describes the procedures which have been developed to
+manage the network.
+
+
+1.2  Organization
+
+FidoNet systems are grouped on several levels, and administration is decen-
+tralized to correspond with these groupings.  This overview provides a
+summary of the structure; specific duties of the coordinator positions are
+given later in the document.
+
+1.2.1  Individual Systems and System Operators
+
+The smallest subdivision of FidoNet is the individual system, corresponding
+to a single entry in the nodelist.  The system operator (sysop) formulates a
+policy for running the board and dealing with users.  The sysop must mesh
+with the rest of the FidoNet system to send and receive mail, and the local
+policy must be consistent with other levels of FidoNet.
+
+1.2.1.1  Users
+
+The sysop is responsible for the actions of any user when they affect the
+rest of FidoNet.  (If a user is annoying, the sysop is annoying.)  Any
+traffic entering FidoNet via a given node, if not from the sysop, is consid-
+ered to be from a user and is the responsibility of the sysop.  (See section
+2.1.3.)
+
+1.2.1.2  Points
+
+A point is a FidoNet-compatible system that is not in the nodelist, but
+communicates with FidoNet through a node referred to as a bossnode.  A point
+is generally regarded in the same manner as a user, for example, the bossnode
+is responsible for mail from the point.  (See section 2.1.3.)  Points are
+addressed by using the bossnode's nodelist address; for example, a point
+system with a bossnode of 114/15 might be known as 114/15.12.  Mail destined
+for the point is sent to the bossnode, which then routes it to the point.
+
+In supporting points, the bossnode makes use of a private net number which
+should not be generally visible outside of the bossnode-point relationship.
+Unfortunately, should the point call another system directly (to do a file
+request, for example), the private network number will appear as the caller's
+address.  In this way, points are different from users, since they operate
+FidoNet-compatible mailers which are capable of contacting systems other than
+the bossnode.
+
+
+1.2.3  Networks and Network Coordinators
+
+A network is a collection of nodes in a local geographic area, usually
+defined by an area of convenient telephone calling.  Networks coordinate
+their mail activity to decrease cost.
+
+The Network Coordinator is responsible for maintaining the list of nodes for
+the network, and for forwarding netmail sent to members of the network from
+other FidoNet nodes.  The Network Coordinator may make arrangements to handle
+outgoing netmail, but is not required to do so.
+
+The Network Coordinator is appointed by the Regional Coordinator.
+
+1.2.3.1  Network Routing Hubs
+
+Network Routing Hubs exist only in some networks.  They may be appointed by
+the Network Coordinator, in order to assist in the management of a large net-
+work.  The exact duties and procedures are a matter for the Network Coordina-
+tor and the hubs to arrange, and will not be discussed here, except that a
+network coordinator cannot delegate responsibility to mediate disputes.
+
+1.2.4  Regions and Regional Coordinators
+
+A region is a well-defined geographic area containing nodes which may or may
+not be combined into networks.  A typical region will contain many nodes in
+networks, and a few independent nodes which are not a part of any network.
+
+The Regional Coordinator maintains the list of independent nodes in the
+region and accepts nodelists from the Network Coordinators in the region.
+These are compiled to create a regional nodelist, which is then sent to the
+Zone Coordinator.  A Regional Coordinator does not perform message-forwarding
+services for any nodes in the region.
+
+Regional Coordinators are appointed by the Zone Coordinator.
+
+
+1.2.5  Zones and Zone Coordinators
+
+A zone is a large geographic area containing many regions, covering one or
+more countries and/or continents.
+
+The Zone Coordinator compiles the nodelists from all of the regions in the
+zone, and creates the master nodelist and difference file, which is then
+distributed over FidoNet in the zone.  A Zone Coordinator does not perform
+message-forwarding services for any nodes in the zone.
+
+Zone Coordinators are selected by the Regional Coordinators in that zone.
+
+
+1.2.6  Zone Coordinator Council
+
+In certain cases, the Zone Coordinators work as a council to provide advice
+to the International Coordinator.  The arrangement is similar to that between
+a president and advisors.  In particular, this council considers inter-zonal
+issues.  This includes, but is not limited to: working out the details of
+nodelist production, mediating inter-zonal disputes, and such issues not
+addressed at a lower level of FidoNet.
+
+
+1.2.7  International Coordinator
+
+The International Coordinator is the "first among equals" Zone Coordinator,
+and coordinates the joint production of the master nodelist by the Zone
+Coordinators.
+
+The International Coordinator acts as the chair of the Zone Coordinator
+Council and as the overseer of elections -- arranging the announcement of
+referenda, the collection and counting of the ballots, and announcing the
+results for those issues that affect FidoNet as a whole.
+
+The International Coordinator is selected by the Zone Coordinators.
+
+
+1.2.8  Top-down Organization.  Checks and Balances.
+
+These levels act to distribute the administration and control of FidoNet to
+the lowest possible level, while still allowing for coordinated action over
+the entire mail system.  Administration is made possible by operating in a
+top-down manner.  That is, a person at any given level is responsible to the
+level above, and responsible for the level below.
+
+For example, a Regional Coordinator is responsible to the Zone Coordinator
+for anything that happens in the region.  From the point of view of the Zone
+Coordinator, the Regional Coordinator is completely responsible for the
+smooth operation of the region.  Likewise, from the point of view of the
+Regional Coordinator, the Network Coordinator is completely responsible for
+the smooth operation of the network.
+
+If a person at any level above sysop is unable to properly perform their
+duties, the person at the next level may replace them.  For example, if a
+Regional Coordinator fails to perform, the Zone Coordinator can replace him.
+
+To provide for checks and balances at the highest level of FidoNet, there are
+two exceptions to this top-down organization.  Zone Coordinators and the
+International Coordinator are selected by a majority vote of the coordinators
+at the level below.  Similarly, decisions made by the International Coordina-
+tor can be reversed by the Zone Coordinator Council, and decisions made by a
+Zone Coordinator can be reversed by the Regional Coordinators.  See sections
+6 and 7 for details.  Decisions made by other coordinators are not subject to
+reversal by a vote of the lower level, but instead are subject to the appeal
+process described in section 9.5.
+
+
+1.3  Definitions
+
+1.3.1  FidoNews
+
+FidoNews is a weekly newsletter distributed in electronic form throughout the
+network.  It is an important medium by which FidoNet sysops communicate with
+each other.  FidoNews provides a sense of being a community of people with
+common interests.  Accordingly, sysops and users are encouraged to contribute
+to FidoNews.  Contributions are submitted to node 1:1/1; a file describing
+the format to be used is available from 1:1/1 and many other systems.
+
+
+1.3.2  Geography
+
+Each level of FidoNet is geographically contained by the level immediately
+above it.  A given geographic location is covered by one zone and one region
+within that zone, and is either in one network or not in a network.  There
+are never two zones, two regions, or two networks which cover the same
+geographic area.
+
+If a node is in the area of a network, it should be listed in that network,
+not as an independent in the region.  (The primary exception to this is a
+node receiving inordinate amounts of host-routed mail; see section 4.2).
+Network boundaries are based on calling areas as defined by the local
+telephone company.  Even in the case of areas where node density is so great
+that more than one network is needed to serve one local calling area, a geo-
+graphic guideline is used to decide which nodes belong to what network.
+Network membership is based on geographic or other purely technical ratio-
+nale.  It is not based on personal or social factors.
+
+There are cases in which the local calling areas lead to situations where
+logic dictates that a node physically in one FidoNet Region should be
+assigned to another.  In those cases, with the agreement of the Regional
+Coordinators and Zone Coordinator involved, exemptions may be granted.  Such
+exemptions are described in section 5.6.
+
+1.3.3  Zone Mail Hour
+
+Zone Mail Hour (ZMH) is a defined time during which all nodes in a zone are
+required to be able to accept netmail.  Each Fidonet zone defines a ZMH and
+publishes the time of its ZMH to all other Fidonet zones.  See sections 2.1.8
+and 10.2.
+
+Zone Mail Hour has previously been referred to as National Mail Hour and
+Network Mail hour.  The term Zone Mail Hour is more accurate.
+
+1.3.4  Nodelist
+
+The nodelist is a file updated weekly which contains the addresses of all
+recognized FidoNet nodes.  This file is currently made available by the Zone
+Coordinator not later than Zone Mail Hour each Saturday, and is available
+electronically for download or file request at no charge.  To be included in
+the nodelist, a system must meet the requirements defined by this document.
+No other requirements may be imposed.
+
+Partial nodelists (single-zone, for example) may be made available at
+different levels in FidoNet.  The full list as published by the International
+Coordinator is regarded as the official FidoNet nodelist, and is used in
+circumstances such as determination of eligibility for voting.  All parts
+that make up the full nodelist are available on each Zone Coordinator's and
+each Regional Coordinator's system.
+
+
+1.3.5  Excessively Annoying Behavior
+
+There are references throughout this policy to "excessively annoying behav-
+ior", especially in section 9 (Resolution of Disputes).  It is difficult to
+define this term, as it is based upon the judgement of the coordinator
+structure.  Generally speaking, annoying behavior irritates, bothers, or
+causes harm to some other person.  It is not necessary to break a law to be
+annoying.
+
+There is a distinction between excessively annoying behavior and (simply)
+annoying behavior.  For example, there is a learning curve that each new
+sysop must climb, both in the technical issues of how to set up the software
+and the social issues of how to interact with FidoNet.  It is a rare sysop
+who, at some point in this journey, does not manage to annoy others.  Only
+when such behavior persists, after being pointed out to the sysop, does it
+becomes excessively annoying.  This does not imply that it is not possible to
+be excessively annoying without repetition (for example, deliberate falsifi-
+cation of mail would likely be excessively annoying on the very first try),
+but simply illustrates that a certain amount of tolerance is extended.
+
+Refer to section 9 and the case studies (section 10.3) for more information.
+
+
+1.3.6  Commercial Use
+
+FidoNet is an amateur network.  Participants spend their own time and money
+to make it work for the good of all the users.  It is not appropriate for a
+commercial enterprise to take advantage of these volunteer efforts to further
+their own business interests.  On the other  hand, FidoNet provides a
+convenient and effective means for companies and users to exchange informa-
+tion, to the mutual benefit of all.
+
+Network Coordinators could be forced to subsidize commercial operations by
+forwarding host-routed netmail, and could even find themselves involved in a
+lawsuit if any guarantee was suggested for mail delivery.   It is therefore
+FidoNet policy that commercial mail is not to be routed.  "Commercial mail"
+includes mail which furthers specific business interests without being of
+benefit to the net as a whole.  Examples include company-internal mail,
+inter-corporate mail, specific product inquiries (price quotes, for in-
+stance), orders and their follow-ups, and  all other subjects specifically
+related to business.
+
+
+2  Sysop Procedures
+
+2.1  General
+
+2.1.1  The Basics
+
+As the sysop of an individual node, you can generally do as you please, as
+long as you observe mail events, are not excessively annoying to other nodes
+in FidoNet, and do not promote or participate in the distribution of pirated
+copyrighted software or other illegal behavior via FidoNet.
+
+
+2.1.2  Familiarity with Policy
+
+In order to understand the meaning of "excessively annoying", it is incumbent
+upon all sysops to occasionally re-read FidoNet policy.  New sysops must
+familiarize themselves with policy before requesting a node number.
+
+
+2.1.3  Responsible for All Traffic Entering FidoNet Via the Node
+
+The sysop listed in the nodelist entry is responsible for all traffic
+entering FidoNet via that system.  This includes (but is not limited to)
+traffic entered by users, points, and any other networks for which the system
+might act as a gateway.  If a sysop allows "outside" messages to enter
+FidoNet via the system, the gateway system must be clearly identified by
+FidoNet node number as the point of origin of that message, and it must act
+as a gateway in the reverse direction.  Should such traffic result in a
+violation of Policy, the sysop must rectify the situation.
+
+
+2.1.4  Encryption and Review of Mail
+
+FidoNet is an amateur system.  Our technology is such that the privacy of
+messages cannot be guaranteed.  As a sysop, you have the right to review
+traffic flowing through your system, if for no other reason than to ensure
+that the system is not being used for illegal or commercial purposes.
+Encryption obviously makes this review impossible.  Therefore, encrypted
+and/or commercial traffic that is routed without the express permission of
+all the links in the delivery system constitutes annoying behavior.  See
+section 1.3.6 for a definition of commercial traffic.
+
+
+2.1.5  No Alteration of Routed Mail
+
+You may not modify, other than as required for routing or other technical
+purposes, any message, netmail or echomail, passing through the system from
+one FidoNet node to another.  If you are offended by the content of a
+message, the procedure described in section 2.1.7 must be used.
+
+
+2.1.6  Private Netmail
+
+The word "private" should be used with great care, especially with users of a
+BBS.  Some countries have laws which deal with "private mail", and it should
+be made clear that the word "private" does not imply that no person other
+than the recipient can read messages.  Sysops who cannot provide this
+distinction should consider not offering users the option of "private mail".
+
+If a user sends a "private message", the user has no control over the number
+of intermediate systems through which that message is routed.  A sysop who
+sends a message to another sysop can control this aspect by sending the
+message direct to the recipient's system, thus guaranteeing that only the
+recipient or another individual to whom that sysop has given authorization
+can read the message.  Thus, a sysop may have different expectations than a
+casual user.
+
+2.1.6.1  No Disclosure of in-transit mail
+
+Disclosing or in any way using information contained in private netmail
+traffic not addressed to you or written by you is considered annoying
+behavior, unless the traffic has been released by the author or the recipient
+as a part of a formal policy complaint.  This does not apply to echomail
+which is by definition a broadcast medium, and where private mail is often
+used to keep a sysop-only area restricted.
+
+2.1.6.2  Private mail addressed to you
+
+The issue of private mail which is addressed to you is more difficult than
+the in-transit question treated in the previous section.  A common legal
+opinion holds that when you receive a message it becomes your property and
+you have a legal right to do with it what you wish.  Your legal right does
+not excuse you from annoying others.
+
+In general, sensitive material should not be sent using FidoNet.  This ideal
+is often compromised, as FidoNet is our primary mode of communication.  In
+general, if the sender of a message specifically requests in the text of the
+message that the contents be kept confidential, release of the message into a
+public forum may be considered annoying.
+
+There are exceptions.  If someone is saying one thing in public and saying
+the opposite in private mail, the recipient of the private mail should not be
+subjected to harassment simply because the sender requests that the message
+not be released.  Judgement and common sense should be used in this area as
+in all other aspects of FidoNet behavior.
+
+2.1.7  Not Routing Mail
+
+You are not required to route traffic if you have not agreed to do so.  You
+are not obligated to route traffic for all if you route it for any, unless
+you hold a Network Coordinator or Hub Coordinator position.  Routing traffic
+through a node not obligated to perform routing without the permission of
+that node may be annoying behavior.  This includes unsolicited echomail.
+
+If you do not forward a message when you previously agreed to perform such
+routing, the message must be returned to the sysop of the node at which it
+entered FidoNet with an explanation of why it was not forwarded.  (It is not
+necessary to return messages which are addressed to a node which is not in
+the current nodelist.)  Intentionally stopping an in-transit message without
+following this procedure constitutes annoying behavior.  In the case of a
+failure to forward traffic due to a technical problem, it does not become
+annoying unless it persists after being pointed out to the sysop.
+
+
+2.1.8  Exclusivity of Zone Mail Hour
+
+Zone Mail Hour is the heart of FidoNet, as this is when network mail is
+passed between systems.  Any system which wishes to be a part of FidoNet must
+be able to receive mail during this time using the protocol defined in the
+current FidoNet Technical Standards Committee publication (FTS-0001 at this
+writing).  It is permissible to have greater capability (for example, to
+support additional protocols or extended mail hours), but the minimum
+requirement is FTS-0001 capability during this one hour of the day.
+
+This time is exclusively reserved for netmail.  Many phone systems charge on
+a per-call basis, regardless of whether a connect, no connect, or busy signal
+is encountered.  For this reason, any activity other than normal network mail
+processing that ties up a system during ZMH is considered annoying behavior.
+Echomail should not be transferred during ZMH.  User (BBS) access to a system
+is prohibited during ZMH.
+
+A system which is a member of a local network may also be required to observe
+additional mail events, as defined by the Network Coordinator.  Access
+restrictions during local network periods are left to the discretion of the
+Network Coordinator.
+
+
+2.1.9  Private Nodes
+
+The rare exception to ZMH compliance is private nodes.  Persons requesting
+private nodes should be supported as points if possible.  A private listing
+is justified when the system must interface with many others, such as an
+echomail distributor.  In these cases, the exact manner and timing of mail
+delivery is arranged between the private node and other systems.  Such an
+agreement between a private system and a hub is not binding on any replace-
+ment for that hub.  A private node must be a part of a network (they cannot
+be independents in the region.)
+
+Private listings impact each member of FidoNet, since they take up space in
+everyone's nodelist.  Private listings which are for the convenience of one
+sysop (at the expense of every other sysop in FidoNet) are a luxury which is
+no longer possible.  Non-essential redundant listings (more than one listing
+for the same telephone number, except as mandated by FTSC standards) also
+fall into this category.  Sysops requesting private or redundant listings
+must justify them with a statement explaining how they benefit the local net
+or FidoNet as a whole.  The Network Coordinator or Regional Coordinator may
+review this statement at any time and listings which are not justified will
+be removed.
+
+
+2.1.10  Observing Mail Events
+
+Failure to observe the proper mail events is grounds for any node to be
+dropped from FidoNet without notice (since notice is generally given by
+netmail).
+
+
+2.1.11  Use of Current Nodelist
+
+Network mail systems generally operate unattended, and place calls at odd
+hours of the night.  If a system tries to call an incorrect or out-of-date
+number, it could cause some poor citizen's phone to ring in the wee hours of
+the morning, much to the annoyance of innocent bystanders and civil authori-
+ties.  For this reason, a sysop who sends mail is obligated to obtain and use
+the most recent edition of the nodelist as is practical.
+
+
+2.1.12  Excommunication
+
+A system which has been dropped from the network is said to be excommunicated
+(i.e. denied communication).  If you find that you have been excommunicated
+without warning, your coordinator was unable to contact you.  You should
+rectify the problem and contact your coordinator.
+
+Systems may also be dropped from the nodelist for cause.  See section 9, and
+sections 4.3 and 5.2.
+
+It is considered annoying behavior to assist a system which was excommuni-
+cated in circumventing that removal from the nodelist.  For example, if you
+decide to provide an echomail feed to your friend who has been excommuni-
+cated, it is likely that your listing will also be removed.
+
+
+2.1.13  Timing of Zone Mail Hour
+
+The exact timing of Zone Mail Hour for each zone is set by the Zone Coordina-
+tor.  See section 10.2.
+
+
+2.1.14  Non-observance of Daylight Savings Time
+
+FidoNet does not observe daylight savings time.  In areas which observe
+daylight savings time the FidoNet mail schedules must be adjusted in the same
+direction as the clock change.  Alternatively, you can simply leave your
+system on standard time.
+
+
+2.2  How to obtain a node number
+
+
+You must first obtain a current nodelist so that you can send mail.  You do
+not need a node number to send mail, but you must have one in order for
+others to send mail to you.
+
+The first step in obtaining a current nodelist is to locate a FidoNet
+bulletin board.  Most bulletin board lists include at least a few FidoNet
+systems, and usually identify them as such.  Use a local source to obtain
+documents because many networks have detailed information available which
+explains the coverage area of the network and any special requirements or
+procedures.
+
+Once you have a nodelist, you must determine which network or region covers
+your area.  Regions are numbered 1-99; network numbers are greater than 99.
+Networks are more restricted in area than regions, but are preferred since
+they improve the flow of mail and provide more services to their members.  If
+you cannot find a network which covers your area, then pick the region which
+does.
+
+Once you have located the network or region in your area, send a message
+containing a request for a node number to node zero of that network or
+region.  The request must be sent by netmail, as this indicates that your
+system has FidoNet capability.
+
+You must set up your software so that the from-address in your message does
+not cause problems for the coordinator who receives it.  If you pick the
+address of an existing system, this will cause obvious problems.  If your
+software is capable of using address -1/-1, this is the traditional address
+used by potential sysops.  Otherwise use net/9999 (e.g. if you are applying
+to net 123, set your system up as 123/9999).  Many nets have specific
+instructions available to potential sysops and these procedures may indicate
+a preference for the from-address.
+
+The message you send must include at least the following information:
+
+     1) Your name.
+     2) Your voice telephone number
+     3) The name of your system.
+     4) The city and state where your system is located.
+     5) The phone number to be used when calling your system.
+     6) Your hours of operation, netmail and BBS.
+     7) The maximum baud rate you can support.
+     8) The type of mailer software and modem you are using.
+
+Your coordinator may contact you for additional information.  All information
+submitted will be kept confidential and will not be supplied to anyone except
+the person who assumes the coordinator position at the resignation of the
+current coordinator.
+
+You must indicate that you have read, and agree to abide by, this document
+and all the current policies of FidoNet.
+
+Please allow at least two weeks for a node number request to be processed.
+If you send your request to a Regional Coordinator, it may forwarded to the
+appropriate Network Coordinator.
+
+
+2.3  If You are Going Down
+
+If your node will be down for an extended period (more than a day or two),
+inform your coordinator as soon as possible.  It is not your coordinator's
+responsibility to chase you down for a status report, and if your system
+stops accepting mail it will be removed from the nodelist.
+
+Never put an answering machine or any other device which answers the phone on
+your phone line while you are down.  If you do, calling systems will get the
+machine repeatedly, racking up large phone bills, which is very annoying.  In
+short, the only thing which should ever answer the telephone during periods
+when the nodelist indicates that your node will accept mail is FidoNet-
+compatible software which accepts mail.
+
+If you will be leaving your system unattended for an extended period of time
+(such as while you are on vacation), you should notify your coordinator.
+Systems have a tendency to "crash" now and then, so you will probably want
+your coordinator to know that it is a temporary condition if it happens while
+you are away.
+
+
+2.4  How to Form a Network
+
+If there are several nodes in your area, but no network, a new network can be
+formed.  This has advantages to both you and to the rest of FidoNet.  You
+receive better availability of nodelist difference files and FidoNews, and
+everyone else can take advantage of host-routing netmail to the new network.
+
+The first step is to contact the other sysops in your area.  You must decide
+which nodes will comprise the network, and which of those nodes you would
+like to be the Network Coordinator.  Then consult your Regional Coordinator.
+You must send the following information:
+
+   1) The region number(s), or network number(s) if a network is splitting
+   up, that are affected by the formation of your network.  The Regional
+   Coordinator will inform the Zone Coordinator and the coordinators of any
+   affected networks that a new network is in formation.
+
+   2) A copy of the proposed network's nodelist segment.  This file should
+   be attached to the message of application for a network number, and
+   should use the nodelist format described in the current version of the
+   appropriate FTSC publication.  Please elect a name that relates to your
+   grouping, for example SoCalNet for nodes in the Southern California Area
+   and MassNet West for the Western Massachusetts Area.  Remember if you
+   call yourself DOGNET it doesn't identify your area.
+
+Granting a network number is not automatic.  Even if the request is granted,
+the network might not be structured exactly as you request.  Your Regional
+Coordinator will review your application and inform you of the decision.
+
+Do not send a network number request to the Zone Coordinator.  All network
+number requests must be processed by the Regional Coordinator.
+
+
+
+3  General Procedures for All Coordinators
+
+3.1  Make Available Difference Files and FidoNews
+
+Any Coordinator is responsible for obtaining and making available, on a
+weekly basis, nodelist difference files and FidoNews.
+
+
+3.2  Processing Nodelist Changes and Passing Them Upstream
+
+Each coordinator is responsible for obtaining nodelist information from the
+level below, processing it, and passing the results to the level above.  The
+timing of this process is determined by the requirements imposed by the level
+above.
+
+
+3.3  Ensure the Latest Policy is Available
+
+A Coordinator is responsible to make the current version of this document
+available to the level below, and to encourage familiarity with it.
+
+In addition, a coordinator is required to forward any local policies received
+to the level above, and to review such policies.  Although not required,
+common courtesy dictates that when formulating a local policy, the participa-
+tion of the level above should be solicited.
+
+
+3.4  Minimize the Number of Hats Worn
+
+Coordinators are encouraged to limit the number of FidoNet functions they
+perform.  A coordinator who holds two different positions compromises the
+appeal process.  For example, if the Network Coordinator is also the Regional
+Coordinator, sysops in that network are denied one level of appeal.
+
+Coordinators are discouraged from acting as echomail and software-distri-
+bution hubs.  If they do so, they should handle echomail (or other volume
+distribution) on a system other than the administrative system.  A coordina-
+tor's system should be readily available to the levels immediately above and
+below.
+
+Another reason to discourage multiple hats is the difficulty of replacing
+services if someone leaves the network.  For example, if a coordinator is the
+echomail hub and the software-distribution hub, those services will be
+difficult to restore when that person resigns.
+
+3.5  Be a Member of the Area Administered
+
+A coordinator must be a member of the area administered. That is, a Network
+Coordinator must be a member of that network by virtue of geography.  A
+Regional Coordinator must be either a member of a network in the region, or
+an independent in the region.
+
+
+3.6  Encourage New Sysops to Enter FidoNet
+
+A coordinator is encouraged to operate a public bulletin board system which
+is freely available for the purpose of distributing Policy, FidoNews, and
+Nodelists to potential new sysops.  Dissemination of this information to
+persons who are potential FidoNet sysops is important to the growth of
+FidoNet, and coordinators should encourage development of new systems.
+
+
+3.7  Tradition and Precedent
+
+A coordinator is not bound by the practices of predecessor or peers beyond
+the scope of this document.
+
+In addition, a new coordinator has the right to review any decision made by
+predecessors for compliance with Policy, and take whatever actions may be
+necessary to rectify any situations not in compliance.
+
+
+3.8  Technical Management
+
+The primary responsibility of any coordinator is technical management of
+network operations.  Decisions must be made on technical grounds.
+
+
+
+4  Network Coordinator Procedures
+
+4.1  Responsibilities
+
+A Network Coordinator has the following responsibilities:
+
+   1) To receive incoming mail for nodes in the network, and arrange
+   delivery to its recipients.
+
+   2) To assign node numbers to nodes in the network.
+
+   3) To maintain the nodelist for the network, and to send a copy of it to
+   the Regional Coordinator whenever it changes.
+
+   4) To make available to nodes in the network new nodelist difference
+   files, new issues of FidoNews, and new revisions of Network Policy
+   Documents as they are received, and to periodically check to insure that
+   nodes use up to date nodelists.
+
+
+4.2  Routing Inbound Mail
+
+It is your responsibility as Network Coordinator to coordinate the receipt
+and forwarding of host-routed inbound netmail for nodes in your network.  The
+best way to accomplish this is left to your discretion.
+
+If a node in your network is receiving large volumes of mail you can request
+that the sysop contact the systems which are sending this mail and request
+that they not host-route it.  If the problem persists, you can request your
+Regional Coordinator to assign the node a number as an independent and drop
+the system from your network.
+
+Occasionally a node will make a "bombing run" (sending one message to a great
+many nodes).  If a node in another network is making bombing runs on your
+nodes and routing them through your inbound host, then you can complain to
+the network coordinator of the offending node.  (If the node is an indepen-
+dent, complain to the regional coordinator.)  Bombing runs are considered to
+be annoying.
+
+Another source of routing overload is echomail.  Echomail cannot be allowed
+to degrade the ability of FidoNet to handle normal message traffic.  If a
+node in your network is routing large volumes of echomail, you can ask the
+sysop to either limit the amount of echomail or to stop routing echomail.
+
+You are not required to forward encrypted, commercial, or illegal mail.
+However, you must follow the procedures described in section 2.1.7 if you do
+not forward the mail.
+
+
+4.3  Assigning Node Numbers
+
+It is your responsibility to assign node numbers to new nodes in your net-
+work.  You may also change the numbers of existing nodes in your network,
+though you should check with your member nodes before doing so.  You may
+assign any numbers you wish, so long as each node has a unique number within
+your network.
+
+You must not assign a node number to any system until you have received a
+formal request from that system by FidoNet mail.  This will ensure that the
+system is minimally operational.  The strict maintenance of this policy has
+been one of the great strengths of FidoNet.
+
+It is also recommended, though not required, that you call a board which is
+applying for a node number before assigning it a node number.
+
+You may not assign a node number to a node in an area covered by an existing
+network.  Further, if you have nodes in an area covered by a network in
+formation, those nodes must be transferred to the new network.
+
+You should use network mail to inform a new sysop of the node number, as this
+helps to insure that the system is capable of receiving network mail.
+
+If a node in your network is acting in a sufficiently annoying manner, then
+you can take whatever action you deem fit, according to the circumstances of
+the case.
+
+
+4.4  Maintaining the Nodelist
+
+
+You should implement name changes, phone number changes, and so forth in your
+segment of the nodelist as soon as possible after the information is received
+from the affected node.  You should also on occasion send a message to every
+node in your network to ensure that they are operational.  If a node turns
+out to be "off the air" with no prior warning, you can either mark the node
+down or remove it from the nodelist.  (Nodes are to be marked DOWN for a
+maximum of two weeks, after which the line should be removed from the node-
+list.)
+
+At your discretion, you may distribute a portion of this workload to routing
+hubs.  In this case, you should receive the nodelists from the Hub Coordina-
+tors within your network.  You will need to maintain a set of nodelists for
+each hub within your network, since you cannot count on getting an update
+from each Hub Coordinator every week.  You should assemble a master nodelist
+for your network every week and send it to your Regional Coordinator by the
+day and time designated.  It is suggested that you do this as late as is
+practical, so as to accommodate any late changes, balanced with the risk of
+missing the connection with your Regional Coordinator and thus losing a week.
+
+4.5  Making Available Policies, Nodelists and FidoNews
+
+As a Network Coordinator you should obtain a new issue of FidoNews and a new
+nodelist difference file every week from your Regional Coordinator.  The
+nodelist difference file is currently made available each Saturday, and
+FidoNews is published each Monday.  You must make these files available to
+all nodes in the network, and you are encouraged to make them available to
+the general public for download.
+
+You should also obtain the most recent versions of the Policy documents that
+bind the members of your network, and make those available to the nodes in
+your network.  Policies are released at sporadic intervals, so you should
+also inform the nodes in your network when such events occur, and ensure the
+nodes are generally familiar with the changes.
+
+Policy, FidoNews, and the nodelist are the glue that holds us together.
+Without them, we would cease to be a community, and become just another
+random collection of bulletin boards.
+
+
+
+5  Regional Coordinator Procedures
+
+5.1  Responsibilities
+
+A Regional Coordinator has the following responsibilities:
+
+   1) To assign node numbers to independent nodes in the region.
+
+   2) To encourage independent nodes in the region to join existing net-
+   works, or to form new networks.
+
+   3) To assign network numbers to networks in the region and define their
+   boundaries.
+
+   4) To compile a nodelist of all of the networks and independents in the
+   region, and to send a copy of it to the Zone Coordinator whenever it
+   changes.
+
+   5) To ensure the smooth operation of networks within the region.
+
+   6) To make new nodelist difference files, Policies, and issues of
+   FidoNews available to the Network Coordinators in the region as soon as
+   is practical.
+
+
+5.2  Assigning Node Numbers
+
+It is your responsibility to assign node numbers to independent nodes in your
+region. You may also change the numbers of existing nodes in your region,
+though you should check with the respective nodes before doing so.  You may
+assign any numbers you wish, so long as each node has a unique number within
+your region.
+
+You should not assign a node number to any system until you have received a
+formal request from that system by FidoNet mail.  This will ensure that the
+system is minimally operational.  The strict maintenance of this policy has
+been one of the great strengths of FidoNet.
+
+It is also recommended, though not required, that you call a board which is
+applying for a node number before assigning it a node number.
+
+You should use network mail to inform a new sysop of the node number, as this
+helps to insure that the system is capable of receiving network mail.
+
+If a node in your region is acting in a sufficiently annoying manner, then
+you can take whatever action you deem fit, according to the circumstances of
+the case.
+
+If you receive a node number request from outside your region, you must
+forward it to the most local coordinator for the requestor as you can deter-
+mine.  If you receive a node number request from a new node that is in an
+area covered by an existing network, then you must forward the request to the
+Coordinator of that network instead of assigning a number yourself.
+
+If a network forms in an area for which you have independent nodes, those
+nodes will be transferred to the local network as soon as is practical.
+
+
+5.3  Encouraging the Formation and Growth of Networks
+
+One of your main duties as a Regional Coordinator is to promote the growth of
+networks in your region.
+
+You should avoid having independent nodes in your region which are within the
+coverage area of a network.  There are, however, certain cases where a node
+should not be a member of a network, such as a system with a large amount of
+inbound netmail; see section 4.2.
+
+If several independent nodes in your region are in a local area you should
+encourage them to form a network, and if necessary you may require them to
+form a network.  Refer to section 2.4.  Note that this is not intended to
+encourage the formation of trivial networks.  Obviously, one node does not
+make a network.  The exact number of nodes required for an effective network
+must be judged according to the circumstances of the situation, and is left
+to your discretion.
+
+
+5.4  Assigning Network Numbers
+
+It is your responsibility to assign network numbers to new networks forming
+within your region.  You are assigned a pool of network numbers to use for
+this purpose by your Zone Coordinator.  As a part of this function, it is the
+responsibility of the Regional Coordinator to define the boundaries of the
+networks in the region.
+
+
+5.5  Maintaining the Nodelist
+
+As a Regional Coordinator, you have a dual role in maintaining the nodelist
+for your region.
+
+First, you must maintain the list of independent nodes in your region.  You
+should attempt to implement name changes, phone number changes, and so forth
+in this nodelist as soon as possible.  You should also on occasion send a
+message to every independent node in your region to ensure that they are
+operational.  If a node turns out to be "off the air" with no prior warning,
+you can either mark the node down or remove it from the nodelist.  (Nodes are
+to marked DOWN for a maximum of two weeks, after which the line should be
+removed from the nodelist.)
+
+Second, you must receive the nodelists from the Network Coordinators within
+your region.  You will need to maintain a set of nodelists for each network
+within your region, since you cannot count on getting an update from each
+Network Coordinator every week.  You should assemble a master nodelist for
+your region every week and send it to your Zone Coordinator by the day and
+time designated.  It is suggested that you do this as late as practical, so
+as to accommodate late changes, balanced with the risk of missing the connec-
+tion with your Zone Coordinator and thus losing a week.
+
+
+5.6  Geographic Exemptions
+
+There are cases where local calling geography does not follow FidoNet re-
+gions.  In exceptional cases, exemptions to normal geographic guidelines are
+agreed upon by the Regional Coordinators and Zone Coordinator involved.  Such
+an exemption is not a right, and is not permanent.  When a network is formed
+in the proper region that would provide local calling access to the exempted
+node, it is no longer exempt.  An exemption may be reviewed and revoked at
+any time by any of the coordinators involved.
+
+
+5.7  Overseeing Network Operations
+
+You are responsible for appointing network coordinators for the nets in your
+region.  If the outgoing Network Coordinator suggests a successor, you are
+not obligated to accept that individual, although you normally will.  Simi-
+larly, you are not obligated to accept the individual selected by the members
+of the network in an election, although you normally will.
+
+It is your responsibility as Regional Coordinator to ensure that the networks
+within your region are operating in an acceptable manner.  This does not mean
+that you are required to operate those networks; that is the responsibility
+of the Network Coordinators.  It means that you are responsible for assuring
+that the Network Coordinators within your region are acting responsibly.
+
+If you find that a Network Coordinator within your region is not properly
+performing the duties outlined in Section 4, you should take whatever action
+you deem necessary to correct the situation.
+
+If a network grows so large that it cannot reasonably accommodate traffic
+flow during the Zone Mail Hour, the Regional Coordinator can direct the
+creation of one or more new networks from that network.  These new networks,
+although they may be within a single local-calling area, must still conform
+to a geographical basis for determining membership.
+
+It is your obligation as Regional Coordinator to maintain direct and reason-
+ably frequent contact with the networks in your region. The exact method of
+accomplishing this is left to your discretion.
+
+
+5.8  Making Available Nodelists, Policies, and FidoNews
+
+As a Regional Coordinator, it is your responsibility to obtain the latest
+nodelist difference file, network policies, and the latest issues of FidoNews
+as they are published, and to make them available to the Network Coordinators
+within your region.  The nodelist is posted weekly on Saturday by the Zone
+Coordinator, and FidoNews is published weekly on Monday by node 1/1.  Contact
+them for more details on how to obtain the latest copies each week.
+
+It is your responsibility to make these available to all Network  Coordina-
+tors in your region as soon as is practical after you receive them.  The
+method of distribution is left to your discretion.  You are not required to
+distribute them to any independent nodes in your region, though you may if
+you wish.  You are encouraged to make all these documents available for
+downloading by the general public.
+
+
+
+6  Zone Coordinator Procedures
+
+6.1  General
+
+A Zone Coordinator for FidoNet has the primary task of maintaining the
+nodelist for the Zone, sharing it with the other Zone Coordinators, and
+ensuring the distribution of the master nodelist (or difference file) to the
+Regions in the Zone.  The Zone Coordinator is also responsible for coordinat-
+ing the distribution of Network Policy documents and FidoNews to the Regional
+Coordinators in the zone.
+
+The Zone Coordinator is responsible for the maintenance of the nodelist for
+the administrative region.  The Administrative Region has the same number as
+the zone, and consists of nodes assigned for administrative purposes not
+related to the sending and receiving of normal network mail.
+
+A Zone Coordinator is charged with the task of ensuring the smooth operation
+of the Zone, which is done by appointing and supervising the Regional Coordi-
+nators.
+
+If a Zone Coordinator determines that a Regional Coordinator is not properly
+performing the duties outlined in section 5, a replacement should be found.
+
+The Zone Coordinator defines the geographic boundaries of the regions within
+the zone and sets the time for the Zone Mail Hour.
+
+The Zone Coordinator is responsible for reviewing and approving any geograph-
+ic exemptions as described in section 5.6.
+
+The Zone Coordinator is responsible for insuring the smooth operation of
+gates between that zone and all other zones for the transfer of interzonal
+mail.
+
+The Zone Coordinators are responsible for the selection of the International
+Coordinator from among their ranks.
+
+
+6.2  Selection
+
+The Zone Coordinator is selected by an absolute majority vote of the Regional
+Coordinators within the zone.
+
+
+7  International Coordinator Procedures
+
+7.1  General
+
+The International Coordinator is the "first among equals" Zone Coordinator.
+
+The International Coordinator has the primary task of coordinating the
+creation of the master nodelist by managing the distribution between the
+Zones of the Zone nodelists.  The International Coordinator is responsible
+for definition of new zones and for negotiation of agreements for communica-
+tion with other networks.  ("Other network" in this context means other
+networks with which FidoNet communicates as peer-to-peer, not "network" in
+the sense of the FidoNet organizational level.)
+
+The International Coordinator is also responsible for coordinating the
+distribution of Network Policies and FidoNews to the Zone Coordinators.
+
+The International Coordinator is responsible for coordinating the activities
+of the Zone Coordinator Council.  The International Coordinator acts as the
+spokesman for the Zone Coordinator Council.
+
+In cases not specifically covered by this document, the International Coordi-
+nator may issue specific interpretations or extensions to this policy.  The
+Zone Coordinator Council may reverse such rulings by a majority vote.
+
+7.2  Selection
+
+The International Coordinator is selected (or removed) by an absolute majori-
+ty vote of the Zone Coordinators.
+
+
+8  Referenda
+
+The procedures described in this section are used to ratify a new version of
+FidoNet policy, which is the mechanism by which policy is changed.  This
+procedure is also used to impeach a Zone Coordinator.
+
+
+8.1  Initiation
+
+A referendum on policy modification is invoked when a majority  of the
+FidoNet Regional Coordinators inform the International Coordinator that they
+wish to consider a proposed new version of Policy.
+
+
+8.2  Announcement and Results Notification
+
+Proposed changes to Policy are distributed using the same structure which is
+used to distribute nodelist difference files and FidoNews.  Results and
+announcements related to the referendum are distributed by the coordinator
+structure as a part of the weekly nodelist difference file.  The Interna-
+tional Coordinator provides copies to the editor of FidoNews for inclusion
+there, although the official announcement and voting dates are tied to
+nodelist distributions.
+
+If it is adopted, the International Coordinator sets the effective date for a
+new policy through announcement in the weekly nodelist difference file.  The
+effective date will be not more than one month after the close of balloting.
+
+
+8.3  Eligibility to Vote
+
+Each member of the FidoNet coordinator structure at and above Network Coordi-
+nator is entitled to one vote.  (Hub coordinators do not vote.)  In the case
+of the position changing hands during the balloting process, either the
+incumbent or the new coordinator may vote, but not both.  If a person holds
+more than one coordinator position, they still receive only one vote.
+
+Network coordinators are expected to assess the opinions of the members of
+their network, and to vote accordingly.  A formal election is not necessary,
+but the network coordinator must inform the net of the issues and solicit
+input.  The network coordinator functions as the representative of the rank
+and file members of FidoNet.
+
+
+8.4  Voting Mechanism
+
+The actual voting mechanism, including whether the ballot is secret and how
+the ballots are to be collected, verified, and counted, is left to the
+discretion of the International Coordinator.  Ideally, ballot collection
+should be by some secure message system, conducted over FidoNet itself.
+
+In order to provide a discussion period, the announcement of any ballot must
+be made at least two weeks before the date of voting commencement.  The
+balloting period must be at least two weeks.
+
+
+8.5  Voting on a whole Policy Document
+
+Given that Policy is intertwined and self referencing, a relatively simple
+change may require several alterations of the document.  In order to simplify
+the process, balloting is done on choices between whole documents, rather
+than individual amendments.  In the simplest case, this means voting yea or
+nay to a new document.  If a number of alternatives are to be considered,
+they must be presented as whole documents, from which one is chosen.
+
+
+8.6  Decision of vote
+
+A Policy amendment is considered in force if, at the end of the balloting
+period, it has received a majority of the votes cast.  For example, if there
+were 350 eligible voters, 100 of which cast a vote, then at least 51 affirma-
+tive votes would be required to declare the amendment in force.
+
+In the case of multiple policy changes which are considered on the same
+ballot, a version must receive more than 50% of the votes cast to be consid-
+ered ratified.  "Abstain" is a valid vote in this case, effectively being a
+vote for not changing the current policy as it simply increases the number of
+votes required to ratify the proposed change.
+
+
+8.7  Impeachment of a Zone Coordinator
+
+8.7.1  Initiation
+
+In extreme cases, a Zone Coordinator may be impeached by referendum.  Im-
+peachment of a Zone Coordinator does not require a Policy violation.  An
+impeachment proceeding is invoked when a majority of the Regional Coordina-
+tors in a zone request the International Coordinator to institute it.
+
+8.7.2  Procedure as in Policy Referendum
+
+The provisions of sections 8.2 and 8.3 apply to impeachment referenda.
+
+The definition of "majority" in section 8.6 applies.  Only coordinators in
+the affected zone vote (even if the zone coordinator is also the Internation-
+al Coordinator).
+
+8.7.3  Voting Mechanism
+
+The balloting procedures are set, the votes are collected, and the results
+are announced by a Regional Coordinator chosen by the Zone Coordinator who is
+being impeached.  The removal of the Zone Coordinator is effective two weeks
+after the end of balloting if the impeachment carries.
+
+8.7.4  Limited to once per year
+
+The removal of a Zone Coordinator is primarily intended to be a mechanism by
+which the net as a whole expresses displeasure with the way Policy is being
+interpreted.  At one time or another, everyone is unhappy with the way policy
+is interpreted.  In order to keep the Zone Coordinators interpreting policy
+as opposed to defending themselves, at least one full calendar year must
+elapse between impeachment referenda (regardless of how many people hold the
+position of Zone Coordinator during that year.)
+
+Should a Zone Coordinator resign during an impeachment process, the process
+is considered null and void, and does not consume the "once per year quota".
+
+
+9  Resolution of Disputes
+
+9.1  General
+
+The FidoNet judicial philosophy can be summed up in two rules:
+
+     1) Thou shalt not excessively annoy others.
+
+     2) Thou shalt not be too easily annoyed.
+
+In other words, there are no hard and fast rules of conduct, but reasonably
+polite behavior is expected.  Also, in any dispute both sides are examined,
+and action could be taken against either or both parties. ("Judge not, lest
+ye be judged!")
+
+The coordinator structure has the responsibility for defining "excessively
+annoying".  Like a common definition of pornography ("I can't define it, but
+I know it when I see it."), a hard and fast definition of acceptable FidoNet
+behavior is not possible.  The guidelines in this policy are deliberately
+vague to provide the freedom that the coordinator structure requires to
+respond to the needs of a growing and changing community.
+
+The first step in any dispute between sysops is for the sysops to attempt to
+communicate directly, at least by netmail, preferably by voice.  Any com-
+plaint made that has skipped this most basic communication step will be
+rejected.
+
+Filing a formal complaint is not an action which should be taken lightly.
+Investigation and response to complaints requires time which coordinators
+would prefer to spend doing more constructive activities.  Persons who
+persist in filing trivial policy complaints may find themselves on the wrong
+side of an excessively-annoying complaint.  Complaints must be accompanied
+with verifiable evidence, generally copies of messages; a simple word-of-
+mouth complaint will be dismissed out of hand.
+
+Failure to follow the procedures herein described (in particular, by skipping
+a coordinator, or involving a coordinator not in the appeal chain) is in and
+of itself annoying behavior.
+
+
+9.2  Problems with Another Sysop
+
+If you are having problems with another sysop, you should first try to work
+it out via netmail or voice conversation with the other sysop.
+
+If this fails to resolve the problem, you should complain to your Network
+Coordinator and the other sysop's Network Coordinator.  If one or both of you
+is not in a network, then complain to the appropriate Regional Coordinator.
+Should this fail to provide satisfaction, you have the right to follow the
+appeal process described in section 9.5.
+
+
+9.3  Problems with your Network Coordinator
+
+If you are having problems with your Network Coordinator and feel that you
+are not being treated properly, you are entitled to a review of your situa-
+tion.  As with all disputes, the first step is to communicate directly to
+attempt to resolve the problem.
+
+The next step is to contact your Regional Coordinator.  If your case has
+merit, there are several possible courses of action, including a change of
+Network Coordinators or even the disbanding of your network.  If you have
+been excommunicated by your Network Coordinator, that judgement may be
+reversed, at which point you will be reinstated into your net.
+
+If you fail to obtain relief from your Regional Coordinator, you have the
+right to follow the appeal process described in section 9.5.
+
+
+9.4  Problems with Other Coordinators
+
+Complaints concerning annoying behavior on the part of any coordinator are
+treated as in section 9.2 and should be filed with the next level of coordi-
+nator.  For example, if you feel that your Regional Coordinator is guilty of
+annoying behavior (as opposed to a failure to perform duties as a coordina-
+tor) you should file your complaint with the Zone Coordinator.
+
+Complaints concerning the performance of a coordinator in carrying out the
+duties mandated by policy are accepted only from the level immediately below.
+For example, complaints concerning the performance of Regional Coordinators
+would be accepted from Network Coordinators and independents in that region.
+Such complaints should be addressed to the Zone Coordinator after an appro-
+priate attempt to work them out by direct communications.
+
+
+9.5  Appeal Process
+
+A decision made by a coordinator may be appealed to the next level.  Appeals
+must be made within two weeks of the decision which is being appealed.  All
+appeals must follow the chain of command; if levels are skipped the appeal
+will be dismissed out of hand.
+
+An appeal will not result in a full investigation, but will be based upon the
+documentation supplied by the parties at the lower level.  For example, an
+appeal of a Network Coordinator's decision will be decided by the Regional
+Coordinator based upon information provided by the coordinator and the sysop
+involved; the Regional Coordinator is not expected to make an independent
+attempt to gather information.
+
+The appeal structure is as follows:
+
+   Network Coordinator decisions may be appealed to the appropriate Region-
+   al Coordinator.
+
+   Regional Coordinator decisions may be appealed to the appropriate Zone
+   Coordinator.  At this point, the Zone Coordinator will make a decision
+   and communicate it to the Regional Coordinators in that zone.  This
+   decision may be reversed by a majority vote of the Regional Coordina-
+   tors.
+
+   Zone Coordinator decisions may be appealed to the International Coordi-
+   nator.  The International Coordinator will make a decision and communi-
+   cate it to the Zone Coordinator Council, which may reverse it by majori-
+   ty vote.
+
+If your problem is with a Zone Coordinator per se, that is, a Zone Coordina-
+tor has committed a Policy violation against you, your complaint should be
+filed with the International Coordinator, who will make a decision and submit
+it to the Zone Coordinator Council for possible reversal, as described above.
+
+
+9.6  Statute of Limitations
+
+A complaint may not be filed more than 60 days after the date of discovery of
+the source of the infraction, either by admission or technical evidence.
+Complaints may not be filed more than 120 days after the incident unless they
+involve explicitly illegal behavior.
+
+
+9.7  Right to a Speedy Decision
+
+A coordinator is required to render a final decision and notify the parties
+involved within 30 days of the receipt of the complaint or appeal.
+
+
+9.8  Return to Original Network
+
+Once a policy dispute is resolved, any nodes reinstated on appeal are re-
+turned to the local network or region to which they geographically or techni-
+cally belong.
+
+
+9.9  Echomail
+
+Echomail is an important and powerful force in FidoNet.  For the purposes of
+Policy Disputes, echomail is simply a different flavor of netmail, and is
+therefore covered by Policy.  By its nature, echomail places unique technical
+and social demands on the net over and above those covered by this version of
+Policy.  In recognition of this, an echomail policy which extends (and does
+not contradict) general Policy, maintained by the Echomail Coordinators, and
+ratified by a process similar to that of this document, is recognized by the
+FidoNet Coordinators as a valid structure for dispute resolution on matters
+pertaining to echomail.  At some future date the echomail policy document may
+be merged with this one.
+
+
+9.10  Case Histories
+
+Most of FidoNet Policy is interpretive in nature.  No one can see what is to
+come in our rapidly changing environment.  Policy itself is only a part of
+what is used as the ground rules for mediating disputes -- as or more impor-
+tant are the precedents.
+
+In order to accommodate this process, case histories may be added to or
+removed from this document by the International Coordinator, with such a
+revision subject to reversal by the Zone Coordinator Council.  Should Policy
+be amended in such a way to invalidate a precedent, Policy supersedes said
+precedent.  (A carefully prepared amendment would address this by removing
+the precedent reference as a part of the amendment.)
+
+Although a case may be removed, the text of a case history may not be modi-
+fied by any mechanism.  Case history is written close to the time of the
+decision, by those involved with it.  Amending the text of a case history is
+the same as revising history, something quite inappropriate in an organiza-
+tion dedicated to moving information.
+
+
+
+10  Appendices
+
+10.1  General
+
+The Appendices of this document are exceptions to the normal ratification
+process.  Section 10.2 can be changed by the appropriate Zone Coordinator,
+and section 10.3 may be modified by the International Coordinator (see
+Section 9.10).
+
+
+10.2  Timing of Zone Mail Hour
+
+Zone Mail Hour is observed each day, including weekends and holidays.  The
+time is based upon Universal Coordinated Time (UTC), also known as Greenwich
+Mean time (GMT).  In areas which observe Daylight Savings Time during part of
+the year, the local time of zone mail hour will change because FidoNet does
+not observe Daylight Savings Time. The exact timing of Zone Mail Hour is set
+for each zone by the Zone Coordinator.
+
+In FidoNet Zone 1, Zone Mail Hour is observed from 0900 to 1000 UTC.  In each
+of the time zones, this is:
+
+     Eastern Standard Time          4 AM to 5 AM
+     Central Standard Time          3 AM to 4 AM
+     Mountain Standard Time          2 AM to 3 AM
+     Pacific Standard Time          1 AM to 2 AM
+     Hawaii Standard Time          11 PM to Midnight
+
+In FidoNet Zone 2, Zone Mail Hour is observed from 0230 to 0330 UTC.
+
+In Fidonet Zone 3, Zone Mail Hour is observed from 1800 to 1900 UTC.  In each
+of the time Zones involved this is:
+
+
+  GMT +12 Zone                        6:00 AM to 7:00 AM
+  (New Zealand)
+
+  GMT +10 Zone                        4:00 AM to 5:00 AM
+  (East Australia)
+  (Papua New Guinea)
+  (Micronesia)
+
+  GMT +9.5 Zone                       3:30 AM to 4:30 AM
+  (Central Australia)
+
+  GMT +9 Zone                         3:00 AM to 4:00 AM
+  (Japan)
+  (Korea)
+  (Eastern Indonesia)
+
+  GMT +8 Zone                         2:00 AM to 3:00 AM
+  (Hong Kong)
+  (Taiwan)
+  (Central Indonesia)
+  (Philippines)
+  (Western Australia)
+
+  GMT +7 Zone                         1:00 AM to 2:00 AM
+  (Malaysia)
+  (Singapore)
+  (Thailand)
+  (Western Indonesia)
+
+
+10.3  Case Histories
+
+
+Case histories of past disputes are instructive to show general procedures
+and methods.  Any decision may be included in this document by a majority
+vote of either the Zone Coordinator Council or the Regional Coordinators.
+
+Policy4 significantly changes the functions of the Zone and International
+Coordinators.  In the following cases which were decided using Policy3,
+substitute "Zone Coordinator" for all occurrences of "International Coordina-
+tor(*)".
+
+
+10.3.1  The Case of the Crooked Node
+
+A sysop of a local node was using network mail to engage in unethical busi-
+ness practices.  The Network Coordinator became very annoyed at this, and
+dropped the local from the nodelist.
+
+The local appealed to the Regional Coordinator for assignment as an indepen-
+dent node.  The Regional Coordinator, after checking with the Network Coordi-
+nator, decided that the Network Coordinator was right to be annoyed.  Inde-
+pendent status was denied.
+
+The International Coordinator(*) did not intervene.
+
+
+10.3.2  The Case of the Hacker Mailer
+
+A sysop of a local node made use of file attaches for extra users to mail
+himself the USER.BBS file from several local boards.  The sysops of these
+boards felt annoyed at this, and appealed to their Network Coordinator, who
+agreed and dropped the offending node from the nodelist.
+
+The Regional Coordinator was not consulted.
+
+The International Coordinator(*) did not intervene.
+
+
+10.3.3  The Case of the Bothered Barker
+
+A local node became annoyed with the Network Coordinator for failing to
+provide services.  Repeated complaints to the Network Coordinator did not
+satisfy him, so he appealed to the International Coordinator(*).
+
+The International Coordinator(*) dismissed the complaint because the Regional
+Coordinator had not been consulted.
+
+The local node submitted the complaint to his Regional Coordinator, who
+investigated the case and discovered that there was some justice to the
+complaint.  He advised and assisted the Network Coordinator in configuring
+his system to provide an improved level of service to the local nodes.
+
+The Regional Coordinator also decided that the local node was being too
+easily annoyed, in that he was expecting services not normally required of a
+Network Coordinator.  The local node was informed as to the true duties of a
+Network Coordinator, and was advised to lower his expectations.
+
+
+10.3.4  The Case of the Busy Beaver
+
+A local node which was operated by a retail establishment was engaged in
+making "bombing runs" to mail advertisements over FidoNet.  The Network
+Coordinator felt annoyed and handling the outgoing traffic for a commercial
+operation, and asked the local node to leave the network.
+
+The local node applied to the Regional Coordinator, and was granted status as
+an independent node in the region.
+
+
+10.3.5  The Mark of the Devil
+
+A local sysop whose board was used in conjunction with voodoo rites, hacking,
+phreaking, and obscene material applied to a Network Coordinator for a node
+number.  The Network Coordinator deemed that this board was exceptionally
+annoying, and denied the request.
+
+The Regional Coordinator was not consulted.
+
+The International Coordinator(*), on seeing that the Regional Coordinator had
+not been consulted, dismissed the case out of hand.  No further appeals were
+made.
+
+
+10.3.6  The Case of the Sysop Twit
+
+A patron of various local nodes had been roundly recognized by all sysops as
+a twit.  The user obtained his own system, became a sysop, and applied for a
+node number.  The Network Coordinator denied the request.  No appeals were
+made.
+
+
+10.3.7  The Case of the Echomail Junkie
+
+A local node became enamored with echomail and joined several conferences,
+routing mail through his network.  He then started an echomail conference of
+his own and began relaying echomail between several systems, again routing it
+all through the network.
+
+His Network Coordinator observed that network performance was becoming
+seriously impaired.  The offending node was told to hold it down.  A compro-
+mise was reached whereby much of the echomail traffic was no longer routed
+through the network, and routed echomail was limited to twenty messages per
+night.  No appeals were made.
+
+
+10.3.8  The Case of the Bouncing Board
+
+A local user decided to establish a node to promote a worthy charity.  The
+machine being used was also used for various other activities during the day,
+and the sysop was often called away.  His coworkers would often forget to
+bring the board up at the end of the day while he was away, so the node was
+often down for extended periods.  The Network Coordinator, finding the node
+unable to receive mail, would mark it down.  The sysop would return, restart
+the board, and ask to be reinstated.
+
+The Network Coordinator eventually decided that the sysop was not able to
+maintain a reliable system, and removed him from the nodelist completely.
+Subsequent requests for a node number from the same sysop were turned down.
+No appeals were made.
+
+
+10.5  Credits, acknowledgments, etc.
+
+Fido and FidoNet are registered trademarks of Fido Software, Inc.
+
+
+
+
+                                     Index
+
+-1/-1,  2.3
+Additional mail events in local network  2.1.8
+Address in message to request node  2.2
+Administrative Region  6.1
+Advantages to network membership  2.2
+Alteration of mail  2.1.5
+Answering machine  2.3
+Announcement of voting results 8.2
+Annoying behavior  1.3.5, 1.4.8, 2.1.1, 2.1.2, 2.1.4, 2.1.6, 2.1.7, 2.1.8,
+     2.1.11, 2.3, 4.2, 4.3, 5.2, 9, 10
+Appeal chain  9.5
+Appointment of coordinators  1.2.3, 1.2.4, 5.7, 6.1
+Availability of NodeList  1.3.4
+Balloting Period  8.4
+Bombing run  4.2
+BossNode  1.2.1.2
+Boundaries  1.3.2
+Business use of FidoNet  1.3.6
+Calling areas  1.3.2, 5.6, 5.7
+Case histories  9.10, 10.3
+Chain of command  1.2.8
+Changing node numbers  4.3, 5.2
+Checks and balances  1.2.8
+Commercial messages  1.3.6, 2.1.4, 4.2
+Complaint (policy)  2.1.6.1, 9
+Contributions to FidoNews  1.3.1
+Current nodelist  2.1.11
+Daylight Savings Time  2.1.14
+Difference file  4.5, 5.8, 8.2
+Disclosing private mail  2.1.6
+Discussion period  8.2
+Disputes  9
+Distribution of ballots  8.2
+Down  2.3, 4.4, 5.5
+Downloading by users  3.6, 4.5, 5.8
+EchoMail  4.2, 9.9
+Effective date (policy change)  8.2
+Election of coordinators  1.2.5, 6.2, 7.2
+Eligibility to vote  8.3
+Encryption  2.1.4, 4.2
+Exceptions  5.6
+Excessively annoying behavior  1.2.1.1, 1.3.5, 2.1.1, 2.1.2, 2.1.4, 2.1.6,
+     2.1.7, 2.1.8, 2.1.11, 2.3, 4.2, 4.3, 5.2, 9, 10
+Exclusivity of Zone Mail Hour  2.1.8
+Excommunication  2.1.12, 4.3, 5.2, 9
+Exemptions, node location  1.3.2, 5.6
+Familiarity with policy  2.1.2, 2.2
+FidoNews  1.3.1
+     availability 3.1, 4.5, 5.8
+FTSC  2.1.8, 2.1.9, 2.4
+Gateway  2.1.3
+Geography  1.3.2, 5.6
+Glue  4.5
+Guarantee of mail delivery  1.3.6
+Hats  3.4
+Host-routed mail  4.2
+How to obtain a node number  2.2
+Hub  1.2.3.1, 4.4
+Illegal behavior  2.1.1, 9.6
+Illegal mail  4.2
+Impeachment  8.7
+In-transit mail  2.1.6.1
+Independent node  4.2, 5.2
+Inter-zonal questions  1.2.6
+International Coordinator  1.4.1, 1.4.9, 7
+Justification of private nodes  2.1.9
+Language  1.0
+Levels of FidoNet  1.2, 1.4
+Local calling areas  1.3.2
+Local policies  1.2, 3.3
+Mail  1.2.3, 4.2
+Mailer  2.2
+Majority  8.6, 8.7.2
+Member of area administrated  3.5
+Modem  2.2
+Modification of mail  2.1.5
+National Mail Hour  see Zone Mail Hour
+Network
+     advantages 2.2
+     boundaries 1.3.2, 5.4
+     definition 1.2.3
+     forming 2.4, 5.3
+     hub 1.2.3.1, 4.4
+     numbers 2.2, 5.4
+Network Coordinator  1.2.3
+     procedures 4
+     replacement 5.7, 9.3
+Network Mail Hour  see Zone Mail Hour
+New sysops  2.1.2, 3.6
+Node numbers  4.3, 5.2
+   obtaining  2.2
+Nodelist  1.3.4, 2.2, 4.4, 5.5
+     availability 3.1, 4.5, 5.8
+     changes 4.4, 5.2
+     current 2.1.11
+     definition 1.3.4
+     format 10.3
+     official 1.3.4
+Nodes
+     definition 1.2.1
+     down 2.3
+Observing mail events  2.1.8, 2.1.10
+Obtaining a node number  2.2
+Offensive messages  2.1.5
+Orders (commercial)  1.3.6
+Partial nodelist  1.3.4
+Pirated software  2.1.1
+Point of origin  2.1.3
+Points  1.2.1.2, 2.1.3
+Policy  3.1, 3.3, 4.5, 5.8
+     changing 8
+     complaint 2.1.6.1, 9
+     familiarity with 2.1.2, 2.2
+     local 1.2, 3.3
+Precedent  3.7, 9.10, 10.3
+Private messsages  2.1.6
+Private network  1.2.1.2
+Private nodes  2.1.9
+Problem resolution  9
+Protocol  2.1.8
+Public BBS  3.6
+Ratification  7.1
+Redundant nodes  2.1.9
+Referendum  1.2.7, 8
+Regional Coordinator  1.2.4
+     procedures 5
+     replacement 6.1, 9.4
+Regions  1.2.4
+Replacement of coordinators  1.2.8
+Replacing services  3.4
+Requirements to be in NodeList  1.3.4, 2.1.2, 2.2
+Resignation of ZC  8.7.4
+Resolution of disputes  9
+Results Announcement  8.2
+Review of decisions  3.7
+Review of routed traffic  2.1.4
+Routing  2.1.4 - 2.1.7, 4.2
+Routing Hub  1.2.3.1, 4.4
+Rules  9.1
+Speedy decision  9.7
+Standards (FTSC)  2.1.8, 2.4
+Statute of limitations  9.6
+Submissions to FidoNews  1.3.1
+Sysop procedures  2
+System operator (sysop)  1.2.1
+Three-tiered networks  1.2.3.1
+Time limit on decision  9.7
+Timing of Zone Mail Hour  2.1.13, 2.1.14, 10.2
+Top-down  1.4.9
+Tradition  3.7
+Trivial network  5.3
+Unattended systems  2.3
+Updates to nodelist  3.2
+User  1.2.1.1
+User access during ZMH  2.1.8
+Vacation  2.3
+Voice telephone number  2.2
+Vote  8
+     eligibility 8.3, 8.7.2
+ZMH see Zone Mail Hour
+Zone Coordinator  1.2.5, 6
+     election 6.2
+     impeachment 8.7
+     procedures 6
+     removal 6.2
+     resignation during impeachment 8.7.4
+Zone Coordinator Council  1.2.6, 7.1
+Zone Mail Hour  1.3.3, 2.1.8
+     timing 2.1.13, 2.1.14, 10.2
+Zones  1.2.5, 1.3.2
+

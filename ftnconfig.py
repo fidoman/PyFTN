@@ -161,8 +161,9 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "CONCORD|TITANIC\.|ROO\.|DWAVE\.|RSS.BASH.ORG.RU|RSS.SECURITYLAB.RU|RSS.BUGTRAQ.RU|RSS.RU.NEWS|SIMBIRSK\.|HOUSTON\.|"
             "INTERBONE\.|RSS\.IBASH\.ORG\.RU|CHERKASSY\.|AT\.TALK|SMOLENSK\.|Z\.TAVSAR\.|WIT\.|STV\.|54\.|"
             "RSS\.IPFW\.RU\.BASH|RSS\.COMPULENTA\.RU|4441\.|KOENIG\.|ALTYN\.|NIKOLAEV\.|TSK\.|ESIB\.|"
-            "KN\.|XSTATION\.|HIPPY\.|ISRA\.RUS|DIATLO\.|FIDONET\.ONLINE\.BBS|5049\.|PSKOV\.|SEBASTOPOL\.|"
-            "ALT\.RUSSIAN\.Z1|CRIMEA\.|ZC\.SYSOP|ZC\.TALKS|HOBBIT\.|TG\.|NINO\.")
+            "KN\.|XSTATION\.|HIPPY\.|ISRA\.RUS|DIATLO\.|FIDONET\.OFFLINE|FIDONET\.ONLINE|FIDONET\.ONLINE\.BBS|5049\.|PSKOV\.|SEBASTOPOL\.|"
+            "ALT\.RUSSIAN\.Z1|CRIMEA\.|ZC\.SYSOP|ZC\.TALKS|HOBBIT\.|TG\.|NINO\.|YES\.NEWS|TW\.|KYIV\.|PRAVDA\.NEWS|8912\.LOCAL|Z7\.|58\.LOCAL|888\.LOCAL|"
+            "KAKTUS\.|5030-722\.LOCAL|UNEXHAUSTIBLE|KRAM\.|DOWNGRADE\.TALKS|SOLOVEY\.TALKS|KLG\.|ANDROID\.UNLIMITED")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|OTHERNETS|FIDOTEST|"
@@ -176,13 +177,15 @@ RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_
             "FIDO_SYSOP|PRISM|BIBLE|TAGLINES|FE_HELP|ELIST|BBS_DOORS|CHESS|BINKD|CLASSIC_COMPUTER|NHL|"
             "RETAIL_HORROR|BBS_DOORS|RENEGADE_BBS|EC_SUPPORT|TG_SUPPORT|TERMINAT|CONSPRCY")
 
-RE_cp850 = re.compile("no_such_echo")
+RE_cp850 = re.compile("ANNOUNCE.024|NODES.024|ALT-BBS-WILDCAT|TEST|RECIPES")
 
 RE_latin = re.compile("CBM|ESP\.|LATINO|PORTUGUES|PHOTO|ASTRONOMY|PHYSICS")
 
-RE_utf8 = re.compile("TEAMOS2|UTF-8")
+RE_utf8 = re.compile("TEAMOS2|UTF-8|WEATHER|FDECHO|RBERRYPI")
 
-RE_ukrainian=re.compile("UKR\.|UA\.|R46\.|R46FE\.|LUGANSK\.")
+RE_ukrainian=re.compile("UKR\.|UA\.|R46\.|R46FE\.|LUGANSK\.|TECHNEWS|HUMOR")
+
+RE_cp1250 = re.compile("no_any_echo")
 
 
 def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
@@ -204,7 +207,7 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
       charset="cp865"
     elif chrs_kludge==b"CP861 2":
       charset="cp861"
-    elif chrs_kludge==b"CP437 2":
+    elif chrs_kludge==b"CP437 2" or chrs_kludge==b"IBMPC 2":
       charset="cp437"
     elif chrs_kludge==b"CP1251 2":
       charset="cp1251"
@@ -237,6 +240,8 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
         charset="cp850"
       elif RE_latin.match(destaddr):
         charset="iso8859-1"
+      elif RE_cp1250.match(destaddr):
+        charset="cp1250"
       elif RE_ukrainian.match(destaddr):
         charset="cp1125"
       else:
@@ -297,7 +302,11 @@ def get_addr_id(db, dom, addr):
   if (dom, addr) in ac:
     return ac[(dom, addr)]
 
+  print("!", dom, addr)
+
   res=ac_q(dom, addr)
+  print(res)
+
   if len(res)==1:
     ac[(dom, addr)]=res[0][0]
     return res[0][0]

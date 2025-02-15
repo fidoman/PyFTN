@@ -1,0 +1,24 @@
+FidoNet Application
+
+Run:
+    1. Run UI
+    2. Read local instance configuration from file (DB connection parameters, modem and IP ports list)
+    3. Complaing to configuration connect to DB and get own FTN parameters (address, SYSop).
+    4. Complaing to configuration start listeners on specified ports.
+    5. Continue work based on events.
+
+Rules:
+    1. Nodelist updates
+    2. Routing list updates
+    3. Subscription and rescan requests («areafix»)
+    4. File requests
+
+Event processing
+    1. Session start
+    2. Local and remote chat requests
+    3. Bundle and file arrival
+
+Concepts:
+    1. Rule-based logics
+    2. Store everything in database
+    3. Mirror processes to UI

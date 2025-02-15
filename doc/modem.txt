@@ -1,0 +1,3 @@
+https://unix.stackexchange.com/questions/504621/use-remote-serial-port-as-a-local-one?rq=1
+socat PTY,link=$HOME/vmodem0,rawer,wait-slave \
+    EXEC:"ssh modemserver.us.org socat - /dev/ttyS0,nonblock,rawer"

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+~/PyFTN/job_nodelist
+
+~/PyFTN/groupaddresses.py
+~/PyFTN/ftnroute.py
+#/home/fido/PyFTN/util_update_last_messages.py
+
+#find log -name 'bforce-debug.*' -mtime +3 -exec rm {} \;
+
+#cd ~/recv/2.5020.614.0/pwd-in
+#./unpack
+
+cd
+
+find recv -name ????????.???-??????????.* -mtime +5 -delete
+find recv -name ????????.upkt-??????????.* -mtime +5 -delete
+find recv -name ????????????.msg-??????????.* -mtime +3 -delete
+
+~/PyFTN/stat_echomail_outbound.py
+~/PyFTN/stat_echomail.py
+~/PyFTN/stat_fecho.py
+~/PyFTN/stat_netmail_queue.py
+~/PyFTN/stat_netmail_route.py
+~/PyFTN/stat_checkutf.py
+
+~/PyFTN/tools/list_unchecked

@@ -61,9 +61,9 @@ def q_file(db, area, name):
     " order by post_time desc").first(db.FTN_domains["fileecho"], area, name)
 
 def nodelist():
-  f_id = q_file(db, 'NODELIST', 'NODELIST.___')
-  print (f_id)
-  save(db, f_id, open(ftnconfig.NODELIST+".zip", "wb"))
+#  f_id = q_file(db, 'NODELIST', 'NODELIST.___')
+#  print (f_id)
+#  save(db, f_id, open(ftnconfig.NODELIST+".zip", "wb"))
   base = os.path.split(ftnconfig.NODELIST)[0]
   save(db, q_file(db, 'R50ROUTE', 'R50.ROU'), open(os.path.join(base, 'R50.ROU'), "wb"))
   save(db, q_file(db, 'R50ROUTE', 'R50.TRU'), open(os.path.join(base, 'R50.TRU'), "wb"))
