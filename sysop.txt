@@ -1,0 +1,5 @@
+1. Check your netmail
+2. Check refuse folder for bads, dups and insecure (post without access) messages
+2.1. Fix bads for encoding, or other reason for refusing. Drop with undefined source address.
+3. Check daily report. Review netmail queue
+4. Review inboxes for untossed bundles and unexpected files. use renbad.py for invalid extension bundles.

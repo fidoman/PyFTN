@@ -23,6 +23,7 @@ NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 NETMAIL_peers += ["2:5020/101"]
 NETMAIL_peers += ["2:5020/614"] # fileecho uplinks
 NETMAIL_peers += ["2:5020/2038"]
+NETMAIL_peers += ["2:5058/104"] # 2025-02
 
 # only links must be here!
 NETMAIL_peerhosts = [("2:5059/0", "2:5059/37"),
@@ -163,7 +164,7 @@ RE_russian=re.compile("RU\.|SU\.|MO\.|R50\.|N50|HUMOR\.|TABEPHA$|XSU\.|ESTAR\.|F
             "RSS\.IPFW\.RU\.BASH|RSS\.COMPULENTA\.RU|4441\.|KOENIG\.|ALTYN\.|NIKOLAEV\.|TSK\.|ESIB\.|"
             "KN\.|XSTATION\.|HIPPY\.|ISRA\.RUS|DIATLO\.|FIDONET\.OFFLINE|FIDONET\.ONLINE|FIDONET\.ONLINE\.BBS|5049\.|PSKOV\.|SEBASTOPOL\.|"
             "ALT\.RUSSIAN\.Z1|CRIMEA\.|ZC\.SYSOP|ZC\.TALKS|HOBBIT\.|TG\.|NINO\.|YES\.NEWS|TW\.|KYIV\.|PRAVDA\.NEWS|8912\.LOCAL|Z7\.|58\.LOCAL|888\.LOCAL|"
-            "KAKTUS\.|5030-722\.LOCAL|UNEXHAUSTIBLE|KRAM\.|DOWNGRADE\.TALKS|SOLOVEY\.TALKS|KLG\.|ANDROID\.UNLIMITED")
+            "KAKTUS\.|5030-722\.LOCAL|UNEXHAUSTIBLE|KRAM\.|DOWNGRADE\.TALKS|SOLOVEY\.TALKS|KLG\.|ANDROID\.UNLIMITED|PERL\.CPAN")
 
 
 RE_cp437 = re.compile("BBS_ADS|IC$|ENET\.|FTSC_|PASCAL|BLUEWAVE|HOME_COOKING|FN_|WIN95|FIDOSOFT\.|OTHERNETS|FIDOTEST|"
@@ -187,6 +188,7 @@ RE_ukrainian=re.compile("UKR\.|UA\.|R46\.|R46FE\.|LUGANSK\.|TECHNEWS|HUMOR")
 
 RE_cp1250 = re.compile("no_any_echo")
 
+force_cp437 = {"1:103/705", "1:135/115"}
 
 def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom, destaddr): # mode="encode"|"decode"
 
@@ -195,7 +197,10 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
     if chrs_kludge is None and charset_kludge==b"LATIN-1":
       chrs_kludge=b"LATIN-1 2"
 
-    if chrs_kludge==b"CP866 2":
+    if srcdom=="node" and srcaddr in force_cp437:
+      # ignore kludge
+      charset="cp437"
+    elif chrs_kludge==b"CP866 2":
       charset="cp866"
     elif chrs_kludge==b"CP1125 2":
       charset="cp1125"
@@ -227,6 +232,7 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
       #      "RUSSIAN", "RUS_FTN", "FIDO", "UKR", "R_FIDO", "TABLE", "IBMPC2", "R FIDO", 
       #      "FTN", "JK", "KOI", "CP808", "RUFIDO", "Russian", "IBM", "+7FIDO")):
       #    charset="cp866"
+
 
     elif destdom=="echo":
       #print("area for charset [%s]"%repr(msg.area))
@@ -302,10 +308,10 @@ def get_addr_id(db, dom, addr):
   if (dom, addr) in ac:
     return ac[(dom, addr)]
 
-  print("!", dom, addr)
+#  print("!", dom, addr)
 
   res=ac_q(dom, addr)
-  print(res)
+#  print(res)
 
   if len(res)==1:
     ac[(dom, addr)]=res[0][0]

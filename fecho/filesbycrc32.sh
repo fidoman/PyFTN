@@ -1,6 +1,6 @@
 #!/bin/bash
 
-find . -maxdepth 1 -type f -not -iname '*.tic' \
+find . -maxdepth 1 -type f -not -iname '*.tic' -not -iname '*.req' \
 -not -iname '*.mo?' -not -iname '*.tu?' -not -iname '*.we?' -not -iname '*.th?' -not -iname '*.fr?' -not -iname '*.sa?' -not -iname '*.su?' \
 -not -iname '*.mo?-*' -not -iname '*.tu?-*' -not -iname '*.we?-*' -not -iname '*.th?-*' -not -iname '*.fr?-*' -not -iname '*.sa?-*' -not -iname '*.su?-*' \
 -not -iname '*.bad' -not -iname '*.dup' -not -iname '*.status' -not -iname '*.pkt' -not -iname '*.pkt-*' \

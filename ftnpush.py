@@ -252,6 +252,7 @@ if __name__ == "__main__":
 
     for f in glob.glob(pnode_dir+"/pwd-in/*.[Tt][Ii][Cc]"):
       print ("Tic file", f)
+      continue
       try:
         ftntic.import_tic(db, f, node)
 

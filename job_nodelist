@@ -1,0 +1,9 @@
+
+~/PyFTN/util_restore.py nodelist
+
+pushd ~/nodelist/
+unzip DAILYUTF.ZIP && rm DAILYUTF.ZIP
+find . -name 'DAILYUTF.*' -exec mv {} fido.ndl \;
+popd
+
+rsync -rt --del ~/nodelist/ fluid:/flash/fido/nodelist/

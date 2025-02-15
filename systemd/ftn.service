@@ -1,0 +1,13 @@
+[Unit]
+After=network.target
+Description=FTN Daemon
+
+[Service]
+User=fido
+Group=fido
+ExecStart=/tank/fido/home/PyFTN/ftndaemon.py /tank/fido/home/log/ftndaemon.log
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
