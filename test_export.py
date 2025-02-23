@@ -1,6 +1,6 @@
 #!/bin/env python3
 
-link_addr = "2:5097/31"
+link_addr = "2:5058/104"
 encoding = "utf-8"
 
 import os
@@ -25,6 +25,7 @@ from ftnconfig import BUNDLETIMELIMIT
 
 def get_subscriber_messages_e(db, subscriber, domain):
   start_time = get_time()
+  print(start_time)
   for target_id, target_name, target_last, subs_id, subs_last in get_subscriptions_x(db, subscriber, domain):
     if get_time()-start_time>BUNDLETIMELIMIT-5:
       print("Abandoning do to export time limit")

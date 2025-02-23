@@ -23,6 +23,7 @@ NETMAIL_peers += ["2:5020/4441"] # echomail uplink
 NETMAIL_peers += ["2:5020/101"]
 NETMAIL_peers += ["2:5020/614"] # fileecho uplinks
 NETMAIL_peers += ["2:5020/2038"]
+NETMAIL_peers += ["2:5030/1474"]
 NETMAIL_peers += ["2:5058/104"] # 2025-02
 
 # only links must be here!
@@ -90,7 +91,7 @@ DAEMONBIND=[
 PACKETTHRESHOLD = 100*1024
 BUNDLETHRESHOLD = 500*1024
 
-MSGSIZELIMIT = 999999
+MSGSIZELIMIT = 11999999
 
 BUNDLETIMELIMIT=30
 PACKETTIMELIMIT=3

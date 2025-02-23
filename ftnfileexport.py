@@ -1,13 +1,13 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 import ftnexport
 import ftnconfig
 import os
 
 db=ftnconfig.connectdb()
-address="2:5059/37"
-password="SB6JV9W"
-classes=["fileecho"]
+address="2:5058/104"
+password=""
+classes=["echo"]
 outdir=os.path.join("static", address.replace("/", ".").replace(":","."))
 os.makedirs(outdir, exist_ok=True)
 

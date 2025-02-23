@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -bb
+#!/usr/bin/python3 -bb
 
 # check that messages in dupearea really the same as in database
 
@@ -10,24 +10,25 @@ import postgresql
 import xml.etree.ElementTree
 import ast
 
-from ftnimport import normalize_message
+from ftnimport import normalize_message, session
 from stringutil import *
 import ftnexport
 
 db=connectdb()
+s=session(db)
 
 Q_msgget = db.prepare("select m.id, m.msgid, m.header, m.body, m.origcharset, s.domain, s.text, d.domain, d.text "
             "from messages m, addresses s, addresses d "
-            "where m.msgid=$1 and m.source=s.id and m.destination=d.id")
+            "where m.msgid=$1 and m.source=s.id and m.destination=d.id and d.id=$2")
 
-for c in Q_msgget("2:280/5003.4 56eee1c4")[0][3]:
-  print(ord(c), c)
-  if ord(c)==144:
-    print("***")
-    break
-import time
-time.sleep(2)
-exit()
+#for c in Q_msgget("2:280/5003.4 56eee1c4")[0][3]:
+#  print(ord(c), c)
+#  if ord(c)==144:
+#    print("***")
+#    break
+#import time
+#time.sleep(2)
+#exit()
 
 #DUPDIR=BADDIR
 
@@ -47,7 +48,10 @@ for f in filelist:
 
     (origdomname, origaddr), (destdomname, destaddr), msgid, header, body, charset = normalize_message(m)
 
-    print("msgid='%s'"%msgid,end=' ')
+    destdom=s.domains[destdomname]
+    dest_id=get_addr_id(db, destdom, destaddr)
+
+    print("msgid: '%s' destination: %s '%s' id=%d"%(msgid, destdomname, destaddr, dest_id), end=' ')
 
 #    if destdomname!="echo":
 #        print ("not echomail")
@@ -62,7 +66,7 @@ for f in filelist:
     #print(body)
 
 #    print("message in database ---")
-    dbmessages=Q_msgget(msgid)
+    dbmessages=Q_msgget(msgid, dest_id)
     if len(dbmessages)>1:
       raise Exception("multiple messages in database with this MSGID")
     dbid, dbmsgid, dbheader, dbbody, dbcharset, dbsd, dbst, dbdd, dbdt = dbmessages[0]
@@ -98,7 +102,8 @@ for f in filelist:
     match = subjmatch and (body.strip()==dbbody.strip() or dbbody.strip().startswith(body.strip()))
 
     print("and same body:", match)
-    if destdomname=="echo" and match and (destdomname,destaddr)==(dbdd,dbdt):
+    # remove check destdomname=="echo" and as even netmail with same content and same id is also considered as dup
+    if  match and (destdomname,destaddr)==(dbdd,dbdt):
       os.unlink(os.path.join(DUPDIR,f))
       os.unlink(os.path.join(DUPDIR,f[:-4]+".status"))
       try:
@@ -107,6 +112,8 @@ for f in filelist:
         pass
 
     else:
+      print("difference!", destdomname, "=echo", match, (destdomname,destaddr), '=', (dbdd,dbdt))
+
       dupf=open(os.path.join(DUPDIR, fn+".db%d.msg"%dbid), "wb")
       dbmsg,_=ftnexport.denormalize_message(
         (dbsd, dbst), (dbdd, dbdt),
