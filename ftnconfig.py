@@ -9,7 +9,7 @@ from ftn.ftn import FTNNoAddressInBase
 
 # system-specific settings
 
-FIDODIR="/tank/fido/home"
+FIDODIR="/zroot/fido/home"
 ADDRESS="2:5020/12000"
 SYSOP="Sergey Dorofeev"
 HOSTNAME="fluid.fidoman.ru"

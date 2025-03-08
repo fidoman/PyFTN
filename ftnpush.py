@@ -250,6 +250,37 @@ if __name__ == "__main__":
         fx.close()
 
 
+    # sort by crc32
+    for p in glob.glob(pnode_dir+"/pwd-in/*"):
+        print(p)
+        if not os.path.isfile(p): continue
+        fn=os.path.basename(p)
+        f=fn.lower()
+        if f.endswith('.tic'): continue
+        if f.endswith('.req'): continue
+        if f.endswith('.msg') or f[8:13]==".msg-": continue
+        if f.endswith('.pkt') or f[8:13]==".pkt-": continue
+        if f.endswith('.bad'): continue
+        if f.endswith('.dup'): continue
+        if f.endswith('.status'): continue
+        if f[8:11] in {".mo", ".tu", ".we", ".th", ".fr", ".sa", ".su"} and ((len(f)==12) or (len(f)>12 and f[12]=='-')): continue
+        
+        print(f)
+#        print(f[8:11], len(f), f[11])
+        with open(p, "rb") as fd:
+          csum=ftntic.sz_crc32fd(fd)
+        print(csum)
+        base=os.path.dirname(p)
+        dest=os.path.join(base, csum[1])
+        if not os.path.isdir(dest):
+            os.mkdir(dest)
+        mod=0
+        while os.path.exists(os.path.join(dest, fn if mod==0 else fn+"___%d"%mod)):
+            mod+=1
+        print(p, "->", os.path.join(dest, fn if mod==0 else fn+"___%d"%mod))
+        os.rename(p, os.path.join(dest, fn if mod==0 else fn+"___%d"%mod))
+
+    # process tics after files are sorted
     for f in glob.glob(pnode_dir+"/pwd-in/*.[Tt][Ii][Cc]"):
       print ("Tic file", f)
 

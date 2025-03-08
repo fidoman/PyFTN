@@ -128,9 +128,13 @@ def find_matching_file(filepath, name, size, crc):
   # if size and CRC not specified then require strict name matching
 #  print(crc); os.abort()
 
-  filepath=os.path.join(filepath, crc.lower())
+  filepath=os.path.join(filepath, crc)
 
-  files = os.listdir(filepath)
+  try:
+    files = os.listdir(filepath)
+  except FileNotFoundError:
+    raise NoFile("cannot list dir %s"%filepath)
+    
   candidates=[]
   for f in files:
     if f==name or f.startswith(name+"."):

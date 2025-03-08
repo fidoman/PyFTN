@@ -1,6 +1,6 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3
 
-# run within directory
+# run within directory!!!
 
 import os
 
@@ -8,7 +8,7 @@ good=["MO", 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
 
 def mkext(counter):
   inc='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-  day=counter/len(inc)
+  day=int(counter/len(inc))
   if day>=len(good): 
     print("no more exts")
     exit(-1)
@@ -19,6 +19,7 @@ c=0
 
 for z in os.listdir('.'):
   if z.endswith(".PKT"): continue
+  if z[8]!='.': continue
   if len(z) not in [12,21,20,19,18]: continue
   if len(z)==12 and z[9:11] in good: continue
   new='FFFFFFFF.'+mkext(c)
