@@ -252,7 +252,7 @@ if __name__ == "__main__":
 
     # sort by crc32
     for p in glob.glob(pnode_dir+"/pwd-in/*"):
-        print(p)
+        #print(p)
         if not os.path.isfile(p): continue
         fn=os.path.basename(p)
         f=fn.lower()
@@ -265,11 +265,11 @@ if __name__ == "__main__":
         if f.endswith('.status'): continue
         if f[8:11] in {".mo", ".tu", ".we", ".th", ".fr", ".sa", ".su"} and ((len(f)==12) or (len(f)>12 and f[12]=='-')): continue
         
-        print(f)
+        #print(f)
 #        print(f[8:11], len(f), f[11])
         with open(p, "rb") as fd:
           csum=ftntic.sz_crc32fd(fd)
-        print(csum)
+        #print(csum)
         base=os.path.dirname(p)
         dest=os.path.join(base, csum[1])
         if not os.path.isdir(dest):

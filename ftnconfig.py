@@ -213,7 +213,8 @@ def suitable_charset(chrs_kludge, charset_kludge, mode, srcdom, srcaddr, destdom
       charset="cp865"
     elif chrs_kludge==b"CP861 2":
       charset="cp861"
-    elif chrs_kludge==b"CP437 2" or chrs_kludge==b"IBMPC 2":
+    elif chrs_kludge==b"CP437 2":
+# or chrs_kludge==b"IBMPC 2":
       charset="cp437"
     elif chrs_kludge==b"CP1251 2":
       charset="cp1251"
