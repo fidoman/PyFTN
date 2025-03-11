@@ -147,6 +147,9 @@ def find_matching_file(filepath, name, size, crc):
     for f in files:
       if name.lower().startswith(f.lower()):
         candidates.append(f)
+  if not candidates: # last try - all files
+    for f in files: # recheck 
+      candidates.append(f)
 
   print(name, candidates)
   for c in candidates:
@@ -247,10 +250,10 @@ def import_tic(db, fullname, expect_addr=None, import_utime=None, ticdata=None, 
 
   fcrc = get_single(ticdata, "CRC", remove=False)
 
-  print ("TIC name, size, crc:", fname, fsize, fcrc)
+  print ("TIC name=%s size=%s crc=%s search in: %s"%(fname, fsize, fcrc, filepath))
   ffullname=find_matching_file(filepath, fname, fsize, fcrc)
 
-  if not os.path.exists(ffullname):
+  if not ffullname or not os.path.exists(ffullname):
     raise NoFile("file %s does not exists"%ffullname)
 
   if fsize is not None and os.path.getsize(ffullname)!=fsize:

@@ -61,6 +61,10 @@ def log(s):
 L_unpack = threading.Lock()
 
 def rununpack():
+  # unpack is self-locked
+  os.system("~/unpack >> ~/log/unpack.log")
+  return
+  
   global L_unpack
 
   log("rununpack")

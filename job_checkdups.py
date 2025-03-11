@@ -38,6 +38,8 @@ if len(sys.argv)<2:
 else:
   filelist=sys.argv[1:]
 
+filelist.sort()
+
 for f in filelist:
   fn, fext = os.path.splitext(f)
   if fext==".msg" and fn.find(".db")==-1:
@@ -65,8 +67,8 @@ for f in filelist:
 
     #print(body)
 
-#    print("message in database ---")
     dbmessages=Q_msgget(msgid, dest_id)
+    print("messages in database:", len(dbmessages))
     if len(dbmessages)>1:
       raise Exception("multiple messages in database with this MSGID")
     dbid, dbmsgid, dbheader, dbbody, dbcharset, dbsd, dbst, dbdd, dbdt = dbmessages[0]
